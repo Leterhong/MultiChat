@@ -1,0 +1,32 @@
+services:
+  multichat:
+    build: .
+    container_name: multichat
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      # 数据持久化（用户、对话、充值记录等）
+      - multichat-data:/app/data
+      # 可选：挂载 clawtip-pay 的 .env（不挂载则使用环境变量）
+      # - ./backend/clawtip-pay/.env:/app/clawtip-pay/.env:ro
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - DATA_DIR=/app/data
+      # JWT 密钥（生产环境务必修改！）
+      - JWT_SECRET=${JWT_SECRET:-multichat_jwt_secret_2024_change_me}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  multichat-data:

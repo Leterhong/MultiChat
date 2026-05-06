@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Data
+data/
+backend/data/
+
+# WorkBuddy / Claude 本地工具目录
+.workbuddy/
+.claude/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temp
+*.tmp
+*.bak
+test_*.log
+
+# Environment
+backend/clawtip-pay/.env
+.env
+.env.local
+
+# Docs (non-essential)
+开发者指南_/
+article-ai-chat-workbuddy.md
