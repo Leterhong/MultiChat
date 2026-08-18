@@ -38,18 +38,6 @@ if ! docker compose version &> /dev/null; then
     fi
 fi
 
-# 生成随机 JWT_SECRET（仅首次）
-if [ ! -f .jwt_secret ]; then
-    JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || python3 -c "import secrets; print(secrets.token_hex(32))")
-    echo "$JWT_SECRET" > .jwt_secret
-    echo -e "${GREEN}已生成 JWT 密钥${NC}"
-else
-    JWT_SECRET=$(cat .jwt_secret)
-fi
-
-# 导出环境变量
-export JWT_SECRET="$JWT_SECRET"
-
 # 构建并启动
 echo -e "${CYAN}正在构建镜像...${NC}"
 docker compose build --quiet

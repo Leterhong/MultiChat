@@ -5,6 +5,7 @@ const QwenAdapter = require('./qwen');
 const WenxinAdapter = require('./wenxin');
 const OllamaAdapter = require('./ollama');
 const LMStudioAdapter = require('./lmstudio');
+const AnthropicAdapter = require('./anthropic');
 
 const ADAPTER_MAP = {
   'openai': OpenAIAdapter,
@@ -15,7 +16,8 @@ const ADAPTER_MAP = {
   'wenxin': WenxinAdapter,
   'ernie': WenxinAdapter,
   'ollama': OllamaAdapter,
-  'lmstudio': LMStudioAdapter
+  'lmstudio': LMStudioAdapter,
+  'anthropic': AnthropicAdapter
 };
 
 function createAdapter(provider) {

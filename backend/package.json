@@ -1,15 +1,22 @@
 {
-  "name": "multi-model-chat-backend",
+  "name": "multichat-backend",
   "version": "1.0.0",
   "private": true,
+  "description": "MultiChat backend — Express-based multi-model Agent platform",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "test": "node tests/smoke.js && node tests/approval.js && node tests/filecontext.js",
+    "lint": "eslint . --max-warnings 99999"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
-    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
-    "express": "^4.21.0",
-    "jsonwebtoken": "^9.0.3"
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1"
   }
 }

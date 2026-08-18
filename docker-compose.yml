@@ -13,8 +13,8 @@ services:
       - PORT=3000
       - NODE_ENV=production
       - DATA_DIR=/app/data
-      # JWT 密钥（生产环境务必修改！）
-      - JWT_SECRET=${JWT_SECRET:-multichat_jwt_secret_2024_change_me}
+      # 远程 MCP 会执行插件声明的进程，默认关闭；仅在可信环境显式开启。
+      - MULTICHAT_ALLOW_REMOTE_MCP=${MULTICHAT_ALLOW_REMOTE_MCP:-0}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]

@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend tests + syntax
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run integration tests (smoke / approval / filecontext)
+        run: npm test
+      - name: Syntax check all backend modules
+        run: |
+          for f in lib/*.js runtime/*.js routes/*.js adapters/*.js mcp.js server.js; do
+            node --check "$f" || exit 1
+          done
+      - name: Lint (eslint — errors block, warnings allowed)
+        run: npm run lint
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install deps
+        run: npm ci
+      - name: Build (vite)
+        run: npm run build
+      - name: Lint (eslint — errors block, warnings allowed)
+        run: npm run lint

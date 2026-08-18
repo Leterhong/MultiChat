@@ -1,0 +1,213 @@
+import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index.js';
+
+/* --------------------------- Render content --------------------------- */
+function renderContent() {
+  const c = $('#content');
+  // 首页空态只显示居中的 hero 输入框；对话态才显示底部 composer，避免首页同时出现两个输入框
+  const composerWrap = $('#composerWrap');
+  if (composerWrap) composerWrap.style.display = state.messages.length ? '' : 'none';
+  if (!state.messages.length) {
+    const noModel = !state.selectedProvider;
+    const counts = state.runtime?.counts || { providers: state.providers.length, agents: state.agents.length, skills: state.skills.length, plugins: state.plugins.length };
+    c.innerHTML = `
+      <div class="hero">
+        <div class="hero-greeting">接入你的模型，开始对话</div>
+        <div class="hero-sub">${noModel ? '先添加一个模型提供方，即可直接对话' : '今天我能为你做什么？'}</div>
+        <div class="hero-card" id="heroCard">
+          <textarea class="hero-input" id="heroInput" placeholder="发消息…" rows="1"></textarea>
+          <div class="hero-actions">
+            <button class="hero-tag" id="heroModelTag">选择模型</button>
+            <div class="spacer"></div>
+            <button class="send-btn" id="heroSendBtn" title="发送">↑</button>
+          </div>
+        </div>
+        <div class="workspace-summary">
+          <div class="workspace-summary-head"><div class="brand-logo" style="width:24px;height:24px;border-radius:7px;font-size:12px;">M</div><div><div class="workspace-summary-title">你的 Agent 工作台</div><div class="workspace-summary-sub">模型、智能体、技能和插件都在本地组合运行</div></div></div>
+          <div class="workspace-stats">
+            <div class="workspace-stat"><div class="workspace-stat-value">${esc(counts.providers || 0)}</div><div class="workspace-stat-label">模型提供方</div></div>
+            <div class="workspace-stat"><div class="workspace-stat-value">${esc(counts.agents || 0)}</div><div class="workspace-stat-label">智能体</div></div>
+            <div class="workspace-stat"><div class="workspace-stat-value">${esc(counts.skills || 0)}</div><div class="workspace-stat-label">技能</div></div>
+            <div class="workspace-stat"><div class="workspace-stat-value">${esc(counts.plugins || 0)}</div><div class="workspace-stat-label">插件</div></div>
+          </div>
+          <div class="workspace-actions"><button class="btn-ghost" id="heroAgents">配置智能体</button><button class="btn-ghost" id="heroSkills">浏览技能</button><button class="btn-ghost" id="heroPlugins">打开插件市场</button></div>
+        </div>
+        <div class="hero-hint">回车发送，Shift+Enter 换行 · 内容由 AI 生成</div>
+      </div>
+    `;
+    syncModelUI();
+    const hi = $('#heroInput'), hb = $('#heroSendBtn');
+    autoresize(hi);
+    hi.addEventListener('input', () => autoresize(hi));
+    hi.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+    hb.onclick = send;
+    hi.focus();
+    $('#heroAgents').onclick = () => openSettings('agents');
+    $('#heroSkills').onclick = () => openSettings('skills');
+    $('#heroPlugins').onclick = () => showMarketplace();
+  } else {
+    c.innerHTML = `<div class="transcript" id="transcript">${state.messages.map(renderMessage).join('')}</div>`;
+    if (state.streaming) c.scrollTop = c.scrollHeight; // 仅流式追加时自动贴底；手动重渲染（编辑/重新生成）保留当前滚动位置
+  }
+}
+
+function renderApprovalCards(m) {
+  if (!m || !m.pendingApprovals) return '';
+  const list = Object.values(m.pendingApprovals);
+  if (!list.length) return '';
+  const cards = list.map(a => {
+    const riskCls = a.risk === 'high' ? 'risk-high' : a.risk === 'medium' ? 'risk-med' : 'risk-low';
+    const riskText = a.risk === 'high' ? '高危' : a.risk === 'medium' ? '中危' : '低危';
+    const resolved = ['approved', 'rejected', 'timed_out', 'cancelled'].includes(a.status);
+    const argStr = a.args ? JSON.stringify(a.args) : '';
+    const argPreview = argStr.length > 240 ? argStr.slice(0, 240) + '…' : argStr;
+    const permTags = (a.permissions || []).map(p => `<span class="ap-perm">${esc(p)}</span>`).join('');
+    const trustTag = a.trustLevel ? `<span class="ap-perm ap-trust">${a.trustLevel === 'trusted' ? '已信任' : '未信任'}</span>` : '';
+    const statusBar = resolved
+      ? `<div class="ap-resolved ${a.status === 'approved' ? 'ok' : 'no'}">${a.status === 'approved' ? '已批准，Agent 继续执行' : a.status === 'rejected' ? '已拒绝' : a.status === 'timed_out' ? '超时自动拒绝' : '已取消'}</div>`
+      : `<div class="ap-actions"><button class="ap-btn ap-approve" data-approve="${a.id}">批准执行</button><button class="ap-btn ap-reject" data-reject="${a.id}">拒绝</button></div>`;
+    return `<div class="approval-card ${resolved ? 'resolved' : 'pending'} ${a.status === 'approved' ? 'is-approved' : (resolved ? 'is-rejected' : '')}">
+      <div class="ap-head"><span class="ap-badge ${riskCls}">需授权 · ${riskText}</span><span class="ap-tool">${esc(a.tool || '')}</span>${trustTag}</div>
+      <div class="ap-args"><span class="ap-args-label">参数</span><code>${esc(argPreview || '（无）')}</code></div>
+      <div class="ap-perms">${permTags || '<span class="ap-perm">无特殊权限</span>'}</div>
+      ${statusBar}
+    </div>`;
+  }).join('');
+  return `<div class="approval-wrap">${cards}</div>`;
+}
+
+function renderMessage(m, i) {
+  let md;
+  if (m.role === 'assistant') {
+    md = renderMarkdown(m.content || '');
+  } else {
+    md = `<div>${esc(m.content || '').replace(/\n/g, '<br/>')}</div>`;
+  }
+  const modelTag = m.model ? `<span class="msg-model">${esc(m.model)}</span>` : '';
+  const agentTag = m.agentTag ? `<span class="msg-model" style="background:var(--bg-elevated);border:1px solid var(--border-l2);">${esc(m.agentTag)}</span>` : '';
+  // 思考（Think）折叠块：对接 deepseek-harness ReasoningRow
+  let thinkBlock = '';
+  if (m.reasoning) {
+    const open = (m.streaming || m.thinkOpen) ? ' open' : '';
+    const stateAttr = m.streaming ? 'running' : 'ok';
+    const summary = m.streaming ? '' : `<span class="think-summary">${esc((m.reasoning || '').split('\n')[0])}</span>`;
+    thinkBlock = `<details class="think-row" data-think="${i}" data-state="${stateAttr}"${open}>
+      <summary>
+        <svg class="think-ico" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.5.4.9 1 .9 1.6V16h5.2v-.5c0-.6.4-1.2.9-1.6A6 6 0 0 0 12 3z"/></svg>
+        <span>思考</span>
+        <span class="think-caret"></span>
+        ${summary}
+      </summary>
+      <div class="think-body">${esc(m.reasoning)}</div>
+    </details>`;
+  }
+  // 工具卡：对接 deepseek-harness GenericCommandCard（细线 SVG 图标 + 状态语义色 + 可折叠）
+  let toolBlock = '';
+  if (Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
+    toolBlock = m.toolCalls.map((tc, k) => {
+      const content = tc.content || '';
+      const open = tc._open ? ' open' : '';
+      const head = content ? (content.split('\n')[0].slice(0, 90) || '返回结果') : '执行完成';
+      const body = content.length > 2000 ? content.slice(0, 2000) + '\n...(截断)' : content;
+      return `<details class="tool-card" data-tool="${i}-${k}"${open}>
+        <summary>
+          <svg class="tool-ico" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2 2.5-2.5z"/></svg>
+          <span class="tool-name">${esc(tc.name)}</span>
+          <span class="tool-sep"></span>
+          <span class="tool-summary">${esc(head)}</span>
+          <span class="tool-caret"></span>
+        </summary>
+        <pre class="tool-body">${esc(body)}</pre>
+      </details>`;
+    }).join('');
+  }
+  // Approval 审批卡片（C1）：等待用户授权的工具调用，实时渲染批准/拒绝按钮
+  const approvalBlock = renderApprovalCards(m);
+  // 执行轨迹（B1）：Agent 完整的「模型请求 → 工具调用 → 结果」时间线
+  let traceBlock = '';
+  if (Array.isArray(m.trace) && m.trace.length > 0) {
+    const items = m.trace.map(s => {
+      const icon = s.kind === 'tool_call'
+        ? '<svg class="trace-ico-svg" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2 2.5-2.5z"/></svg>'
+        : '<svg class="trace-ico-svg" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>';
+      const statusCls = s.status === 'success' ? 'ok' : s.status === 'error' ? 'err' : s.status === 'rejected' ? 'rej' : 'run';
+      const dur = s.durationMs != null ? (s.durationMs / 1000).toFixed(1) + 's' : '';
+      let label, sub;
+      if (s.kind === 'tool_call') {
+        const argStr = s.args ? JSON.stringify(s.args).slice(0, 80) : '';
+        label = `${esc(s.tool || 'tool')}${argStr ? '(' + esc(argStr) + ')' : ''}`;
+        sub = s.result ? esc(String(s.result).split('\n')[0].slice(0, 90)) : (s.error || '');
+      } else {
+        label = `模型请求 · ${esc(s.model || '')}`;
+        sub = `${s.toolCount || 0} 工具 · ${s.messageCount || 0} 上下文` + (s.outputLen != null ? ` · 输出 ${s.outputLen} 字` : '');
+      }
+      return `<div class="trace-step ${statusCls}">
+        ${icon}
+        <div class="trace-main"><span class="trace-label">${label}</span>${sub ? `<span class="trace-sub">${esc(sub)}</span>` : ''}</div>
+        <span class="trace-status">${s.status === 'success' ? '✓' : s.status === 'rejected' ? '⊘' : s.status === 'error' ? '✕' : '…'}</span>
+        ${dur ? `<span class="trace-dur">${dur}</span>` : ''}
+      </div>`;
+    }).join('');
+    traceBlock = `<details class="mc-trace"${m.streaming ? ' open' : ''}>
+      <summary><span class="trace-ico">⟜</span><span class="trace-title">执行轨迹</span><span class="trace-count">${m.trace.length} 步</span></summary>
+      <div class="trace-body">${items}</div>
+    </details>`;
+  }
+  // 单轮统计：竖线分隔的 tertiary 灰字（对接 deepseek-harness StatsLine，无 emoji）
+  let statsBlock = '';
+  if (m.role === 'assistant' && !m.streaming && (m.usage || m.elapsedMs != null)) {
+    const u = m.usage || {};
+    const pt = u.prompt_tokens ?? u.input_tokens;
+    const ct = u.completion_tokens ?? u.output_tokens;
+    const tt = u.total_tokens != null ? u.total_tokens : (pt != null && ct != null ? pt + ct : null);
+    const cached = (u.prompt_tokens_details && u.prompt_tokens_details.cached_tokens) || u.cached_tokens || 0;
+    const reasoning = (u.completion_tokens_details && u.completion_tokens_details.reasoning_tokens) || u.reasoning_tokens || 0;
+    const elapsed = m.elapsedMs != null ? (m.elapsedMs / 1000) : null;
+    const speed = (m.elapsedMs && ct) ? (ct / (m.elapsedMs / 1000)) : null;
+    const providerName = m.providerName || '';
+    const groups = [];
+    if (tt != null) {
+      let g = `共 <strong>${fmtTok(tt)}</strong> tokens`;
+      if (pt != null && ct != null) g += ` <span style="color:var(--label-dimmed)">(输入 ${fmtTok(pt)} / 输出 ${fmtTok(ct)})</span>`;
+      if (reasoning > 0) g += ` · 推理 ${fmtTok(reasoning)}`;
+      groups.push(g);
+    }
+    if (cached > 0 && pt) {
+      const ratio = ((cached / pt) * 100).toFixed(0);
+      groups.push(`缓存命中 <strong class="cached">${fmtTok(cached)}</strong> <span style="color:var(--label-dimmed)">(${ratio}%)</span>`);
+    }
+    if (elapsed != null) {
+      let g = `${elapsed.toFixed(1)}s`;
+      if (speed) g += ` · <span class="speed">${speed.toFixed(0)} tok/s</span>`;
+      groups.push(g);
+    }
+    if (m.model) groups.push(`模型 <strong>${esc(m.model)}</strong>`);
+    if (providerName) groups.push(`渠道 <strong>${esc(providerName)}</strong>`);
+    if (groups.length) {
+      const full = groups.join('  |  ');
+      const html = groups.map(g => `<span>${g}</span>`).join('<span class="sep">|</span>');
+      statsBlock = `<div class="msg-stats" title="${esc(full)}">${html}</div>`;
+    }
+  }
+  return `
+    <div class="msg ${m.role}" data-idx="${i}">
+      <div class="msg-avatar">${m.role === 'user' ? '我' : 'M'}</div>
+      <div class="msg-body">
+        <div class="msg-role">${m.role === 'user' ? '我' : 'MultiChat'}${agentTag}${modelTag}${m.streaming ? '<span class="busy-label">生成中</span>' : ''}</div>
+        ${thinkBlock}
+        <div class="msg-content">${md}${toolBlock}${approvalBlock}${traceBlock}</div>
+        ${statsBlock}
+        <div class="msg-actions">
+          ${m.role === 'assistant' && !m.streaming ? `<button class="msg-action" data-copy="${i}">复制</button><button class="msg-action" data-regen="${i}">重新生成</button>` : ''}
+          ${m.role === 'user' ? `<button class="msg-action" data-edit="${i}">编辑</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function autoresize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(240, el.scrollHeight) + 'px';
+}
+
+
+export { renderContent,renderApprovalCards,renderMessage,autoresize };

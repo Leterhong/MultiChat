@@ -19,13 +19,11 @@ WORKDIR /app
 COPY backend/package.json ./
 COPY backend/server.js ./
 COPY backend/prompts.json ./
+COPY backend/mcp.js ./
 COPY backend/adapters/ ./adapters/
-COPY backend/clawtip-direct.js ./
-
-# 复制 clawtip-pay（可选模块，.env 需要运行时挂载）
-COPY backend/clawtip-pay/package.json ./clawtip-pay/package.json
-COPY backend/clawtip-pay/tsconfig.json ./clawtip-pay/tsconfig.json
-COPY backend/clawtip-pay/dist/ ./clawtip-pay/dist/
+COPY backend/lib/ ./lib/
+COPY backend/plugins/ ./plugins/
+COPY backend/marketplace/ ./marketplace/
 
 # 从 builder 复制 node_modules
 COPY --from=builder /app/node_modules ./node_modules
@@ -41,6 +39,7 @@ EXPOSE 3000
 ENV PORT=3000
 ENV NODE_ENV=production
 ENV DATA_DIR=/app/data
+ENV MULTICHAT_ALLOW_REMOTE_MCP=0
 
 # 使用 dumb-init 作为 PID 1
 ENTRYPOINT ["dumb-init", "--"]

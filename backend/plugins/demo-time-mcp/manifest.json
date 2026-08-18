@@ -1,0 +1,38 @@
+{
+  "id": "demo-time-mcp",
+  "name": "时间 & 文件 MCP 连接器",
+  "version": "1.0.0",
+  "author": "MultiChat",
+  "type": "mcp",
+  "description": "演示用 MCP 连接器：通过标准 MCP 协议暴露「当前时间」与「读取本地文件」两个工具。安装后，agent 即可像调用内置工具一样调用它们。零外部依赖，离线可跑。",
+  "mcp": {
+    "command": "node",
+    "args": ["server.js"],
+    "env": {}
+  },
+  "skills": [
+    {
+      "id": "sk_mcp_time",
+      "name": "MCP·当前时间",
+      "description": "通过 MCP 连接器获取当前时间（UTC + 本地），可用于需要报时的 agent。",
+      "type": "mcp",
+      "config": { "tool": "get_current_time", "schema": { "type": "object", "properties": {}, "required": [] } }
+    },
+    {
+      "id": "sk_mcp_readfile",
+      "name": "MCP·读取本地文件",
+      "description": "通过 MCP 连接器读取本地文本文件内容（最多 4000 字符）。",
+      "type": "mcp",
+      "config": { "tool": "read_local_file", "schema": { "type": "object", "properties": { "path": { "type": "string", "description": "文件绝对路径" } }, "required": ["path"] } }
+    }
+  ],
+  "agents": [
+    {
+      "id": "ag_mcp_demo",
+      "name": "MCP 演示助手",
+      "description": "接入 MCP 连接器的示例智能体，可报时、可读取本地文件。",
+      "systemPrompt": "你是一个接入了 MCP 工具的助手。需要当前时间时用 get_current_time；需要读取本地文件时用 read_local_file，并把路径明确告诉用户。",
+      "skillIds": ["sk_mcp_time", "sk_mcp_readfile"]
+    }
+  ]
+}
