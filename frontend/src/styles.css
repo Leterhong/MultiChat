@@ -166,7 +166,7 @@ a { color: inherit; text-decoration: none; }
 .msg-role { font-size: 13px; font-weight: 600; color: var(--label-primary); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
 .msg-role .msg-model { font-weight: 400; font-size: 11.5px; color: var(--label-caption); padding: 2px 8px; border-radius: var(--radius-pill); background: var(--bg-sunken); }
 
-/* 用户消息：右对齐 + 浅蓝气泡（对接 deepseek-harness 气泡语言） */
+/* 用户消息：右对齐 + 浅蓝气泡 */
 .msg.user { max-width: 82%; margin-left: auto; }
 .msg.user .msg-avatar { order: 2; }
 .msg.user .msg-body { order: 1; background: var(--bubble-user); border: 1px solid var(--bubble-user-border); border-radius: 20px; padding: 10px 15px; }
@@ -197,7 +197,7 @@ a { color: inherit; text-decoration: none; }
 .msg:hover .msg-actions, .msg.streaming .msg-actions { opacity: 1; }
 .msg-action { font-size: 12px; color: var(--label-caption); padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; }
 .msg-action:hover { background: var(--bg-hover); color: var(--label-primary); }
-/* 流式指示器：深蓝渐变扫光文字（对接 deepseek-harness turnStatus 设计） */
+/* 流式指示器：深蓝渐变扫光文字 */
 .busy-label {
   font-size: 12px; font-weight: 500; letter-spacing: 0.01em;
   background: linear-gradient(90deg, var(--accent) 0%, var(--accent) 40%, var(--accent-soft2) 50%, var(--accent) 60%, var(--accent) 100%);
@@ -209,7 +209,7 @@ a { color: inherit; text-decoration: none; }
 @keyframes busy-shimmer { to { background-position: 0 0; } }
 @media (prefers-reduced-motion: reduce) { .busy-label { animation: none; background: none; color: var(--accent); -webkit-text-fill-color: var(--accent); } }
 
-/* 单轮对话统计条：竖线分隔的 tertiary 灰字（对接 deepseek-harness StatsLine 设计语言，无 emoji） */
+/* 单轮对话统计条：竖线分隔的 tertiary 灰字（无 emoji） */
 .msg-stats {
   margin-top: 12px; padding-top: 10px;
   border-top: 1px solid var(--border-l2);
@@ -225,7 +225,7 @@ a { color: inherit; text-decoration: none; }
 .msg-stats .cached { color: var(--accent); font-weight: 600; }
 .msg-stats .speed { color: var(--label-secondary); }
 
-/* 思考（Think）折叠块：对接 deepseek-harness ReasoningRow —— 细线 SVG 图标 + 折叠披露 + 流式扫光 */
+/* 思考（Think）折叠块：细线 SVG 图标 + 折叠披露 + 流式扫光 */
 .think-row { display: block; margin: 0 0 10px 0; }
 .think-row > summary {
   display: inline-flex; align-items: center; gap: 7px;
@@ -247,7 +247,7 @@ a { color: inherit; text-decoration: none; }
 @keyframes think-sweep { 0% { left: -120px; } 90%, 100% { left: 100%; } }
 @media (prefers-reduced-motion: reduce) { .think-row[data-state='running'] > summary::after { animation: none; } }
 
-/* 工具卡：对接 deepseek-harness GenericCommandCard —— 细线 SVG 图标 + 状态语义色 + 可折叠结果 */
+/* 工具卡：细线 SVG 图标 + 状态语义色 + 可折叠结果 */
 .tool-card { margin: 0 0 10px 0; border: 1px solid var(--border-l2); border-radius: var(--radius-md); background: var(--bg-sunken); overflow: hidden; }
 .tool-card[data-state='error'] { border-color: rgba(212,76,76,0.35); }
 .tool-card > summary {

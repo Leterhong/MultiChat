@@ -1,7 +1,7 @@
 import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index.js';
 
 /* --------------------------- Markdown (small, dep-free) --------------------------- */
-/* 紧凑数字格式（对接 deepseek-harness formatTokens）：517 / 12.2K / 1.2M */
+/* 紧凑数字格式：517 / 12.2K / 1.2M */
 function fmtTok(n) {
   if (n == null) return '0';
   if (n < 1000) return String(n);

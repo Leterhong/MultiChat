@@ -84,7 +84,7 @@ function renderMessage(m, i) {
   }
   const modelTag = m.model ? `<span class="msg-model">${esc(m.model)}</span>` : '';
   const agentTag = m.agentTag ? `<span class="msg-model" style="background:var(--bg-elevated);border:1px solid var(--border-l2);">${esc(m.agentTag)}</span>` : '';
-  // 思考（Think）折叠块：对接 deepseek-harness ReasoningRow
+  // 思考（Think）折叠块
   let thinkBlock = '';
   if (m.reasoning) {
     const open = (m.streaming || m.thinkOpen) ? ' open' : '';
@@ -100,7 +100,7 @@ function renderMessage(m, i) {
       <div class="think-body">${esc(m.reasoning)}</div>
     </details>`;
   }
-  // 工具卡：对接 deepseek-harness GenericCommandCard（细线 SVG 图标 + 状态语义色 + 可折叠）
+  // 工具卡（细线 SVG 图标 + 状态语义色 + 可折叠）
   let toolBlock = '';
   if (Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
     toolBlock = m.toolCalls.map((tc, k) => {
@@ -152,7 +152,7 @@ function renderMessage(m, i) {
       <div class="trace-body">${items}</div>
     </details>`;
   }
-  // 单轮统计：竖线分隔的 tertiary 灰字（对接 deepseek-harness StatsLine，无 emoji）
+  // 单轮统计：竖线分隔的 tertiary 灰字（无 emoji）
   let statsBlock = '';
   if (m.role === 'assistant' && !m.streaming && (m.usage || m.elapsedMs != null)) {
     const u = m.usage || {};

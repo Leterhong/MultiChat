@@ -39,8 +39,10 @@ require('./routes/import')(app);
 require('./routes/chat')(app);
 require('./routes/meta')(app);
 
-// ── 前端静态资源（单文件 SPA 生产件） ──
-app.use(express.static(path.join(__dirname, '..', 'frontend', 'dist')));
+// ── 前端静态资源（生产构建件） ──
+// 默认按本地布局取 ../frontend/dist；容器内通过 FRONTEND_DIST 指向 /app/frontend/dist
+const frontendDist = process.env.FRONTEND_DIST || path.join(__dirname, '..', 'frontend', 'dist');
+app.use(express.static(frontendDist));
 
 // ── 全局错误处理（兜底未捕获异常，统一输出 { error, code, requestId }）──
 app.use(errorHandler);

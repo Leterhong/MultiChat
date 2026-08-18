@@ -28,6 +28,7 @@ logs/
 # Temp
 *.tmp
 *.bak
+*.bak-*
 test_*.log
 
 # Environment

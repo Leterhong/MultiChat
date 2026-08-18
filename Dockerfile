@@ -22,6 +22,8 @@ COPY backend/prompts.json ./
 COPY backend/mcp.js ./
 COPY backend/adapters/ ./adapters/
 COPY backend/lib/ ./lib/
+COPY backend/runtime/ ./runtime/
+COPY backend/routes/ ./routes/
 COPY backend/plugins/ ./plugins/
 COPY backend/marketplace/ ./marketplace/
 
@@ -39,6 +41,7 @@ EXPOSE 3000
 ENV PORT=3000
 ENV NODE_ENV=production
 ENV DATA_DIR=/app/data
+ENV FRONTEND_DIST=/app/frontend/dist
 ENV MULTICHAT_ALLOW_REMOTE_MCP=0
 
 # 使用 dumb-init 作为 PID 1

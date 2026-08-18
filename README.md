@@ -44,8 +44,6 @@ MultiChat 现在不只是一个“切换模型的聊天页面”，而是一个�
 - **安全层**：Agent 调用高风险工具时走 **Approval 审批流**，MCP 插件按 **信任等级** 沙箱化。
 - **运行层**：保留 Agent 运行状态、步骤、工具调用、审批轨迹和错误，方便复盘问题。
 
-这套分层借鉴了 DeepSeek Harness 的“能力可组合、运行过程可观察”思路，但 MultiChat 保持单机、轻量和 OpenAI 兼容，不要求先安装完整的 Cordis 运行时。
-
 ---
 
 ## 🚀 快速开始
@@ -466,13 +464,10 @@ A: 在客户端里设置 `base_url = http://localhost:3000/v1`，模型名写 `<
 MultiChat 原本基于 [Leterhong/MultiChat](https://github.com/Leterhong/MultiChat) 的"多模型 + 计费"商业版本，本次重构**完全开源化**：
 
 - ❌ 移除：ClawTip 支付集成、用户注册/登录、JWT 鉴权、余额系统、计费中间件
-- ❌ 移除：原项目 [deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) 反向代理与降级页
 - ❌ 移除：`bcryptjs` / `jsonwebtoken` / `http-proxy` 等 3 个 npm 依赖
 - ✅ 保留：OpenAI 兼容代理 + 适配器工厂 + Providers / 对话 / Prompts / Assistants 本地存储
 - ✅ 优化：14 个 OpenAI 标准字段完全透传、`tools` / `tool_choice` 自动补 `auto`、结构化错误提示
 - ✅ 新增：工作区 / 项目 / 会话分层、Agent 审批流 + MCP 信任等级、Vite 前端工程化、后端测试套件与 CI
-
-设计风格参考了 deepseek-harness 视觉语言（极简、内容优先、暖色边缘），但**所有代码均为 MultiChat 原生实现**。
 
 ---
 
