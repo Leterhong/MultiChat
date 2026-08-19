@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --max-warnings 99999",
+    "lint": "eslint . --max-warnings 99999 --no-error-on-unmatched-pattern",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,css,html}\""
   },
