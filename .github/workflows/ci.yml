@@ -16,10 +16,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      # 后端含 TS（lib/*.ts）与 JS 混合；lock 含 win32 平台偏见，与 frontend 一致
+      # 用 --no-package-lock 让 runner 重新解析并装 typescript/tsx/@types 等工具链。
       - name: Install deps
-        run: npm ci
+        run: npm install --no-package-lock --no-audit --no-fund
       - name: Run integration tests (smoke / approval / filecontext)
         run: npm test
+      - name: Typecheck (tsc --noEmit, 渐进 strict:false)
+        run: npm run typecheck
       - name: Syntax check all backend modules
         run: |
           for f in lib/*.js runtime/*.js routes/*.js adapters/*.js mcp.js server.js; do

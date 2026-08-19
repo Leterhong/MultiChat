@@ -63,7 +63,7 @@ async function main() {
   const port = await listen(portServer);
   portServer.close();
   const base = `http://127.0.0.1:${port}`;
-  const child = spawn(process.execPath, ['server.js'], {
+  const child = spawn(process.execPath, ['--import', 'tsx', 'server.js'], {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env, PORT: String(port), DATA_DIR: dataDir, NODE_ENV: 'test' },
     stdio: ['ignore', 'pipe', 'pipe'],

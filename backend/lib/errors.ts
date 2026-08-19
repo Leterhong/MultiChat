@@ -1,11 +1,11 @@
-'use strict';
 // ── 统一错误码 + 请求ID 中间件（A3） ───────────────────────────────────
 // 设计目标：在不破坏既有契约（前端读 res.data.error 字符串）的前提下，
 // 为每次请求附加 requestId，并为错误响应附加 code 字段，便于排障与日志关联。
-const crypto = require('crypto');
+import crypto from 'crypto';
+import type { Request, Response, NextFunction } from 'express';
 
 // 业务错误码 → HTTP 状态码 映射
-const ERROR_CODES = {
+export const ERROR_CODES: Record<string, number> = {
   BAD_REQUEST: 400,
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,
@@ -24,8 +24,10 @@ const ERROR_CODES = {
   INTERNAL: 500,
 };
 
-class AppError extends Error {
-  constructor(code, message, statusCode) {
+export class AppError extends Error {
+  code: string;
+  statusCode: number;
+  constructor(code: string, message: string, statusCode?: number) {
     super(message);
     this.name = 'AppError';
     this.code = ERROR_CODES[code] !== undefined ? code : 'INTERNAL';
@@ -34,17 +36,18 @@ class AppError extends Error {
 }
 
 // 请求ID 中间件：每个请求分配一个 id（允许上游透传 X-Request-Id）
-function requestIdMiddleware(req, res, next) {
-  const id = (typeof req.headers['x-request-id'] === 'string' && req.headers['x-request-id'])
-    || crypto.randomBytes(8).toString('hex');
-  req.requestId = id;
+export function requestIdMiddleware(req: Request, res: Response, next: NextFunction): void {
+  const id =
+    (typeof req.headers['x-request-id'] === 'string' && req.headers['x-request-id']) ||
+    crypto.randomBytes(8).toString('hex');
+  (req as any).requestId = id;
   res.locals.requestId = id;
   res.setHeader('X-Request-Id', id);
   next();
 }
 
 // 结构化失败响应：保持 error 为字符串以兼容旧前端，额外带 code / requestId
-function fail(res, status, code, message) {
+export function fail(res: Response, status: number, code: string, message: string) {
   return res.status(status).json({
     error: message,
     code,
@@ -53,19 +56,17 @@ function fail(res, status, code, message) {
 }
 
 // 全局错误处理：兜底未捕获异常，统一输出 { error, code, requestId }
-function errorHandler(err, req, res, next) {
+export function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
   if (res.headersSent) return next(err);
   const status = err.statusCode || 500;
   const code = err.code || 'INTERNAL';
   const message = err.message || 'Internal Server Error';
   if (status >= 500) {
-    console.error('[error]', code, message, 'reqId=', req.requestId, err.stack ? '\n' + err.stack : '');
+    console.error('[error]', code, message, 'reqId=', (req as any).requestId, err.stack ? '\n' + err.stack : '');
   }
   res.status(status).json({
     error: message,
     code,
-    requestId: req.requestId || res.locals.requestId || null,
+    requestId: (req as any).requestId || res.locals.requestId || null,
   });
 }
-
-module.exports = { AppError, ERROR_CODES, requestIdMiddleware, errorHandler, fail };
