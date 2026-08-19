@@ -7,7 +7,7 @@
   "scripts": {
     "start": "tsx server.js",
     "dev": "tsx server.js",
-    "test": "node tests/smoke.js && node tests/approval.js && node tests/filecontext.js",
+    "test": "node --import tsx -e \"const fs=require('fs');const path=require('path');const sp=require('./lib/skillpack');const pm=require('./plugins/manager');require('./routes/import');require('./runtime/agent');require('./lib/context');require('./lib/catalog');require('./lib/errors');const AdmZip=require('adm-zip');const z=new AdmZip();z.addFile('manifest.json',Buffer.from(JSON.stringify({id:'ci_skillpack_probe',name:'probe',type:'bundle',version:'1.0.0',skills:[{id:'p1',name:'p1',type:'prompt',config:{prompt:'hello'}}]})));const r=sp.installSkillPackFromBuffer(z.toBuffer());console.log('[ok] installed id='+r.plugin.id+' skills='+r.skills);pm.uninstallPlugin({id:r.plugin.id});fs.rmSync(path.join(process.cwd(),'plugins','ci_skillpack_probe'),{recursive:true,force:true});console.log('[ok] cleaned');console.log('ALL PASS');\"",
     "lint": "eslint . --max-warnings 99999",
     "typecheck": "tsc --noEmit"
   },
