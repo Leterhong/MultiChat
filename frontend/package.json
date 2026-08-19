@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --max-warnings 99999 --no-error-on-unmatched-pattern",
+    "lint": "eslint \"src/**/*.ts\" --max-warnings 99999",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,css,html}\""
   },
@@ -15,6 +15,8 @@
     "vite": "^5.4.0",
     "eslint": "^8.57.1",
     "prettier": "^3.3.0",
-    "typescript": "7.0.2"
+    "typescript": "^5.6.3",
+    "@typescript-eslint/parser": "^8.18.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.0"
   }
 }
