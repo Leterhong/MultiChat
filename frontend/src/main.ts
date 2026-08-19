@@ -5,19 +5,19 @@
  *  全局调用语义，避免逐文件 import 全部交叉依赖，零回归）→ 启动 bootstrap。
  * ================================================================= */
 import './styles.css';
-import * as Core from './core/index.js';
-import * as Init from './modules/init.js';
-import * as Data from './modules/data.js';
-import * as Conversations from './modules/conversations.js';
-import * as ModelPicker from './modules/modelPicker.js';
-import * as AgentPicker from './modules/agentPicker.js';
-import * as Settings from './modules/settings.js';
-import * as PluginsUI from './modules/pluginsUI.js';
-import * as ImportExport from './modules/importExport.js';
-import * as Modal from './modules/modal.js';
-import * as Render from './modules/render.js';
-import * as Markdown from './modules/markdown.js';
-import * as Send from './modules/send.js';
+import * as Core from './core/index';
+import * as Init from './modules/init';
+import * as Data from './modules/data';
+import * as Conversations from './modules/conversations';
+import * as ModelPicker from './modules/modelPicker';
+import * as AgentPicker from './modules/agentPicker';
+import * as Settings from './modules/settings';
+import * as PluginsUI from './modules/pluginsUI';
+import * as ImportExport from './modules/importExport';
+import * as Modal from './modules/modal';
+import * as Render from './modules/render';
+import * as Markdown from './modules/markdown';
+import * as Send from './modules/send';
 
 // 装配层：把所有模块导出挂到 globalThis，使业务函数之间保持原全局调用关系。
 const namespaces = [

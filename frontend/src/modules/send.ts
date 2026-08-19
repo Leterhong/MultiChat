@@ -1,4 +1,4 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index.js';
+import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
 
 /* --------------------------- Send (streaming) --------------------------- */
 $('#input').addEventListener('input', (e) => autoresize(e.target));

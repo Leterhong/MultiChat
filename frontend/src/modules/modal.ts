@@ -1,4 +1,4 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index.js';
+import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
 
 /* --------------------------- Modal --------------------------- */
 function showModal({ title, body, onMount }) {

@@ -1,6 +1,6 @@
 // 统一 API 客户端：相对 apiBase 发起 fetch，统一错误解析。
 // 依赖 state（读取 apiBase），单向依赖，无循环。
-import { state } from './state.js';
+import { state } from './state';
 
 export async function api(path, opts = {}) {
   const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});

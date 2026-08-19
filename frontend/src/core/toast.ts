@@ -1,5 +1,5 @@
 // 轻量 Toast 提示。仅依赖 dom.$（叶子依赖）。
-import { $ } from './dom.js';
+import { $ } from './dom';
 
 let toastTimer;
 export function toast(msg, kind = '') {

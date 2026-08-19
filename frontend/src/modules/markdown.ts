@@ -1,4 +1,4 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index.js';
+import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
 
 /* --------------------------- Markdown (small, dep-free) --------------------------- */
 /* 紧凑数字格式：517 / 12.2K / 1.2M */
