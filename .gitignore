@@ -30,6 +30,7 @@ logs/
 *.bak
 *.bak-*
 test_*.log
+*.timestamp-*.mjs
 
 # Environment
 backend/clawtip-pay/.env

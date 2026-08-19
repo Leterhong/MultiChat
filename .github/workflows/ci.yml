@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Install deps
+        run: npm ci
       - name: Run integration tests (smoke / approval / filecontext)
         run: npm test
       - name: Syntax check all backend modules
