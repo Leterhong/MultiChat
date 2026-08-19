@@ -278,7 +278,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
       // 乐观更新：原地翻转开关与卡片标签，避免整段 innerHTML 重建（即“页面重置”感）
       sk.enabled = next; flip(next);
       try {
-        const payload = { enabled: next };
+        const payload: any = { enabled: next };
         if (sk.type === 'prompt' && sk.config) payload.config = sk.config;
         await api('/api/skills/' + sid, { method: 'PUT', body: JSON.stringify(payload) });
       } catch (err) {

@@ -48,7 +48,7 @@ function setupDrop() {
     const files = e.dataTransfer && e.dataTransfer.files;
     if (!files || !files.length) return;
     if (!state.selectedProject) { toast('请先在右上角选择工作区/项目', 'error'); return; }
-    for (const file of Array.from(files)) {
+    for (const file of Array.from(files) as File[]) {
       if (file.size > 2_000_000) { toast('文件超过 2MB 限制，已跳过：' + file.name, 'error'); continue; }
       try {
         const content = await file.text();

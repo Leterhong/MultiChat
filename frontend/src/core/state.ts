@@ -52,6 +52,8 @@ export const state = {
   agents: [],
   plugins: [],
   selectedAgent: null, // null = 直接对话；否则为 agent 对象
+  currentTab: 'providers', // 设置面板当前激活 tab
+  currentRunId: null, // 当前进行中的 run id（用于停止/继续流式）
 };
 
 // Optional cross-origin override (?api=…)

@@ -77,7 +77,7 @@ async function streamReply() {
     ? `/api/agents/${state.selectedAgent.id}/chat`
     : `/v1/chat/completions`;
 
-  const body = {
+  const body: any = {
     model: provider.id + ':' + model,
     messages: state.messages.filter(m => !m.streaming || m.role === 'user').map(m => ({ role: m.role, content: m.content })),
     stream: true,
@@ -264,7 +264,7 @@ async function streamReply() {
 
 /* code-block copy + 折叠状态持久化（事件委托， survives re-render） */
 document.addEventListener('click', (e) => {
-  const btn = e.target.closest('.code-copy');
+  const btn = (e.target as HTMLElement).closest('.code-copy');
   if (!btn) return;
   const code = btn.parentElement.querySelector('pre code');
   if (!code) return;
@@ -276,7 +276,7 @@ document.addEventListener('click', (e) => {
 
 /* Approval 审批卡片：批准 / 拒绝（事件委托，survives re-render） */
 document.addEventListener('click', (e) => {
-  const apBtn = e.target.closest('[data-approve],[data-reject]');
+  const apBtn = (e.target as HTMLElement).closest('[data-approve],[data-reject]') as HTMLButtonElement;
   if (!apBtn) return;
   const approvalId = apBtn.getAttribute('data-approve') || apBtn.getAttribute('data-reject');
   if (!approvalId) return;
@@ -304,7 +304,7 @@ document.addEventListener('click', (e) => {
 
 /* 折叠披露（思考 / 工具卡）的 open 状态写回消息对象，避免重渲染后丢失用户的展开/收起选择 */
 document.addEventListener('toggle', (e) => {
-  const d = e.target;
+  const d = e.target as HTMLDetailsElement;
   if (!d || !d.getAttribute) return;
   const ti = d.getAttribute('data-think');
   if (ti != null) { const m = state.messages[+ti]; if (m) m.thinkOpen = d.open; return; }

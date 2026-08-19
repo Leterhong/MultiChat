@@ -166,10 +166,10 @@ function showAgentModal(id) {
       $('#agentForm', card).onsubmit = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
-        const body = Object.fromEntries(fd.entries());
+        const body: Record<string, any> = Object.fromEntries(fd.entries());
         if (body.name) body.name = body.name.trim();
         if (body.description) body.description = body.description.trim();
-        body.skillIds = Array.from(e.target.querySelectorAll('input[name="skill"]:checked')).map(cb => cb.value);
+        body.skillIds = Array.from(e.target.querySelectorAll('input[name="skill"]:checked')).map((cb: any) => cb.value);
 try {
             if (editing) {
               await api('/api/agents/' + id, { method: 'PUT', body: JSON.stringify(body) });
@@ -209,7 +209,7 @@ function showSkillModal(id) {
       $('#skillForm', card).onsubmit = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
-        const body = Object.fromEntries(fd.entries());
+        const body: Record<string, any> = Object.fromEntries(fd.entries());
         if (body.id) body.id = body.id.trim();
         if (body.name) body.name = body.name.trim();
         if (body.description) body.description = body.description.trim();
@@ -291,7 +291,7 @@ function showAddCustom() {
       $('#customForm', card).onsubmit = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
-        const body = Object.fromEntries(fd.entries());
+        const body: Record<string, any> = Object.fromEntries(fd.entries());
         const raw = (body.models || '').toString();
         body.models = raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
         if (body.id) body.id = body.id.trim();

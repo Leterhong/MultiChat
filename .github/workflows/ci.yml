@@ -51,5 +51,7 @@ jobs:
         run: npm install --no-package-lock --no-audit --no-fund
       - name: Build (vite)
         run: npm run build
+      - name: Typecheck (tsc --noEmit)
+        run: npm run typecheck
       - name: Lint (eslint — errors block, warnings allowed)
         run: npm run lint

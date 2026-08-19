@@ -52,7 +52,7 @@ function renderContent() {
 
 function renderApprovalCards(m) {
   if (!m || !m.pendingApprovals) return '';
-  const list = Object.values(m.pendingApprovals);
+  const list = Object.values(m.pendingApprovals) as any[];
   if (!list.length) return '';
   const cards = list.map(a => {
     const riskCls = a.risk === 'high' ? 'risk-high' : a.risk === 'medium' ? 'risk-med' : 'risk-low';
