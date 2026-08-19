@@ -1,14 +1,25 @@
 import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
 
 /* --------------------------- Import / Export --------------------------- */
+// 大文件安全转 base64（避免 String.fromCharCode(...arr) 爆栈）
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
+  }
+  return btoa(binary);
+}
 function importBarHTML() {
   return `
     <div class="import-bar">
       <span class="import-bar-label">导入 / 引用</span>
       <button class="mini-btn" id="importFile">上传文件 (.json)</button>
+      <button class="mini-btn" id="importZip">上传技能包 (.zip)</button>
       <button class="mini-btn" id="importUrl">URL 导入</button>
       <button class="mini-btn" id="gotoPlugins">从插件市场</button>
       <input type="file" id="importFileInput" accept=".json,application/json" style="display:none" />
+      <input type="file" id="importZipInput" accept=".zip,application/zip" style="display:none" />
     </div>`;
 }
 async function doImport(spec, sourceLabel) {
@@ -55,6 +66,21 @@ function wireImportBar() {
   }
   if (urlBtn) urlBtn.onclick = () => showUrlImport();
   if (plugBtn) plugBtn.onclick = () => showMarketplace();
+  const zipBtn = body.querySelector('#importZip');
+  const zipInput = body.querySelector('#importZipInput');
+  if (zipBtn && zipInput) {
+    zipBtn.onclick = () => zipInput.click();
+    zipInput.onchange = async () => {
+      const f = zipInput.files && zipInput.files[0];
+      if (!f) return;
+      try {
+        const buf = new Uint8Array(await f.arrayBuffer());
+        const b64 = bytesToBase64(buf);
+        await doImport({ payload: b64, format: 'zip', source: '技能包 ' + f.name }, '技能包 ' + f.name);
+      } catch (e) { toast('技能包上传失败：' + e.message, 'error'); }
+      zipInput.value = '';
+    };
+  }
 }
 
 // 市场：列出三类可一键导入的真实来源（由后端以 URL 提供），并支持粘贴任意外部 URL
@@ -101,7 +127,7 @@ function showUrlImport() {
   showModal({
     title: '从 URL 导入',
     body: `<form id="urlImportForm">
-      <p class="lead" style="margin-bottom:10px;">粘贴一个返回技能 / 智能体 / 插件清单 JSON 的链接。抓取由后端完成，无需对方允许跨域。</p>
+      <p class="lead" style="margin-bottom:10px;">粘贴一个返回技能 / 智能体 / 插件清单 JSON 的链接，或直接指向 .zip 技能包。抓取由后端完成，无需对方允许跨域。</p>
       <div class="field"><label>URL</label><input name="url" placeholder="https://example.com/my-pack.json" required /></div>
       <div class="field"><label>来源标记（可选）</label><input name="source" placeholder="my-repo" /></div>
       <div id="urlErr" class="auth-error"></div>
