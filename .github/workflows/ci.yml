@@ -39,11 +39,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      # 注意：本地 Windows 生成的 lock 只记录了 win32 的 esbuild/rollup 平台二进制，
-      # 若用 npm ci 严格按 lock 安装，ubuntu runner 会缺 linux 原生二进制导致 vite build 崩溃。
-      # 改用 npm install 让 runner 按当前平台重新解析并安装正确的原生依赖。
+      # 本地 Windows 生成的 lock 只记录了 win32 的 esbuild/rollup 平台二进制，
+      # npm ci 严格按 lock 只装 win32、npm install 也会沿用 lock 的 win32 记录，
+      # 都会导致 ubuntu runner 缺 linux 原生二进制、vite import rollup 时崩溃。
+      # 用 --no-package-lock 完全忽略 lock，让 runner 在 linux 上重新解析并装正确平台的原生依赖。
       - name: Install deps
-        run: npm install --no-audit --no-fund
+        run: npm install --no-package-lock --no-audit --no-fund
       - name: Build (vite)
         run: npm run build
       - name: Lint (eslint — errors block, warnings allowed)
