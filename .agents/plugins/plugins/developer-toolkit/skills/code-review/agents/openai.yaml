@@ -1,0 +1,3 @@
+interface:
+  display_name: "代码审查"
+  short_description: "发现有证据的正确性与安全问题"

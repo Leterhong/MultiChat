@@ -1,0 +1,3 @@
+interface:
+  display_name: "发布说明"
+  short_description: "把技术变更整理为用户可读说明"

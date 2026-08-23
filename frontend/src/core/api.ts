@@ -8,12 +8,18 @@ export async function api(path: any, opts: any = {}) {
   const ct = res.headers.get('content-type') || '';
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
+    let code;
+    let requestId;
     try {
       const j = await res.json();
-      msg = j?.error?.message || j?.message || msg;
+      msg = typeof j?.error === 'string' ? j.error : (j?.error?.message || j?.message || msg);
+      code = j?.code;
+      requestId = j?.requestId;
     } catch {}
     const e = new Error(msg);
     (e as any).status = res.status;
+    (e as any).code = code;
+    (e as any).requestId = requestId;
     throw e;
   }
   if (ct.includes('application/json')) return res.json();

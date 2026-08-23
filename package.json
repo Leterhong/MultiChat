@@ -1,0 +1,57 @@
+{
+  "name": "@leterhong/multichat",
+  "version": "1.0.0",
+  "description": "Local-first multi-model agent workspace with Skills, MCP servers, and plugins",
+  "type": "module",
+  "bin": {
+    "multichat": "bin/multichat.mjs"
+  },
+  "files": [
+    ".agents",
+    "bin",
+    "backend/*.ts",
+    "backend/adapters",
+    "backend/extensions",
+    "backend/lib",
+    "backend/routes",
+    "backend/runtime",
+    "backend/package.json",
+    "backend/prompts.json",
+    "frontend/dist",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node ./bin/multichat.mjs web",
+    "doctor": "node ./bin/multichat.mjs doctor",
+    "build": "npm run build --prefix frontend",
+    "test": "node --test test/*.test.mjs",
+    "test:cli": "node --test test/cli.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Leterhong/MultiChat.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Leterhong/MultiChat/issues"
+  },
+  "homepage": "https://github.com/Leterhong/MultiChat#readme",
+  "keywords": [
+    "agent",
+    "mcp",
+    "skills",
+    "multichat",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.18",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "tsx": "^4.19.2"
+  }
+}

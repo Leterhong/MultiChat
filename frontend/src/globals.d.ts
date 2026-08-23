@@ -24,6 +24,8 @@ declare global {
   const loadWorkspaces: any;
   const loadProjects: any;
   const loadSkills: any;
+  const loadTools: any;
+  const loadMcpServers: any;
   const loadAgents: any;
   const loadPlugins: any;
 
@@ -82,15 +84,17 @@ declare global {
   // ── pluginsUI ──
   const PLUGIN_ICON: any;
   const EXPORT_ICON: any;
+  const sourceLabel: any;
   const renderPlugins: any;
+  const renderMcpServers: any;
+  const showDiff: any;
+  const showExtensionImport: any;
 
   // ── importExport ──
   const importBarHTML: any;
   const doImport: any;
   const normalizeImport: any;
   const wireImportBar: any;
-  const showMarketplace: any;
-  const showUrlImport: any;
   const exportEntity: any;
   const showAgentModal: any;
   const showSkillModal: any;

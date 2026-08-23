@@ -10,6 +10,9 @@ backend/data/
 .workbuddy/
 .claude/
 
+# Codex machine-local launch paths
+.codex/config.toml
+
 # IDE
 .idea/
 .vscode/

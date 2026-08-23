@@ -1,0 +1,24 @@
+{
+  "name": "writing-toolkit",
+  "version": "1.0.0",
+  "description": "可复用的中文周报、会议纪要和简历优化工作流。",
+  "author": {
+    "name": "MultiChat"
+  },
+  "license": "MIT",
+  "keywords": ["writing", "meeting", "resume"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "写作工具包",
+    "shortDescription": "周报、会议纪要与简历优化工作流",
+    "longDescription": "把常用中文写作流程作为标准 Agent Skills 提供，按用户目标自动加载完整指令。",
+    "developerName": "MultiChat",
+    "category": "Writing",
+    "capabilities": ["Write"],
+    "defaultPrompt": [
+      "根据这些工作要点整理本周周报。",
+      "把这段会议记录整理为决议和待办。",
+      "在不虚构经历的前提下优化这份简历。"
+    ]
+  }
+}

@@ -49,6 +49,8 @@ export const state = {
   selectedWorkspace: null,
   selectedProject: null,
   skills: [],
+  tools: [],
+  mcpServers: [],
   agents: [],
   plugins: [],
   selectedAgent: null, // null = 直接对话；否则为 agent 对象

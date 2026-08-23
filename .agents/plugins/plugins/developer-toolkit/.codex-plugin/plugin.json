@@ -1,0 +1,24 @@
+{
+  "name": "developer-toolkit",
+  "version": "1.0.0",
+  "description": "代码审查、测试设计、安全审查和发布说明工作流。",
+  "author": {
+    "name": "MultiChat"
+  },
+  "license": "MIT",
+  "keywords": ["development", "review", "testing", "security"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "开发者工具包",
+    "shortDescription": "审查、测试、安全与发布工作流",
+    "longDescription": "为日常研发提供可复用的结构化工作流，并保持 Skill 与工具调用边界清晰。",
+    "developerName": "MultiChat",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "审查当前改动并按严重程度列出问题。",
+      "为这个接口设计覆盖边界条件的测试方案。",
+      "根据这些变更生成用户可读的发布说明。"
+    ]
+  }
+}

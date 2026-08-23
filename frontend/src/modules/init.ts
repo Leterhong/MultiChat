@@ -1,4 +1,4 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
+import { $, api, toast, state, loadSelectedAgent } from '../core/index';
 
 /* --------------------------- Init --------------------------- */
 async function bootstrap() {
@@ -6,25 +6,27 @@ async function bootstrap() {
 }
 
 async function initApp() {
-  await Promise.all([loadProviders(), loadConversations(), loadSkills(), loadAgents(), loadPlugins(), loadRuntime(), loadRuns(), loadWorkspaces()]);
+  await Promise.all([loadProviders(), loadConversations(), loadSkills(), loadTools(), loadMcpServers(), loadAgents(), loadPlugins(), loadRuntime(), loadRuns()]);
   loadSelectedAgent();
-  renderTopbar();
-  renderContent();
-  renderSettings();
 
   const last = localStorage.getItem('multichat_lastModel');
   if (last) {
     const [pid, ...rest] = last.split(':');
     const m = rest.join(':');
     const p = state.providers.find(x => x.id === pid);
-    if (p) { state.selectedProvider = p; state.selectedModel = m; renderTopbar(); }
+    if (p) { state.selectedProvider = p; state.selectedModel = m; }
   }
   if (!state.selectedProvider && state.providers.length > 0) {
     const p = state.providers[0];
     state.selectedProvider = p;
     state.selectedModel = (p.models && p.models[0]) || p.defaultModel || p.model || '';
-    renderTopbar();
   }
+  // Projects depend on loaded Agents/Providers; their explicit defaults take
+  // precedence over the user's last global selection.
+  await loadWorkspaces();
+  renderTopbar();
+  renderContent();
+  renderSettings();
   // D1：文件上下文面板初始化 + 折叠按钮
   const fcMin = $('#fcMin');
   if (fcMin) fcMin.onclick = () => {
@@ -36,6 +38,8 @@ async function initApp() {
   setupDrop();
   const cs = $('#convSearch'); if (cs) cs.oninput = (e) => { state.convSearch = e.target.value; renderConvList(); };
   const fb = $('#forkBtn'); if (fb) fb.onclick = forkConversation;
+  const fileButton = $('#composerFileBtn');
+  if (fileButton) fileButton.onclick = () => openSettings('workspace');
 }
 
 // D1：拖拽文件到对话区 → 自动上传为当前项目资产并加入上下文

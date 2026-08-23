@@ -1,56 +1,34 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
+import { $, esc, api, toast, state } from '../core/index';
 
 /* --------------------------- Import / Export --------------------------- */
-// 大文件安全转 base64（避免 String.fromCharCode(...arr) 爆栈）
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
-  }
-  return btoa(binary);
-}
 function importBarHTML() {
   return `
     <div class="import-bar">
-      <span class="import-bar-label">导入 / 引用</span>
-      <button class="mini-btn" id="importFile">上传文件 (.json)</button>
-      <button class="mini-btn" id="importZip">上传技能包 (.zip)</button>
-      <button class="mini-btn" id="importUrl">URL 导入</button>
-      <button class="mini-btn" id="gotoPlugins">从插件市场</button>
+      <span class="import-bar-label">智能体备份</span>
+      <button class="mini-btn" id="importFile">导入 Agent JSON</button>
       <input type="file" id="importFileInput" accept=".json,application/json" style="display:none" />
-      <input type="file" id="importZipInput" accept=".zip,application/zip" style="display:none" />
     </div>`;
 }
 async function doImport(spec, sourceLabel) {
-  // spec: {skills, agents} 直接包，或 {url} 让后端抓取
   try {
-    const body = spec.url ? { url: spec.url, source: sourceLabel } : spec;
-    const r = await api('/api/import', { method: 'POST', body: JSON.stringify(body) });
-    await loadSkills(); await loadAgents();
-    renderSettings(state.currentTab || (spec.agents && !spec.skills ? 'agents' : 'skills'), true);
+    const r = await api('/api/import', { method: 'POST', body: JSON.stringify(spec) });
+    await loadAgents();
+    renderSettings(state.currentTab || 'agents', true);
     renderTopbar();
-    if (r.plugin) {
-      toast(`已安装插件：${r.plugin.name}（+${r.skills} 技能 / +${r.agents} 智能体，来源：${sourceLabel}）`);
-    } else {
-      toast(`已导入：+${r.skills} 技能 / +${r.agents} 智能体（来源：${sourceLabel}）`);
-    }
+    toast(`已导入 ${r.agents} 个智能体（来源：${sourceLabel}）`);
     return r;
   } catch (e) { toast(e.message, 'error'); throw e; }
 }
 function normalizeImport(json) {
-  if (Array.isArray(json)) return { skills: json };
-  if (json && (json.skills || json.agents)) return json;
-  if (json && json.id && json.systemPrompt !== undefined) return { agents: [json] };
-  if (json && json.id) return { skills: [json] };
-  return json;
+  if (Array.isArray(json)) return { agents: json };
+  if (json && json.agents) return { agents: json.agents };
+  if (json && typeof json === 'object' && json.id) return { agents: [json] };
+  throw new Error('文件不是 Agent JSON 备份');
 }
 function wireImportBar() {
   const body = $('#settingsBody');
   const fileBtn = body.querySelector('#importFile');
   const fileInput = body.querySelector('#importFileInput');
-  const urlBtn = body.querySelector('#importUrl');
-  const plugBtn = body.querySelector('#gotoPlugins');
   if (fileBtn && fileInput) {
     fileBtn.onclick = () => fileInput.click();
     fileInput.onchange = async () => {
@@ -64,94 +42,8 @@ function wireImportBar() {
       fileInput.value = '';
     };
   }
-  if (urlBtn) urlBtn.onclick = () => showUrlImport();
-  if (plugBtn) plugBtn.onclick = () => showMarketplace();
-  const zipBtn = body.querySelector('#importZip');
-  const zipInput = body.querySelector('#importZipInput');
-  if (zipBtn && zipInput) {
-    zipBtn.onclick = () => zipInput.click();
-    zipInput.onchange = async () => {
-      const f = zipInput.files && zipInput.files[0];
-      if (!f) return;
-      try {
-        const buf = new Uint8Array(await f.arrayBuffer());
-        const b64 = bytesToBase64(buf);
-        await doImport({ payload: b64, format: 'zip', source: '技能包 ' + f.name }, '技能包 ' + f.name);
-      } catch (e) { toast('技能包上传失败：' + e.message, 'error'); }
-      zipInput.value = '';
-    };
-  }
 }
 
-// 市场：列出三类可一键导入的真实来源（由后端以 URL 提供），并支持粘贴任意外部 URL
-function showMarketplace() {
-  const items = [
-    { key: 'skills', icon: '🧩', title: '技能包', url: '/marketplace/skills.json', desc: '社区策展的提示词型技能：专业翻译 / 代码解释 / 长文总结 / SQL 助手。' },
-    { key: 'agents', icon: '🤖', title: '智能体包', url: '/marketplace/agents.json', desc: '社区策展的智能体：小红书文案 / 代码审查 / 旅行规划。' },
-    { key: 'plugins', icon: '🔌', title: '插件包', url: '/marketplace/plugins.json', desc: '效率合集插件（bundle）：周报 / 会议纪要 / 简历优化 + 全能写作助手。' },
-  ];
-  showModal({
-    title: '从市场导入',
-    body: `
-      <p class="lead" style="margin-bottom:12px;">挑一个来源一键导入；也可粘贴任意外部 URL（技能/智能体包或插件清单）。</p>
-      <div id="mkList">
-        ${items.map(it => `
-          <div class="mk-card" data-url="${esc(it.url)}" data-title="${esc(it.title)}">
-            <div class="mk-ico">${it.icon}</div>
-            <div class="mk-body">
-              <div class="mk-title">${esc(it.title)}</div>
-              <div class="mk-desc">${esc(it.desc)}</div>
-              <div class="mk-url">${esc(it.url)}</div>
-            </div>
-            <button class="btn-primary mk-import" style="width:auto;padding:8px 14px;">导入</button>
-          </div>`).join('')}
-      </div>
-      <div class="mk-divider"><span>或</span></div>
-      <div class="row">
-        <button type="button" class="btn-ghost" id="mkPaste">粘贴外部 URL 导入</button>
-      </div>
-      <div id="mkErr" class="auth-error"></div>`,
-    onMount: (card) => {
-      card.querySelectorAll('.mk-card').forEach(c => {
-        c.querySelector('.mk-import').onclick = async () => {
-          const url = c.dataset.url, title = c.dataset.title;
-          try { await doImport({ url }, '市场·' + title); closeModal(); }
-          catch (e) { $('#mkErr', card).textContent = e.message; }
-        };
-      });
-      $('#mkPaste', card).onclick = () => { closeModal(); showUrlImport(); };
-    }
-  });
-}
-function showUrlImport() {
-  showModal({
-    title: '从 URL 导入',
-    body: `<form id="urlImportForm">
-      <p class="lead" style="margin-bottom:10px;">粘贴一个返回技能 / 智能体 / 插件清单 JSON 的链接，或直接指向 .zip 技能包。抓取由后端完成，无需对方允许跨域。</p>
-      <div class="field"><label>URL</label><input name="url" placeholder="https://example.com/my-pack.json" required /></div>
-      <div class="field"><label>来源标记（可选）</label><input name="source" placeholder="my-repo" /></div>
-      <div id="urlErr" class="auth-error"></div>
-      <div class="row">
-        <button type="button" class="btn-ghost" id="urlCancel">取消</button>
-        <button type="submit" class="btn-primary" style="width:auto;padding:9px 18px;">导入</button>
-      </div>
-    </form>`,
-    onMount: (card) => {
-      $('#urlCancel', card).onclick = closeModal;
-      $('#urlImportForm', card).onsubmit = async (e) => {
-        e.preventDefault();
-        const url = (new FormData(e.target).get('url') || '').toString().trim();
-        const source = (new FormData(e.target).get('source') || '').toString().trim() || 'url';
-        if (!url) return;
-        const errEl = $('#urlErr', card); errEl.textContent = '';
-        try {
-          await doImport({ url }, source);
-          closeModal();
-        } catch (e) { errEl.textContent = '导入失败：' + e.message; }
-      };
-    }
-  });
-}
 function exportEntity(entity, kind) {
   const blob = new Blob([JSON.stringify(entity, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -171,14 +63,32 @@ function showAgentModal(id) {
       <div class="field"><label>名称</label><input name="name" value="${a ? esc(a.name) : ''}" placeholder="中英翻译" required /></div>
       <div class="field"><label>描述</label><input name="description" value="${a ? esc(a.description || '') : ''}" placeholder="一句话描述这个智能体做什么" /></div>
       <div class="field"><label>系统提示词</label><textarea name="systemPrompt" rows="4" placeholder="你是一个...">${a ? esc(a.systemPrompt || '') : ''}</textarea></div>
-      <div class="field"><label>关联技能（多选 · 仅工具类会暴露给 LLM）</label>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+      <div class="field"><label>Agent Skills（先提供描述，匹配任务时再加载完整工作流）</label>
+        <div class="extension-checks">
           ${state.skills.map(s => {
-            const checked = a && (a.skillIds || []).includes(s.id) ? 'checked' : '';
-            return `<label style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--border-l2);border-radius:8px;font-size:12.5px;cursor:pointer;background:${checked ? 'var(--bg-hover)' : 'var(--bg-elevated)'};">
-              <input type="checkbox" name="skill" value="${esc(s.id)}" ${checked} /> ${esc(s.name)}
+            const ref = s.key || s.id;
+            const selected = a ? (a.skillRefs || a.skillIds || []) : [];
+            const checked = selected.includes(ref) || selected.includes(s.id) ? 'checked' : '';
+            return `<label>
+              <input type="checkbox" name="skill" value="${esc(ref)}" ${checked} /> ${esc(s.name)} <span class="pmeta">${esc(sourceLabel(s.source))}${s.enabled ? '' : ' · 已停用'}</span>
             </label>`;
-          }).join('')}
+          }).join('') || '<span class="pmeta">没有已启用的 Skill</span>'}
+        </div>
+      </div>
+      <div class="field"><label>内置工具（函数调用）</label>
+        <div class="extension-checks">
+          ${(state.tools || []).map(t => {
+            const checked = a && (a.toolIds || []).includes(t.id) ? 'checked' : '';
+            return `<label><input type="checkbox" name="tool" value="${esc(t.id)}" ${checked} /> ${esc(t.name)}${t.enabled ? '' : '（已停用）'}</label>`;
+          }).join('') || '<span class="pmeta">没有已启用的内置工具</span>'}
+        </div>
+      </div>
+      <div class="field"><label>MCP servers（工具由 tools/list 实时发现）</label>
+        <div class="extension-checks">
+          ${(state.mcpServers || []).filter(m => (m.targets || ['multichat']).includes('multichat')).map(m => {
+            const checked = a && (a.mcpServerIds || []).includes(m.id) ? 'checked' : '';
+            return `<label><input type="checkbox" name="mcpServer" value="${esc(m.id)}" ${checked} /> ${esc(m.name)} <span class="pmeta">${(m.tools || []).length} tools${m.enabled ? '' : ' · 已停用'}</span></label>`;
+          }).join('') || '<span class="pmeta">没有已启用的 MCP server</span>'}
         </div>
       </div>
       <div id="agentErr" class="auth-error"></div>
@@ -195,8 +105,16 @@ function showAgentModal(id) {
         const body: Record<string, any> = Object.fromEntries(fd.entries());
         if (body.name) body.name = body.name.trim();
         if (body.description) body.description = body.description.trim();
-        body.skillIds = Array.from(e.target.querySelectorAll('input[name="skill"]:checked')).map((cb: any) => cb.value);
-try {
+        const knownSkillRefs = new Set(state.skills.flatMap(s => [s.key || s.id, s.id]));
+        const knownToolIds = new Set((state.tools || []).map(t => t.id));
+        const visibleMcpIds = new Set((state.mcpServers || []).filter(m => (m.targets || ['multichat']).includes('multichat')).map(m => m.id));
+        const preservedSkillRefs = editing ? (a?.skillRefs || a?.skillIds || []).filter(ref => !knownSkillRefs.has(ref)) : [];
+        const preservedToolIds = editing ? (a?.toolIds || []).filter(ref => !knownToolIds.has(ref)) : [];
+        const preservedMcpIds = editing ? (a?.mcpServerIds || []).filter(ref => !visibleMcpIds.has(ref)) : [];
+        body.skillRefs = [...Array.from(e.target.querySelectorAll('input[name="skill"]:checked')).map((cb: any) => cb.value), ...preservedSkillRefs];
+        body.toolIds = [...Array.from(e.target.querySelectorAll('input[name="tool"]:checked')).map((cb: any) => cb.value), ...preservedToolIds];
+        body.mcpServerIds = [...Array.from(e.target.querySelectorAll('input[name="mcpServer"]:checked')).map((cb: any) => cb.value), ...preservedMcpIds];
+        try {
             if (editing) {
               await api('/api/agents/' + id, { method: 'PUT', body: JSON.stringify(body) });
               toast('已保存');
@@ -213,17 +131,16 @@ try {
 
 function showSkillModal(id) {
   const editing = !!id;
-  const s = editing ? state.skills.find(x => x.id === id) : null;
+  const s = editing ? state.skills.find(x => (x.key || x.id) === id) : null;
   showModal({
-    title: editing ? '编辑技能' : '新建技能（提示片段）',
+    title: editing ? '编辑 Agent Skill' : '新建 Agent Skill',
     body: `<form id="skillForm">
-      <div class="field"><label>技能 ID</label><input name="id" value="${s ? esc(s.id) : ''}" placeholder="my_skill" required pattern="[-a-zA-Z0-9_]+" ${editing ? 'readonly' : ''} />
-        <div style="font-size:11.5px;color:var(--label-caption);margin-top:4px;">小写字母、数字、下划线或连字符。</div></div>
-      <div class="field"><label>显示名称</label><input name="name" value="${s ? esc(s.name) : ''}" placeholder="我的技能" required /></div>
-      <div class="field"><label>描述</label><input name="description" value="${s ? esc(s.description || '') : ''}" placeholder="一句话说明" /></div>
-      <div class="field"><label>类型</label><select name="type" ${editing ? 'disabled' : ''}><option value="prompt" selected>prompt（注入系统提示）</option></select>
-        <div style="font-size:11.5px;color:var(--label-caption);margin-top:4px;">目前仅开放 prompt 类型。工具类技能（时间/计算/抓取/搜索）请用内置的或扩展后端。</div></div>
-      <div class="field"><label>提示内容</label><textarea name="prompt" rows="4" placeholder="注入到 system prompt 的文本...">${s && s.config ? esc(s.config.prompt || '') : ''}</textarea></div>
+      <div class="field"><label>Skill ID</label><input name="id" value="${s ? esc(s.id) : ''}" placeholder="release-notes" required pattern="[a-z0-9-]+" ${editing ? 'readonly' : ''} />
+        <div class="pmeta">1–64 位小写字母、数字或连字符；写入 SKILL.md frontmatter。</div></div>
+      <div class="field"><label>Skill name</label><input name="name" value="${s ? esc(s.name) : ''}" placeholder="release-notes" required pattern="[a-z0-9-]+" ${editing ? 'readonly' : ''} /></div>
+      <div class="field"><label>Description</label><textarea name="description" rows="3" placeholder="说明何时应使用此 Skill，以及它能完成什么。" required>${s ? esc(s.description || '') : ''}</textarea></div>
+      <div class="field"><label>Instructions（SKILL.md 正文）</label><textarea name="instructions" rows="9" placeholder="# Workflow&#10;&#10;1. ..." required>${s ? esc(s.instructions || '') : ''}</textarea>
+        <div class="pmeta">需要脚本、参考资料或模板时，可在对应 Skill 目录添加 scripts、references、assets。</div></div>
       <div id="skillErr" class="auth-error"></div>
       <div class="row">
         <button type="button" class="btn-ghost" id="skillCancel">取消</button>
@@ -239,12 +156,12 @@ function showSkillModal(id) {
         if (body.id) body.id = body.id.trim();
         if (body.name) body.name = body.name.trim();
         if (body.description) body.description = body.description.trim();
-        body.config = { prompt: body.prompt || '' };
-        delete body.prompt;
+        if (body.instructions) body.instructions = body.instructions.trim();
         try {
           if (editing) {
-            const { id: _id, type: _t, ...rest } = body;
-            await api('/api/skills/' + id, { method: 'PUT', body: JSON.stringify(rest) });
+            const rest = { ...body };
+            delete rest.id;
+            await api('/api/skills/' + encodeURIComponent(id), { method: 'PUT', body: JSON.stringify(rest) });
             toast('已保存');
           } else {
             await api('/api/skills', { method: 'POST', body: JSON.stringify(body) });
@@ -331,4 +248,4 @@ function showAddCustom() {
   });
 }
 
-export { importBarHTML,doImport,normalizeImport,wireImportBar,showMarketplace,showUrlImport,exportEntity,showAgentModal,showSkillModal,BUILTIN_PROVIDERS,showAddBuiltin,showAddCustom };
+export { importBarHTML,doImport,normalizeImport,wireImportBar,exportEntity,showAgentModal,showSkillModal,BUILTIN_PROVIDERS,showAddBuiltin,showAddCustom };

@@ -1,389 +1,395 @@
-<div align="center">
+# MultiChat Orbit
 
-# MultiChat
+> 面向本地项目的多模型 Agent 工作台：把对话、Agent、Skill、MCP 与 Plugin 放进一个可观察、可审阅、可回滚的运行空间。
 
-**本地优先的多模型 Agent 工作台 + OpenAI 兼容网关**
+MultiChat Orbit 是 MultiChat 的产品界面与交互系统。它不把所有扩展都塞进同一种“插件”概念，而是保留每种能力真实的边界：
 
-本地优先 · 无登录 · 无计费 · 配置自托管
+- **Agent** 负责组合模型、指令、Skill、内置工具和 MCP server；
+- **Skill** 是以 `SKILL.md` 为入口的知识与工作流目录；
+- **MCP** 是独立运行的标准工具服务，拥有自己的连接、信任与作用域策略；
+- **Plugin** 是以 `.codex-plugin/plugin.json` 为入口的完整 Codex 能力包；
+- **Runtime** 负责渐进加载、工具审批、调用记录和资源清理。
 
-[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org)
-[![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-412991?logo=openai&logoColor=white)](https://platform.openai.com/docs/api-reference)
-[![CI](https://github.com/Leterhong/MultiChat/actions/workflows/ci.yml/badge.svg)](https://github.com/Leterhong/MultiChat/actions/workflows/ci.yml)
+项目坚持本地优先：网页和控制面运行在你的机器上，项目扩展保存在项目目录，运行数据默认保存在当前用户目录。需要注意的是，本地优先不代表所有模型推理都在本地完成；当你配置云端模型或远程 MCP 时，请求仍会发送到对应服务。
 
-[快速开始](#-快速开始) · [技能包 (.zip)](#-技能包zip) · [支持的模型](#-支持的模型) · [API](#-api) · [安全设计](#-安全设计) · [项目结构](#-项目结构) · [开发](#-开发)
+## 一条命令启动
 
-</div>
-
----
-
-## ✨ 核心特性
-
-| 类别 | 能力 |
-|------|------|
-| **协议** | 完整兼容 OpenAI `/v1/chat/completions`（流式 SSE、`tools`/`tool_choice`、14+ 标准字段透传，`_provider` 请求级注入） |
-| **多模型** | 内置 OpenAI / DeepSeek / Anthropic / Gemini / Kimi / 智谱 / 通义千问 / Ollama / LM Studio 模板，任意 OpenAI 兼容端点可自定义接入 |
-| **Agent 工作台** | 工作区 → 项目 → 会话三层组织；智能体、技能、插件、MCP、运行记录统一编排 |
-| **技能系统** | 技能 = 自包含 **`.zip` 技能包**（manifest + 资源文件），支持文件上传 / URL 直链导入，七道安全校验后才落盘加载 |
-| **Agent 安全** | 高风险工具调用走 **Approval 审批流**（人工批准后才执行）；MCP 插件分 **trusted / untrusted** 信任等级，远程 MCP 默认关闭 |
-| **本地优先** | Providers / 对话 / Agent / Skill / Plugin / Run / 工作区全部存本机 JSON，零云依赖，可整体备份迁移 |
-| **零门槛** | 无登录、无注册、无计费、无配额，开箱即用 |
-| **工程化** | 前端 Vite + TypeScript（core + 12 业务模块）；后端 Node.js + Express（TS 渐进迁移，tsx 运行）；GitHub Actions 双 job CI；ESLint / Prettier / tsc 质量门禁 |
-| **部署** | Dockerfile + docker-compose 开箱部署；前端构建产物 `dist/` 随仓库提交，克隆即用 |
-
----
-
-## 🚀 快速开始
-
-### 方式 1：直接运行（最快）
+需要 [Node.js](https://nodejs.org/) 22 或更高版本。
 
 ```bash
-git clone https://github.com/Leterhong/MultiChat.git && cd MultiChat
-
-# 启动后端（tsx 运行，兼容 .ts/.js 混合源码）
-cd backend && npm install && npm start
-# → Multi-model chat server running on http://localhost:3000
-# → OpenAI-compatible endpoint: POST /v1/chat/completions
+npx --yes github:Leterhong/MultiChat web
 ```
 
-前端构建产物 `frontend/dist` 已随仓库提交，`server.js` 直接静态托管，克隆后访问 `http://localhost:3000` 即可使用，无需再构建前端。
+这条命令会通过 npm 从 GitHub 下载当前版本并启动**本地服务**，然后打开 `http://127.0.0.1:3000`。它不是远程发布，也不会替你创建公网服务。按 `Ctrl+C` 即可停止，数据会保留在 `~/.multichat/data`。
 
-> 改了 `frontend/src` 源码后需重新构建：
-> ```bash
-> cd frontend && npm install && npm run build   # 产物输出到 frontend/dist
-> ```
-
-运行后端测试（模块加载 + 技能包安装冒烟）：
+在一个具体项目中运行时，建议先进入该项目目录；当前目录会作为默认工作区：
 
 ```bash
-cd backend && npm test
+cd my-agent-project
+npx --yes github:Leterhong/MultiChat web
 ```
 
-打开 `http://localhost:3000`，点右上角 ⚙ 设置 → 添加模型（填入 API Key 与 baseUrl）即可开始对话。
-
-### 方式 2：Docker
+常用选项：
 
 ```bash
-docker-compose up -d
-# 访问 http://localhost:3000
+# 指定端口，不自动打开浏览器
+npx --yes github:Leterhong/MultiChat web --port 3100 --no-open
+
+# 管理另一个项目，并把运行数据放到指定目录
+npx --yes github:Leterhong/MultiChat web \
+  --workspace ./my-agent-project \
+  --data-dir ./.multichat-data
 ```
 
-### 方式 3：作为 OpenAI 兼容代理（让任何 ChatGPT 客户端接入）
+未来发布正式 npm 包后，会补充更短的 `npx @leterhong/multichat web`；在此之前，请以本节的 GitHub 命令为准。
 
-MultiChat 的 `/v1/chat/completions` 与 OpenAI 协议完全兼容，任何支持自定义 baseUrl 的客户端（Cherry Studio / ChatBox / NextChat 等）都可以指向它：
+## MultiChat Orbit 界面
+
+Orbit 的视觉语言来自“本地 Agent 控制轨道”：
+
+- 深色导航轨道承载会话和全局入口，浅色工作区承载当前任务；
+- 紫色代表创建与主要操作，青色代表已连接、在线和可运行状态；
+- 首页用 Capability Orbit 汇总 Agent、Skill、MCP 与 Plugin 的实时数量；
+- 设置中心使用统一的资源卡片、状态徽标、导入向导和详情面板；
+- 桌面端与移动端共享同一信息架构，并支持深色主题、键盘焦点和可访问的弹窗交互。
+
+界面不是一层静态外壳。状态、来源、作用域、信任级别、变更 Diff 和运行结果都直接来自后端资源模型，便于在启用能力前完成判断。
+
+## 能力概览
+
+| 能力 | 用途 | 保存位置 | 运行方式 |
+|---|---|---|---|
+| 对话与工作区 | 多模型对话、上下文与项目资产 | `DATA_DIR` | 本地 API 与浏览器界面 |
+| Agent | 组合模型、指令和可调用能力 | `DATA_DIR` | Agent 工具循环 |
+| Skill | 提供工作流、知识、脚本和资源 | `.agents/skills/` 或托管目录 | 按需读取，默认不执行脚本 |
+| 内置工具 | 时间、计算、网页读取等宿主函数 | 应用代码与状态库 | 由 Runtime 调用 |
+| MCP server | 接入 STDIO 或 Streamable HTTP 工具服务 | `DATA_DIR`，可同步到 `.codex/config.toml` | 实时 `tools/list` 与工具调用 |
+| Plugin | 分发完整 Codex 能力包 | `.agents/plugins/` | 当前加载包内 Skill 与 MCP |
+
+## 上传与导入
+
+设置中心提供 Skill、MCP 和 Plugin 三条独立导入路径。每条路径都遵循同一个生命周期：
+
+```text
+选择文件或目录
+      ↓
+静态预检与风险提示
+      ↓
+用户确认
+      ↓
+原子安装（默认停用）
+      ↓
+按作用域启用并进入运行时
+```
+
+### Skill
+
+支持：
+
+- 单个 `SKILL.md`；
+- 包含 `SKILL.md` 的完整目录；
+- WorkBuddy 常见目录布局的 Skill ZIP；
+- 可选的 `scripts/`、`references/`、`assets/` 和 `agents/openai.yaml`。
+
+最小目录：
+
+```text
+.agents/skills/release-notes/
+├── SKILL.md
+├── agents/
+│   └── openai.yaml       # 可选
+├── scripts/              # 可选
+├── references/           # 可选
+└── assets/               # 可选
+```
+
+最小 `SKILL.md`：
+
+```md
+---
+name: release-notes
+description: Generate user-facing release notes from a change summary.
+---
+
+# Workflow
+
+1. Identify user-visible changes.
+2. Group changes by impact.
+3. Never invent changes that are not present in the input.
+```
+
+同名 Skill 默认拒绝覆盖。显式确认覆盖时，MultiChat 会先完成预检，再原子替换原目录。新导入或覆盖后的 Skill 默认停用。
+
+Runtime 使用渐进披露：模型先看到 Skill 的名称、描述和 loader；只有任务匹配并调用 loader 后，才读取完整说明与文本 references。发现 Skill 本身不会自动执行其中的脚本。
+
+### MCP
+
+支持：
+
+- 在界面中创建 STDIO server；
+- 在界面中创建 Streamable HTTP server；
+- 上传 MCP JSON；
+- 识别 `mcpServers`、`mcp_servers`、`servers` 或直接 server map；
+- 批量导入、独立启停、信任策略、作用域与实时工具发现；
+- 将项目范围配置同步到 `.codex/config.toml`。
+
+导入只解析配置，不会在预检或安装阶段启动命令、连接 URL 或调用工具。所有导入项都以“停用 + 未信任”状态落盘。
+
+### Plugin
+
+支持上传 ZIP 或选择完整目录。插件根目录必须包含：
+
+```text
+my-plugin/
+├── .codex-plugin/
+│   └── plugin.json
+├── skills/               # 可选
+├── .mcp.json             # 可选
+└── ...                   # 其他包内资源原样保留
+```
+
+MultiChat 会校验 manifest、组件路径、Skill 目录、MCP 配置和凭据位置，再把整包注册到项目 marketplace。导入后默认停用；覆盖升级和卸载会同步处理目录、marketplace、扩展状态与 Agent 引用，失败时回滚。
+
+当前 Runtime 会加载插件中的 **Skills 与 MCP servers**。Agents、Commands、Hooks、Apps 等文件可以随包保留，但上传的 JS/TS 与 hook 不会直接注入 MultiChat 主进程。
+
+## 兼容边界
+
+| 格式或生态 | 状态 | 说明 |
+|---|---|---|
+| 标准 Agent Skill 目录 | 支持 | 以 `SKILL.md` 为入口，保留附属资源 |
+| WorkBuddy 风格 Skill 包 | 支持导入 | 支持常见 ZIP/目录布局，不宣称 WorkBuddy 宿主 API 兼容 |
+| MCP STDIO | 支持 | 本地子进程，不是沙箱 |
+| MCP Streamable HTTP | 支持 | 默认限制私网地址，需显式放行 |
+| Codex Plugin 完整包 | 支持 | 以 `.codex-plugin/plugin.json` 为准 |
+| DeepSeek Harness / Cordis npm Plugin ABI | 不兼容 | 不伪装成 DSH/Cordis 插件运行时 |
+| 任意上传的 JS/TS、Hook 或 App | 仅保留 | 未进入经过隔离和授权的宿主模型前，不直接执行 |
+| 远程 URL 扩展安装 | 不支持 | 当前只接受本地文件、ZIP、目录或声明式配置 |
+
+“完整包可导入”不等于“所有包内代码都会执行”。这是有意保留的安全与宿主边界。
+
+## Agent 如何组合能力
+
+每个 Agent 可以分别关联：
+
+- `skillRefs`：带来源身份的标准 Skills；
+- `toolIds`：MultiChat 内置函数工具；
+- `mcpServerIds`：运行前动态发现工具的 MCP servers。
+
+MCP 工具使用 `mcp__<server>__<tool>` 命名空间，避免不同 server 出现同名工具时相互覆盖。旧数据中的 `skillIds` 继续兼容，并会在加载时迁移到新的来源模型。
+
+典型运行过程：
+
+1. Runtime 收集 Agent 已启用的模型、Skill、内置工具和 MCP；
+2. Skill 只暴露摘要与 loader，MCP 通过 `tools/list` 获取实时 schema；
+3. 模型决定是否加载 Skill 或请求工具；
+4. 未信任工具进入逐次审批，已信任工具按策略执行；
+5. 工具输出回到模型，直到产生最终回答或达到运行上限；
+6. 运行历史、错误和工具调用记录写入本地数据目录。
+
+## TypeScript 在项目中的地位
+
+TypeScript 不是只用于界面类型提示，而是 MultiChat 的主开发语言和架构边界：
+
+- **前端**：Vite + TypeScript，界面模块、API 客户端、状态与主题系统均使用 TS；
+- **后端**：Express 路由、模型适配器、扩展导入器、MCP client 与 Agent Runtime 使用 TS；
+- **运行**：后端保留成熟的 CommonJS 模块语义，通过 `tsx` 直接运行，避免同时进行语言迁移和模块系统迁移；
+- **验证**：前后端分别执行 `tsc --noEmit`，测试也直接运行 TypeScript；
+- **兼容入口**：标准 MCP 演示 server 与 Windows 启动 shim 可保留小型 JS/CJS 入口，避免破坏已有配置路径。
+
+这样做的目标不是追求某个仓库语言百分比，而是让请求、资源、扩展、运行时和 UI 之间共享可检查的契约。DeepSeek Harness 在 GitHub 显示的 TypeScript 占比是 Linguist 按文件字节计算的统计值，会随版本变化；它能说明工程重心，但不能替代类型覆盖率、测试和边界设计。
+
+MultiChat 借鉴了 DeepSeek Harness 的 TypeScript 工程组织和一条命令启动体验，但没有复制或冒充其插件 ABI。相关官方资料：
+
+- [DeepSeek Harness — Run](https://github.com/deepseek-ai/deepseek-harness#run)
+- [DeepSeek Harness — TypeScript project layout](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/development.md#typescript-project-layout)
+- [DeepSeek Harness — Architecture](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md)
+- [GitHub Languages API：deepseek-harness](https://api.github.com/repos/deepseek-ai/deepseek-harness/languages)
+
+## CLI
+
+CLI 既可通过 GitHub 的 `npx` 命令运行，也可在源码目录中运行。
+
+| 命令 | 作用 |
+|---|---|
+| `multichat` / `multichat web` | 启动本地网页与 API |
+| `multichat doctor` | 检查 Node 版本、前端产物、后端入口、工作区和数据目录 |
+| `multichat init [dir]` | 创建一个源码副本并准备本地运行环境 |
+| `multichat pull [dir]` | 更新已有源码副本并重新准备构建产物 |
+| `multichat deploy` | 本地部署别名；准备并启动本地服务，不发布到远端 |
+
+`web` 与 `deploy` 支持：
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `--host <host>` | `127.0.0.1` | HTTP 监听地址 |
+| `--port <port>` | `3000` | HTTP 端口 |
+| `--no-open` | 关闭 | 启动后不自动打开浏览器 |
+| `--workspace <path>` | 当前目录 | 被管理项目的根目录 |
+| `--data-dir <path>` | `~/.multichat/data` | 对话、Agent 与运行状态目录 |
+
+完整参数以当前版本为准：
 
 ```bash
-base_url: http://localhost:3000/v1
-api_key: 任意非空字符串（真实 Key 由请求体 `_provider` 覆盖）
-model:    openai:gpt-4o-mini    # 格式：<providerId>:<modelName>
+npx --yes github:Leterhong/MultiChat --help
+npx --yes github:Leterhong/MultiChat doctor
 ```
 
----
-
-## 📦 技能包 (.zip)
-
-技能不再是一条裸 JSON 记录，而是**自包含的压缩包**——上传后由后端解压、安全校验、落盘到 `backend/plugins/<id>/`，技能/智能体经插件管理器注册进 `skills.json` / `agents.json`（带 `_plugin` 标记，可整体卸载）。
-
-### 包内结构
-
-```
-my-skill.zip
-├── manifest.json          # 必须：包元数据 + skills/agents 定义
-├── references/            # 可选：使用文档（.md）
-├── assets/                # 可选：模板 / 图片 / 数据（json/svg/png/csv 等）
-└── README.md              # 可选
-```
-
-### manifest.json 格式
-
-```json
-{
-  "id": "owner_my_skill",
-  "name": "我的技能",
-  "type": "bundle",
-  "version": "1.0.0",
-  "skills": [
-    {
-      "id": "ts_writer",
-      "name": "写作助手",
-      "type": "prompt",
-      "config": { "prompt": "你是一个专业的中文技术写作助手……" }
-    }
-  ],
-  "agents": [
-    { "id": "ag_editor", "name": "编辑 Agent", "description": "负责校对与润色" }
-  ]
-}
-```
-
-- 根 `id` 须匹配 `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$`；`type` 强制为 `bundle`（**禁止 `mcp`**，技能包不启动任何外部进程，杜绝远程代码执行）。
-- 技能 `type` 白名单：`prompt` / `datetime` / `calculator` / `web_fetch` / `web_search`；`prompt` 型须含 `config.prompt`（≤ 8000 字）。
-- 权限声明仅允许已知集合（如 `network`）。
-
-### 上传方式
-
-| 入口 | 说明 |
-|------|------|
-| **UI 上传** | 设置 → 导入 / 引用 → 「上传技能包 (.zip)」选择本地文件 |
-| **URL 直链** | 设置 → 导入 / 引用 → 「URL 导入」粘贴 `.zip` 直链（后端自动识别 `PK` 魔数 / content-type / 后缀） |
-| **API** | `POST /api/import`，`{ format: 'zip', payload: <base64> }` |
-
-### 安全校验（入口即拦，先于任何落盘）
-
-1. **zip-slip 路径穿越防护**：拒绝绝对路径、`..` 段、逃逸 root 的条目
-2. **防 zip-bomb**：压缩包 ≤ 8 MB、文件数 ≤ 200、单文件 ≤ 5 MB、解压后总大小 ≤ 20 MB
-3. **扩展名白名单**：只放行 `json/md/txt/yaml/svg/png/jpg/gif/webp/html/css/csv/pdf` 等静态资源，禁止 `exe/sh/py/so/dll` 等可执行/脚本文件
-4. **manifest 合法性**：根 `id` 经 `safeId` 校验、`name` 必填、`type` 强制归一 `bundle`、技能类型白名单、`prompt` 长度上限、权限声明白名单
-
-校验失败返回 `400 INVALID_PACKAGE`，不做任何写入。
-
----
-
-## 🤖 支持的模型
-
-内置 9 个常用供应商模板，一键填入 API Key 即可使用：
-
-| 供应商 | 协议 | 默认 baseUrl | 适配器 |
-|--------|------|--------------|--------|
-| OpenAI | openai | `https://api.openai.com/v1` | `openai` |
-| DeepSeek | openai | `https://api.deepseek.com/v1` | `openai` |
-| Anthropic | anthropic | `https://api.anthropic.com/v1` | `anthropic` |
-| Google Gemini | openai | `https://generativelanguage.googleapis.com/v1beta/openai` | `openai` |
-| 月之暗面 Kimi | openai | `https://api.moonshot.cn/v1` | `moonshot` |
-| 智谱 GLM | zhipu | `https://open.bigmodel.cn/api/paas/v4` | `zhipu` |
-| 阿里云 DashScope | openai | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen` |
-| Ollama (本地) | ollama | `http://localhost:11434/v1` | `ollama` |
-| LM Studio (本地) | lmstudio | `http://localhost:1234/v1` | `lmstudio` |
-
-> 任何 OpenAI 兼容端点（自建网关、转发代理）可通过「自定义 Provider」添加，协议类型选 `openai` 即可。
-
----
-
-## 📡 API
-
-### `POST /v1/chat/completions`
-
-完全兼容 OpenAI 协议：
+## 从源码运行
 
 ```bash
-curl -X POST http://localhost:3000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "deepseek:deepseek-chat",
-    "messages": [{"role":"user","content":"你好"}],
-    "stream": true
-  }'
+git clone https://github.com/Leterhong/MultiChat.git
+cd MultiChat
+
+npm install
+npm --prefix backend install
+npm --prefix frontend install
+npm --prefix frontend run build
+npm start
 ```
 
-**`model` 字段格式**：`<providerId>:<modelName>`（Ollama 模型名可含冒号，如 `llama3:latest`）。
+打开 `http://127.0.0.1:3000`。
 
-**`_provider` 字段（MultiChat 扩展）**：请求级注入 Provider 配置，适合客户端代理场景，无需预先存 provider 记录：
+后端会直接提供 `frontend/dist`，因此修改界面后需要重新构建前端。开发时可以分别运行前后端的类型检查和测试：
 
-```json
-{
-  "model": "openai:gpt-4o-mini",
-  "messages": [],
-  "_provider": {
-    "id": "openai",
-    "apiType": "openai",
-    "baseUrl": "https://api.openai.com/v1",
-    "apiKey": "sk-..."
-  }
-}
+```bash
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
+
+npm --prefix backend run typecheck
+npm --prefix backend test
+
+# CLI 参数、doctor 与进程启动测试
+npm test
 ```
 
-**透传字段**：`temperature` · `max_tokens` · `top_p` · `tools` · `tool_choice` · `stream_options` · `response_format` · `logprobs` · `stop` · `frequency_penalty` · `presence_penalty` · `seed` · `n` · `user` · `parallel_tool_calls`
+Node 22 是最低版本；推荐使用当前维护中的 Node LTS。
 
-### 其他端点
+## 配置与数据目录
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET / POST / PUT / DELETE | `/api/providers[/:id]` | Provider CRUD |
-| GET | `/api/models` | 所有 Provider × 模型组合 |
-| POST | `/api/fetch-local-models` | 拉取 Ollama / LM Studio 本地模型 |
-| GET / POST / PUT / DELETE | `/api/conversations[/:id[/messages]]` | 对话 CRUD |
-| GET / POST / PUT / DELETE | `/api/prompts`、`/api/assistants` | 提示词 / 助手 CRUD |
-| GET / POST / PUT / DELETE | `/api/skills`、`/api/agents` | Skill / Agent CRUD |
-| GET / POST | `/api/plugins` | 插件发现、安装、启停 |
-| POST | `/api/import` | 导入：`format: json`（技能/智能体/插件清单）或 `format: zip`（技能包，base64）或 URL 抓取 |
-| GET / POST / PUT / DELETE | `/api/workspaces[/:id]` | 工作区 / 项目 / 会话分层管理 |
-| GET / POST | `/api/runs[/:id]` | Agent 运行历史与状态 |
-| POST | `/api/runs/:id/approval/:approvalId` | 审批流：`{ action: "approve" | "reject" }` |
-| GET | `/api/runtime`、`/api/catalog` | 工作台能力与完整目录 |
-| GET | `/api/health` | 健康检查（Docker / LB 用） |
+### CLI 默认目录
 
-**审批 SSE 事件**：Agent 运行期间服务端推送 `approval_required`（待审批工具调用）与 `approval_resolved`（审批结果），前端据此渲染审批卡片。
+```text
+~/.multichat/
+└── data/                  # 对话、Agent、Provider、MCP、运行记录等
 
----
-
-## 🔐 安全设计
-
-1. **Approval 审批流**：Agent 执行命中「需人工确认」策略时挂起运行，推送 `approval_required`；用户批准/拒绝后由 `approval_resolved` 唤醒。审批轨迹记录在 Run 的 `approvals` 字段，超时（默认 5 分钟）自动中止。
-
-2. **MCP 信任等级**：
-   - `trusted`：本地受信插件，正常加载调用。
-   - `untrusted`：默认沙箱化；远程会执行外部进程的 MCP 插件默认关闭，仅显式设置 `MULTICHAT_ALLOW_REMOTE_MCP=1` 才允许。
-
-3. **技能包上传安全**：见 [技能包 (.zip)](#-技能包zip) 的七道校验——zip-slip 防护、zip-bomb 上限、扩展名白名单、manifest 合法性、强制 `type=bundle` 禁 `mcp`（防远程代码执行）。
-
-4. **SSRF 防护**：后端 URL 抓取走 `safeFetch`，拦截内网 / 云元数据地址（`lib/ssrf.ts`）。
-
-执行引擎 `backend/runtime/agent.js` 根据 `trustLevel` / `requiresApproval` / `riskLevel` 动态决定是否挂起审批、是否放行 MCP 调用。
-
----
-
-## 🗂️ 工作区 / 项目 / 会话
-
-- **工作区（Workspace）**：最高层级容器，聚合相关 Provider、Agent、Skill、Plugin 与运行记录。
-- **项目（Project）**：工作区下子分组，隔离不同目标（如「论文写作」「代码审查」）。
-- **会话（Session）**：项目下的一次具体对话，独立消息历史与上下文。
-
-存储与路由：`backend/lib/workspace-store.js`、`backend/routes/workspaces.js`；前端侧边栏提供切换与 CRUD。
-
----
-
-## 🏗️ 技术架构
-
-```
-┌──────────────────────────────────────────────┐
-│          浏览器 (Vite + TypeScript 前端)      │
-│   frontend/src → vite build → frontend/dist   │
-│   core（dom/toast/state/api）+ 12 业务模块    │
-└────────────────┬─────────────────────────────┘
-                 │ HTTP / SSE
-┌────────────────▼─────────────────────────────┐
-│        Node.js 后端 (Express，tsx 运行)        │
-│   routes/ · runtime/agent.js · lib/          │
-│   adapters/（工厂模式，10 个供应商）           │
-│   lib/skillpack.js（.zip 解压 + 安全校验）     │
-└────────────────┬─────────────────────────────┘
-                 │ HTTPS
-┌────────────────▼─────────────────────────────┐
-│       上游 LLM 提供商 / 本地模型              │
-│   OpenAI / DeepSeek / Anthropic / Ollama ... │
-└──────────────────────────────────────────────┘
+<workspace>/
+├── .agents/
+│   ├── skills/            # 项目 Skills
+│   └── plugins/           # marketplace 与插件包
+└── .codex/
+    └── config.toml        # 可同步的项目 MCP 配置
 ```
 
-| 层 | 技术选型 |
-|----|----------|
-| 前端 | Vite + TypeScript；原生 DOM，`core` + 12 个 `modules` 模块；构建产物 `frontend/dist` |
-| 后端 | Node.js 18+，Express 4，`tsx` 运行（TS 渐进迁移，`.ts`/`.js` 混合） |
-| 存储 | 本地 JSON 文件（`backend/data/`），零数据库依赖 |
-| 协议 | OpenAI `/v1/chat/completions` 完整兼容 |
-| 质量 | GitHub Actions（后端测试 + 前端构建）、ESLint、Prettier、`tsc --noEmit` |
+Windows 中的 `~/.multichat/data` 对应当前用户目录下的 `.multichat\data`。
 
----
+### 环境变量
 
-## 📁 项目结构
+CLI 会根据参数设置主要环境变量；直接启动后端时也可以手动设置：
 
-```
-MultiChat/
-├── backend/                      # Express 后端（模块化 Agent 平台）
-│   ├── server.js                 # 入口：挂载路由 + 静态托管 frontend/dist
-│   ├── mcp.js                    # MCP 客户端与信任等级判定
-│   ├── adapters/                 # 供应商适配器（工厂模式）
-│   │   ├── index.js  base.js
-│   │   ├── openai.js  anthropic.js  ollama.js  lmstudio.js
-│   │   ├── zhipu.js  wenxin.js  moonshot.js  qwen.js
-│   │   └── README.md
-│   ├── lib/                      # 基础设施（.ts/.js 混合）
-│   │   ├── store.js  workspace-store.js      # JSON / 工作区存储
-│   │   ├── context.js  catalog.js  errors.ts # 上下文 / 目录 / 错误码
-│   │   ├── ssrf.ts  util.ts                  # SSRF 防护 / 工具
-│   │   └── skillpack.js                      # .zip 技能包解压 + 安全校验（核心）
-│   ├── routes/                   # 路由层（11 个）
-│   │   ├── chat.js  agents.js  assistants.js  conversations.js
-│   │   ├── skills.js  plugins.js  providers.js  runs.js
-│   │   ├── workspaces.js  import.js  meta.js
+| 变量 | 作用 |
+|---|---|
+| `HOST` | 监听地址，默认 `127.0.0.1` |
+| `PORT` | 监听端口，默认 `3000` |
+| `DATA_DIR` | 运行数据目录；CLI 默认使用 `~/.multichat/data` |
+| `FRONTEND_DIST` | 前端静态产物目录 |
+| `MULTICHAT_PROJECT_ROOT` | Skill、Plugin 与 Codex 配置所属的项目根目录 |
+| `CORS_ORIGINS` | 逗号分隔的允许来源；默认不额外开放跨域 |
+| `NODE_ENV` | 运行模式标识 |
+
+直接在 `backend/` 执行 `npm start` 且未设置 `DATA_DIR` 时，数据默认写入 `backend/data`；通过 CLI 启动时使用用户级目录，避免运行包升级时影响数据。
+
+## 安全模型
+
+MultiChat 会在安装前检查：
+
+- ZIP 路径穿越、绝对路径与符号链接；
+- 文件数量、单文件大小、压缩包大小与解压后总量；
+- UTF-8 文本、YAML frontmatter、JSON 和 manifest 合法性；
+- 组件路径是否留在包内；
+- 同名冲突、覆盖意图与来源身份；
+- MCP 配置和插件包中的明文凭据位置；
+- 更新与卸载过程中的状态一致性。
+
+还需要理解以下运行边界：
+
+- **STDIO MCP 是本机进程，不是沙箱。** 启用前请审阅 command、args 和环境变量；
+- 导入和预检不会执行包内脚本、启动 MCP 或连接远程 URL；
+- HTTP MCP 默认阻止 localhost、内网和 link-local 目标，只有显式允许后才可连接；
+- MCP 子进程只继承必要的基础环境和 server 显式配置，不继承全部进程环境；
+- 凭据应通过 `${ENV_VAR}` 或 `${env:ENV_VAR}` 引用，避免明文进入项目文件；
+- 停用、更新、删除或退出时会关闭缓存 client 与 STDIO 子进程；
+- 将 `HOST` 改为非 loopback 会把服务暴露给局域网或更大网络。当前服务不自带公网身份认证，请只在受控网络和可信代理之后使用。
+
+## HTTP API
+
+界面使用同一套本地 API。主要资源如下：
+
+| 资源 | 代表路径 | 说明 |
+|---|---|---|
+| 状态 | `GET /api/health`、`GET /api/runtime` | 健康、版本和资源计数 |
+| Provider | `/api/providers` | 模型供应商与模型配置 |
+| 对话 | `/api/conversations`、`/api/chat` | 对话记录与流式回答 |
+| Agent | `/api/agents`、`POST /api/agents/:id/chat` | Agent 管理与工具循环 |
+| Skill | `/api/skills`、`/api/skills/:key/diff` | 扫描、编辑、启停和 Diff |
+| 内置工具 | `/api/tools` | 工具列表与状态 |
+| MCP | `/api/mcp-servers` | 配置、发现、策略与 Codex 同步 |
+| Plugin | `/api/plugins` | marketplace、启停、Diff 与卸载 |
+| 扩展导入 | `/api/extensions/import/:kind/inspect`、`/install` | Skill、MCP、Plugin 两阶段导入 |
+| 运行记录 | `/api/runs` | Agent 与工具运行历史 |
+
+旧的 `POST /api/import` 只用于声明式 Agent JSON 备份，不接受伪装成 Skill 的 MCP、插件代码或远程安装 URL。
+
+## 项目结构
+
+```text
+.
+├── bin/
+│   └── multichat.mjs                 # 一条命令启动与源码管理 CLI
+├── .agents/
+│   ├── skills/                       # 项目 Skills
+│   └── plugins/                      # marketplace + Codex 插件包
+├── .codex/
+│   └── config.toml                   # 项目 MCP 配置
+├── backend/
+│   ├── adapters/                     # 模型供应商适配器
+│   ├── extensions/
+│   │   ├── importer.ts               # 两阶段导入与安全校验
+│   │   ├── manager.ts                # 来源、作用域、状态、Diff 与同步
+│   │   └── demo-mcp-server.js        # 稳定的 MCP STDIO 兼容入口
+│   ├── lib/                          # 存储、上下文和网络安全工具
+│   ├── routes/                       # HTTP API
 │   ├── runtime/
-│   │   └── agent.js              # Agent 执行引擎（审批 / 信任 / MCP）
-│   ├── marketplace/              # 市场清单（skills / agents / plugins.json）
-│   └── plugins/                  # 本地插件目录（demo-time-mcp 等，技能包也落盘于此）
-├── frontend/                     # Vite + TypeScript 前端
-│   ├── index.html  vite.config.*
+│   │   └── agent.ts                  # Skill loader 与工具循环
+│   ├── mcp.ts                        # STDIO / Streamable HTTP client
+│   ├── server.ts                     # 服务入口
+│   └── tests/                        # Node TypeScript tests
+├── frontend/
 │   ├── src/
-│   │   ├── main.ts               # 聚合层（core/modules 挂载到 globalThis）
-│   │   ├── globals.d.ts          # globalThis 全局符号声明
-│   │   ├── core/                 # dom.ts toast.ts state.ts api.ts index.ts
-│   │   ├── modules/              # 12 个业务模块（含 importExport.ts 技能包上传）
-│   │   └── styles.css
-│   └── dist/                     # 构建产物（已提交，server 直接 serve）
-├── .github/workflows/ci.yml      # CI：backend 测试 + frontend 构建 / 类型 / lint
-├── Dockerfile  docker-compose.yml  deploy.sh
+│   │   ├── core/                     # API、状态、主题
+│   │   ├── modules/                  # 会话、设置、扩展与 Shell
+│   │   └── styles.css                # Orbit 设计系统
+│   └── dist/                         # 构建后的网页
+├── package.json                      # CLI 包入口
 └── README.md
 ```
 
----
+## 路线图
 
-## ⚙️ 环境变量
+- 继续收紧后端与前端 TypeScript 类型，逐步减少宽泛类型；
+- 发布正式 npm 包，并为 CLI 增加可验证的版本与升级通道；
+- 增强扩展权限清单、来源签名和安装审计；
+- 在明确的隔离与授权模型下扩展 Plugin 宿主能力；
+- 增加端到端浏览器测试、导入夹具和跨平台 CLI 测试；
+- 持续完善移动端、键盘操作、屏幕阅读器语义和高对比度主题。
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `PORT` | `3000` | 服务端口 |
-| `DATA_DIR` | `backend/data` | 数据存储目录（providers / conversations / 工作区等） |
-| `MULTICHAT_ALLOW_REMOTE_MCP` | `0` | 置 `1` 才允许加载会执行外部进程的远程 MCP 插件 |
+## 参与贡献
 
----
+欢迎提交 Issue 或 Pull Request。开始开发前请：
 
-## 🛠️ 开发
+1. 说明要解决的用户问题和兼容边界；
+2. 保持 Skill、MCP、Plugin 与内置工具的模型分离；
+3. 为导入、安全策略和数据迁移补充测试；
+4. 运行前后端类型检查、后端测试和前端构建；
+5. 不在示例、测试夹具或提交记录中加入真实密钥。
 
-**后端**
-
-```bash
-cd backend
-npm install
-npm test          # 模块加载 + 技能包安装/卸载冒烟（无测试目录，脚本内联）
-npm run lint      # ESLint（错误阻断，警告允许）
-npm run typecheck # tsc --noEmit（渐进 strict:false）
-```
-
-**前端（Vite + TypeScript）**
-
-```bash
-cd frontend
-npm install
-npm run dev       # 本地开发服务器（热更新）
-npm run build     # 构建到 frontend/dist（部署用）
-npm run typecheck # tsc --noEmit
-npm run lint      # ESLint
-npm run format    # Prettier 格式化
-```
-
-`server.js` 直接静态托管 `frontend/dist`，本地联调时后端 `npm start` 即可同时提供 API 与页面。
-
-**CI**
-
-推送到 `main` 或发起 PR 时，GitHub Actions 并行运行：
-
-- `backend` job：`npm install --no-package-lock` → `npm test` → `npm run typecheck` → `node --check` 全模块语法 → `npm run lint`
-- `frontend` job：`npm install --no-package-lock`（忽略 win32 偏见 lock，linux runner 重新解析原生依赖）→ `npm run build` → `npm run typecheck` → `npm run lint`
-
----
-
-## 🧯 常见问题
-
-**Q: 添加了 Provider 但模型下拉里看不到？**
-A: Provider 的 `models` 字段必须是非空数组，在设置卡片里确保「模型列表」至少一行。
-
-**Q: 发送消息后报 `HTTP 403`？**
-A: 这是**上游服务商**返回的。常见原因：API Key 无效/被禁用、余额不足、模型名不存在、IP 地区受限。界面气泡会显示具体中文错误。
-
-**Q: Ollama / LM Studio 怎么用？**
-A: 确保本地服务已启动（Ollama 11434、LM Studio 1234），设置里添加对应 Provider，API Key 留空。
-
-**Q: 数据存在哪？**
-A: `backend/data/` 目录下的 JSON 文件，可直接备份、迁移。
-
-**Q: Agent 工具调用一直卡着？**
-A: 命中了 Approval 审批策略，正在等待你在对话界面审批卡片上「批准 / 拒绝」。超时（默认 5 分钟）自动中止。
-
-**Q: 上传 .zip 技能包被拒？**
-A: 返回 `400 INVALID_PACKAGE` 时查看具体原因——通常是路径穿越、文件超限、含禁用扩展名、manifest 缺 id/name、技能类型不在白名单或误用 `mcp` 类型。
-
-**Q: 怎么让现有 ChatGPT 客户端通过 MultiChat 转发？**
-A: 客户端设置 `base_url = http://localhost:3000/v1`，模型名写 `<providerId>:<modelName>`，API Key 填非空值；真实 Key 由 `_provider` 字段覆盖。
-
----
-
-## 📄 License
-
-MIT
+如果变更会执行新的本机命令、扩大网络访问、修改扩展格式或改变默认信任策略，请在 Pull Request 中单独说明风险和迁移方式。

@@ -1,4 +1,4 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
+import { $, esc, api, toast, state, saveSelectedAgent } from '../core/index';
 
 /* --------------------------- Conversations --------------------------- */
 async function loadConversations() {
@@ -82,9 +82,13 @@ function renderFileContext() {
   const wrap = $('#fileCtx'); if (!wrap) return;
   const body = $('#fileCtxBody'); if (!body) return;
   const count = $('#fcCount');
-  if (count) count.textContent = state.selectedAssetIds.size + ' / ' + state.assets.length + ' 个文件作为上下文';
+  const fileLabel = $('#composerFileLabel');
+  const selectedCount = state.selectedAssetIds.size;
+  wrap.hidden = state.assets.length === 0;
+  if (count) count.textContent = selectedCount + ' / ' + state.assets.length + ' 已选择';
+  if (fileLabel) fileLabel.textContent = selectedCount ? `文件 ${selectedCount}` : '文件';
   if (!state.assets.length) {
-    body.innerHTML = '<div class="fc-empty">当前项目还没有文件。可在「设置 → 工作区」上传，或直接把文件拖到此处。</div>';
+    body.innerHTML = '';
     return;
   }
   body.innerHTML = state.assets.map(a => `
@@ -98,7 +102,8 @@ function renderFileContext() {
     cb.onchange = () => {
       const id = cb.dataset.id;
       if (cb.checked) state.selectedAssetIds.add(id); else state.selectedAssetIds.delete(id);
-      if (count) count.textContent = state.selectedAssetIds.size + ' / ' + state.assets.length + ' 个文件作为上下文';
+      if (count) count.textContent = state.selectedAssetIds.size + ' / ' + state.assets.length + ' 已选择';
+      if (fileLabel) fileLabel.textContent = state.selectedAssetIds.size ? `文件 ${state.selectedAssetIds.size}` : '文件';
     };
   });
   const bAll = $('#fcAll'); if (bAll) bAll.onclick = () => { state.assets.forEach(a => state.selectedAssetIds.add(a.id)); renderFileContext(); };

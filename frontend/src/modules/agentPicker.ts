@@ -1,4 +1,4 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
+import { $, esc, toast, state, saveSelectedAgent } from '../core/index';
 
 /* --------------------------- Agent picker --------------------------- */
 $('#workspacePicker').onclick = () => {
@@ -6,8 +6,16 @@ $('#workspacePicker').onclick = () => {
   if (!opts.length) { openSettings('workspace'); return; }
   showModal({
     title: '选择工作区',
-    body: `<div style="max-height:420px;overflow:auto;">${opts.map(o => `<div class="settings-tab" data-wid="${esc(o.id)}" style="margin-bottom:4px;display:block;text-align:left;padding:12px;"><div style="font-weight:600;color:var(--label-primary);font-size:14px;">${esc(o.name)}</div>${o.description ? `<div style="font-size:11.5px;color:var(--label-caption);margin-top:2px;">${esc(o.description)}</div>` : ''}</div>`).join('')}</div>`,
-    onMount: (card) => card.querySelectorAll('[data-wid]').forEach(item => item.onclick = async () => {
+    body: `<div class="picker-dialog-intro"><span>切换对话与项目所在的工作区</span><span>${opts.length} 个工作区</span></div>
+      <div class="model-picker-list">${opts.map(o => {
+        const active = state.selectedWorkspace?.id === o.id;
+        return `<button type="button" class="picker-option${active ? ' active' : ''}" data-wid="${esc(o.id)}" aria-pressed="${active}">
+          <span class="picker-provider-mark" aria-hidden="true">${esc(o.name.trim().slice(0, 1).toUpperCase() || 'W')}</span>
+          <span class="picker-option-copy"><strong>${esc(o.name)}</strong><small>${esc(o.description || '本地工作区')}</small></span>
+          <span class="picker-option-state" aria-hidden="true">${active ? '✓' : '›'}</span>
+        </button>`;
+      }).join('')}</div>`,
+    onMount: (card) => card.querySelectorAll('[data-wid]').forEach((item: HTMLButtonElement) => item.onclick = async () => {
       state.selectedWorkspace = state.workspaces.find(x => x.id === item.dataset.wid) || null;
       await loadProjects();
       state.currentConvId = null;
@@ -25,14 +33,19 @@ $('#agentPicker').onclick = () => {
   const opts = [{ id: '', name: '无智能体', description: '直接对话，不注入系统提示词、不提供工具' }].concat(state.agents.map(a => ({ id: a.id, name: a.name, description: a.description })));
   showModal({
     title: '选择智能体',
-    body: `<div style="max-height:420px;overflow:auto;">
-      ${opts.map(o => `<div class="settings-tab" data-aid="${esc(o.id)}" style="margin-bottom:4px;display:block;text-align:left;padding:12px;">
-        <div style="font-weight:600;color:var(--label-primary);font-size:14px;">${esc(o.name)}</div>
-        ${o.description ? `<div style="font-size:11.5px;color:var(--label-caption);margin-top:2px;">${esc(o.description)}</div>` : ''}
-      </div>`).join('')}
+    body: `<div class="picker-dialog-intro"><span>选择参与本轮对话的能力组合</span><span>${state.agents.length} 个智能体</span></div>
+      <div class="model-picker-list">
+      ${opts.map(o => {
+        const active = (state.selectedAgent?.id || '') === o.id;
+        return `<button type="button" class="picker-option${active ? ' active' : ''}" data-aid="${esc(o.id)}" aria-pressed="${active}">
+          <span class="picker-provider-mark agent" aria-hidden="true">${o.id ? esc(o.name.trim().slice(0, 1).toUpperCase() || 'A') : '—'}</span>
+          <span class="picker-option-copy"><strong>${esc(o.name)}</strong><small>${esc(o.description || '自定义智能体')}</small></span>
+          <span class="picker-option-state" aria-hidden="true">${active ? '✓' : '›'}</span>
+        </button>`;
+      }).join('')}
     </div>`,
     onMount: (card) => {
-      card.querySelectorAll('[data-aid]').forEach(t => {
+      card.querySelectorAll('[data-aid]').forEach((t: HTMLButtonElement) => {
         t.onclick = () => {
           const id = t.dataset.aid;
           state.selectedAgent = id ? state.agents.find(a => a.id === id) : null;

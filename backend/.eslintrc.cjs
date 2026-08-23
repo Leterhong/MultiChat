@@ -10,14 +10,20 @@ module.exports = {
     commonjs: true,
     es2021: true,
   },
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint'],
   parserOptions: {
-    ecmaVersion: 2021,
-    sourceType: 'script',
+    ecmaVersion: 2022,
+    sourceType: 'module',
   },
   extends: ['eslint:recommended'],
   rules: {
     // 降级为 warn，避免一次性阻塞
-    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
+    'no-unused-vars': 'off',
+    // TypeScript resolves ambient/global types (for example RequestInit and
+    // NodeJS.Timeout); the base ESLint rule is not type-aware.
+    'no-undef': 'off',
+    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
     'no-constant-condition': ['warn', { checkLoops: false }],
     // 关闭在遗留代码中普遍的风格/噪音规则
     'no-console': 'off',

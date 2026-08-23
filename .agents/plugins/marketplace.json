@@ -1,0 +1,32 @@
+{
+  "name": "multichat-project",
+  "interface": {
+    "displayName": "MultiChat 项目插件"
+  },
+  "plugins": [
+    {
+      "name": "writing-toolkit",
+      "source": {
+        "source": "local",
+        "path": "./plugins/writing-toolkit"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Writing"
+    },
+    {
+      "name": "developer-toolkit",
+      "source": {
+        "source": "local",
+        "path": "./plugins/developer-toolkit"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

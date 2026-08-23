@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeepSeek-V4-Flash · 王虹手写风完整演示</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../../assets/base.css">
+  <link rel="stylesheet" href="../../assets/animations.css">
+  <link rel="stylesheet" href="../../assets/neat-annotations.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="deck">
+  <section class="slide cover is-active" data-title="封面">
+    <div>
+      <h1 class="hand-title">DeepSeek-V4-Flash：极限量化与本地部署</h1>
+      <div class="title-line"></div>
+    </div>
+    <div class="cover-meta">
+      <div>AI学习的老章</div>
+      <div>AI 技术分享</div>
+      <div>August 2, 2026</div>
+    </div>
+    <div class="notes">今天只讲一件事：DeepSeek-V4-Flash 为什么值得企业重新计算本地部署这笔账。</div>
+  </section>
+
+  <section class="slide" data-title="正式版开源">
+    <div class="page-heading">
+      <h2 class="hand-title">DeepSeek-V4-Flash 正式版开源</h2>
+      <div class="title-line"></div>
+    </div>
+    <p class="note-line release-sub">模型结构、参数规模保持不变</p>
+    <div class="release-flow">
+      <div class="sketch-box">Preview</div>
+      <div class="flow-arrow">→</div>
+      <div class="sketch-box marker-yellow">重新后训练</div>
+      <div class="flow-arrow">→</div>
+      <div class="sketch-box marker-green">正式版</div>
+    </div>
+    <div class="training-notes">
+      <span>回答问题</span><span>调用工具</span><span>完成任务</span>
+    </div>
+    <div class="wide-result">多项基准超过三个月前的 V4-Pro Preview</div>
+    <div class="notes">同架构、同参数，通过后训练把回答、工具调用和任务完成能力继续抬高。</div>
+  </section>
+
+  <section class="slide" data-title="斩杀线">
+    <div class="page-heading">
+      <h2 class="hand-title">理想模型，应该站在左上角</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="s2-layout">
+      <div class="scatter-copy">
+        <p class="note-line">横轴：完成一次任务的<span class="marker marker-coral">成本</span></p>
+        <p class="note-line">纵轴：模型的<span class="marker marker-green">智能得分</span></p>
+        <p class="note-line">越往左越便宜，越往上越聪明</p>
+        <div class="equation thin-box">左上角 = 低成本 + 高能力</div>
+      </div>
+      <div>
+        <svg class="diagram" viewBox="0 0 700 590" role="img" aria-label="成本与智能得分坐标图，DeepSeek 位于左上区域">
+          <defs>
+            <filter id="wobble-s3">
+              <feTurbulence type="turbulence" baseFrequency="0.018" numOctaves="2" result="noise"/>
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.25"/>
+            </filter>
+          </defs>
+          <path class="scribble" d="M105 485 C103 382 105 220 109 95 M103 485 C255 485 454 483 618 486"/>
+          <path class="scribble" d="M99 108 L109 92 L120 111 M604 478 L622 486 L603 496"/>
+          <text x="36" y="80" font-size="28">智能得分</text>
+          <text x="565" y="530" font-size="28">任务成本</text>
+          <circle cx="204" cy="175" r="15" fill="var(--magenta)"/>
+          <path class="scribble-magenta scribble" d="M226 174 C278 158 318 154 358 159"/>
+          <text x="370" y="166" font-size="30" fill="var(--magenta)">DeepSeek-V4-Flash</text>
+          <circle cx="435" cy="280" r="11" fill="var(--blue)"/>
+          <text x="456" y="289" font-size="22">模型 A</text>
+          <circle cx="518" cy="402" r="11" fill="var(--green)"/>
+          <text x="539" y="409" font-size="22">模型 B</text>
+        </svg>
+        <span class="ann ann-e ann-red ann-no-mark annotation-anchor" data-note="DeepSeek 斩杀线" style="position:absolute;right:720px;top:385px;--ann-arrow-x:2px;--ann-text-x:-2px" aria-label="DeepSeek 位于低成本高能力区域"></span>
+      </div>
+    </div>
+    <div class="notes">横轴看成本，纵轴看智能。DeepSeek 的位置把“能力强”和“单次任务便宜”放到了一起。</div>
+  </section>
+
+  <section class="slide" data-title="本地部署门槛">
+    <div class="page-heading">
+      <h2 class="hand-title">本地部署门槛，终于降下来了</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="model-stats">
+      <div><strong>304B</strong><span>参数规模</span></div>
+      <div><strong class="marker marker-green">原生 8-bit</strong><span>官方精度</span></div>
+      <div><strong class="marker marker-yellow">167GB</strong><span>模型文件</span></div>
+    </div>
+    <div class="local-row">
+      <p class="note-line">企业最关心：能力、成本、数据</p>
+      <div class="local-boundary">
+        <span class="boundary-title">本地</span>
+        <span>CPU</span><span>↔</span><span class="server-doodle">▤</span><span>↔</span><span>SSD</span>
+        <span class="ram-line">↕ 内存（RAM）</span>
+      </div>
+    </div>
+    <div class="wide-result compact-result">本地可控</div>
+    <div class="notes">304B、原生八位、167GB 文件，让本地部署从昂贵集群下沉到更多企业环境。</div>
+  </section>
+
+  <section class="slide" data-title="企业为什么要本地">
+    <div class="page-heading">
+      <h2 class="hand-title">企业应用，为什么绕不开本地模型？</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="why-local">
+      <div class="why-line"><span class="marker marker-yellow">数据</span><p>敏感资料留在自己的边界内</p></div>
+      <div class="why-line"><span class="marker marker-green">成本</span><p>高频调用可以长期摊薄</p></div>
+      <div class="why-line"><span class="marker marker-coral">控制</span><p>版本、能力、审计都掌握在手里</p></div>
+    </div>
+    <div class="model-weight-compare">
+      <div><span>GLM-5.2</span><i class="weight-long"></i><em>参数量太大</em></div>
+      <div><span>Kimi-K3</span><i class="weight-long"></i><em>部署成本高</em></div>
+      <div><span>V4-Flash</span><i class="weight-short"></i><em>304B / 167GB</em></div>
+    </div>
+    <div class="wide-result">能力足够强 + 成本可以接受 + 技术路线透明</div>
+    <div class="notes">企业关心的数据边界、长期成本和技术控制力，决定了本地模型仍然有不可替代的位置。</div>
+  </section>
+
+  <section class="slide" data-title="vLLM 官方部署">
+    <div class="page-heading">
+      <h2 class="hand-title">官方部署：先看 vLLM</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="deploy-split">
+      <div class="deploy-notes">
+        <p class="note-line">• vLLM 升级到 <span class="marker marker-yellow">v0.25+</span></p>
+        <p class="note-line">• NVIDIA 仍然挑架构</p>
+        <p class="note-line">• 推荐 <span class="marker marker-green">Hopper / Blackwell</span></p>
+      </div>
+      <svg class="diagram gpu-diagram" viewBox="0 0 650 460" role="img" aria-label="Hopper 与 Blackwell GPU 架构">
+        <rect x="92" y="95" width="175" height="235" rx="8" fill="none" stroke="var(--blue)" stroke-width="3"/>
+        <rect x="375" y="95" width="175" height="235" rx="8" fill="none" stroke="var(--magenta)" stroke-width="3"/>
+        <text x="128" y="75" font-size="29">Hopper</text>
+        <text x="402" y="75" font-size="29">Blackwell</text>
+        <g fill="none" stroke="var(--ink)" stroke-width="2.5">
+          <path d="M125 145 H235 M125 185 H235 M125 225 H235 M125 265 H235"/>
+          <path d="M408 145 H518 M408 185 H518 M408 225 H518 M408 265 H518"/>
+          <path d="M110 350 C204 374 285 374 360 352"/>
+        </g>
+        <text x="210" y="405" font-size="25">旧卡先核对支持情况</text>
+      </svg>
+    </div>
+    <div class="wide-result compact-result">部署前先确认版本与 GPU 架构</div>
+    <div class="notes">官方首推 vLLM，但版本和显卡架构都有明确门槛，旧环境不能直接照搬命令。</div>
+  </section>
+
+  <section class="slide" data-title="H200 PD 分离">
+    <div class="page-heading">
+      <h2 class="hand-title">H200 单机：4 张 prefill + 4 张 decode</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="pd-layout">
+      <div class="gpu-group"><span>Prefill</span><b>GPU</b><b>GPU</b><b>GPU</b><b>GPU</b></div>
+      <div class="kv-bridge"><span class="marker marker-yellow">KV cache</span><strong>Mooncake / Nixl</strong><i>⇄</i></div>
+      <div class="gpu-group"><span>Decode</span><b>GPU</b><b>GPU</b><b>GPU</b><b>GPU</b></div>
+    </div>
+    <div class="pd-caption">
+      <span>先把提示词算好</span><span>再持续吐出 token</span>
+    </div>
+    <div class="wide-result">做推理集群：关注 PD 分离和 KV cache 传输</div>
+    <div class="notes">官方方案把预填充和解码拆开，八张 H200 分成四加四，中间通过 Mooncake 或 Nixl 传递 KV cache。</div>
+  </section>
+
+  <section class="slide" data-title="Unsloth GGUF">
+    <div class="page-heading">
+      <h2 class="hand-title">Unsloth：13 个 GGUF 档位来了</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="levels-list">
+      <div><span>1-bit</span><b>IQ1_S</b><b>IQ1_M</b></div>
+      <div><span>2-bit</span><b>IQ2_XXS</b><b>IQ2_M</b><b>Q2_K_XL</b></div>
+      <div><span>3-bit</span><b>IQ3_XXS</b><b>IQ3_S</b><b>Q3_K_M</b><b>Q3_K_XL</b></div>
+      <div><span>4-bit</span><b>IQ4_NL</b><b>IQ4_XS</b><b class="marker marker-green">Q4_K_XL</b></div>
+      <div><span>8-bit</span><b class="marker marker-yellow">Q8_K_XL</b></div>
+    </div>
+    <div class="levels-scale">
+      <span>82.5GB</span><i></i><span>161.9GB</span>
+    </div>
+    <div class="wide-result">档位很多，关键要看“体积—质量”的断点</div>
+    <div class="notes">十三个档位从 82.5GB 到 161.9GB。名称很多，真正有用的是找到质量断点。</div>
+  </section>
+
+  <section class="slide" data-title="原生量化">
+    <div class="quant-layout">
+      <div class="quant-copy">
+        <p class="note-line">• DeepSeek-V4-Flash 做了<span class="marker marker-yellow">量化感知训练 QAT</span></p>
+        <p class="note-line">• <span class="marker marker-green">96% routed experts</span> 已经是 MXFP4</p>
+        <p class="note-line">• 剩余 <span class="marker marker-coral">4%</span> 是 FP8 或 BF16</p>
+        <div class="thin-box">GGUF = 逐位重打包</div>
+        <div class="conclusion-arrow"><span>⟶</span><strong>专家权重一个 bit 都不动</strong></div>
+      </div>
+      <div>
+        <svg class="diagram" viewBox="0 0 670 500" role="img" aria-label="96% 专家权重与 4% 其他权重比例图">
+          <path d="M58 205 L538 205 L538 294 L58 294 Z" fill="none" stroke="var(--blue)" stroke-width="3"/>
+          <path d="M538 205 L618 205 L618 294 L538 294 Z" fill="none" stroke="var(--magenta)" stroke-width="3"/>
+          <g stroke="var(--green)" stroke-width="3" opacity=".9">
+            <path d="M78 285 L123 215"/><path d="M127 285 L172 215"/><path d="M176 285 L221 215"/>
+            <path d="M225 285 L270 215"/><path d="M274 285 L319 215"/><path d="M323 285 L368 215"/>
+            <path d="M372 285 L417 215"/><path d="M421 285 L466 215"/><path d="M470 285 L515 215"/>
+          </g>
+          <g stroke="var(--coral)" stroke-width="3">
+            <path d="M550 285 L586 215"/><path d="M576 285 L608 222"/>
+          </g>
+          <text x="230" y="183" font-size="34">96%</text>
+          <text x="550" y="183" font-size="34">4%</text>
+          <text x="176" y="353" font-size="31">原生 MXFP4</text>
+          <text x="527" y="353" font-size="26">FP8 / BF16</text>
+        </svg>
+        <span class="ann ann-s ann-green ann-no-mark annotation-anchor" data-note="官方已经压过" style="position:absolute;right:400px;top:325px" aria-label="96% 专家权重已经是原生四位格式"></span>
+        <span class="ann ann-s ann-red ann-no-mark annotation-anchor" data-note="只剩这点能再量化" style="position:absolute;right:172px;top:325px;--ann-label-max-width:180px;--ann-text-x:12px" aria-label="仅有 4% 权重属于其他格式"></span>
+      </div>
+    </div>
+    <div class="notes">文件没有明显缩小，因为百分之九十六的专家权重原本就是 MXFP4。GGUF 主要做格式重打包。</div>
+  </section>
+
+  <section class="slide" data-title="同为 4bit">
+    <div class="page-heading">
+      <h2 class="hand-title">同样写着 4bit，结果可以差很多</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="method-compare">
+      <div class="compare-head"><span>版本</span><span>专家权重</span><span>体积</span><span>KLD</span></div>
+      <div><span class="marker marker-green">UD-Q4_K_XL</span><span>逐位精确</span><span>155.1GB</span><span>≈0.01</span></div>
+      <div><span>bartowski MXFP4</span><span>重新处理</span><span>156.0GB</span><span>0.0105</span></div>
+      <div><span class="marker marker-coral">antirez Q4K</span><span>专家再量化</span><span>164.6GB</span><span>0.029</span></div>
+    </div>
+    <div class="callout-pair">
+      <p>文件更大</p><span>+</span><p>质量更差</p>
+    </div>
+    <div class="wide-result">看名称不够，还要看专家权重有没有被重新量化</div>
+    <div class="notes">同为四位档，专家权重的处理方法决定了最终体积和质量。名称相同，路线可能完全不同。</div>
+  </section>
+
+  <section class="slide" data-title="关键数字">
+    <div class="page-heading">
+      <h2 class="hand-title">把几个关键数字放在一起</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="metrics-table">
+      <div class="metrics-head"><span>版本</span><span>体积</span><span>PPL</span><span>KL 散度</span><span>一致率</span></div>
+      <div><span>官方原版</span><span>156.4GB</span><span>4.5319</span><span>0</span><span>100%</span></div>
+      <div class="metric-highlight"><span>UD-Q8_K_XL</span><span>161.9GB</span><span>4.5319</span><span>≈0</span><span>100%</span></div>
+      <div><span>UD-Q4_K_XL</span><span>155.1GB</span><span>4.5335</span><span>0.0102</span><span>96.28%</span></div>
+      <div><span>antirez Q4K</span><span>164.6GB</span><span>4.5726</span><span>0.0290</span><span>93.94%</span></div>
+      <div><span>antirez IQ2XXS</span><span>86.7GB</span><span>6.1518</span><span>0.4207</span><span>77.92%</span></div>
+    </div>
+    <span class="ann ann-w ann-green ann-no-mark metric-note" data-note="小数点后四位一致" aria-label="UD-Q8 与官方版本困惑度一致">Q8</span>
+    <div class="wide-result compact-result">UD-Q8_K_XL：首次看到真正的无损点</div>
+    <div class="notes">Q8 的困惑度和官方原版小数点后四位完全相同，KL 接近零，top-token 一致率百分之百。</div>
+  </section>
+
+  <section class="slide" data-title="质量断点">
+    <div class="page-heading">
+      <h2 class="hand-title">体积继续下降，质量损失突然抬头</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="curve-layout">
+      <div class="curve-copy">
+        <p class="note-line">Q8：<span class="marker marker-yellow">无损</span></p>
+        <p class="note-line">Q4：KLD <span class="marker marker-green">≈ 0.01</span></p>
+        <p class="note-line">IQ3：KLD 约为 Q4 的 25 倍</p>
+        <div class="thin-box">低于 4bit，开始真正改动专家权重</div>
+      </div>
+      <svg class="diagram" viewBox="0 0 720 560" role="img" aria-label="量化档位体积与质量损失曲线">
+        <path class="scribble" d="M95 475 L95 70 M95 475 L650 475"/>
+        <path class="scribble" d="M86 85 L95 68 L106 86 M635 467 L653 475 L636 486"/>
+        <text x="26" y="52" font-size="27">质量损失</text><text x="592" y="520" font-size="27">体积</text>
+        <path class="scribble scribble-blue" d="M122 115 C160 180 203 260 278 348 C358 439 480 455 620 460"/>
+        <circle cx="157" cy="175" r="11" fill="var(--coral)"/><text x="177" y="178" font-size="25">IQ3 · 103GB</text>
+        <circle cx="411" cy="443" r="11" fill="var(--magenta)"/><text x="430" y="426" font-size="25">Q4 · 155GB</text>
+        <circle cx="600" cy="458" r="11" fill="var(--green)"/><text x="565" y="430" font-size="25">Q8 · 162GB</text>
+        <ellipse cx="421" cy="435" rx="66" ry="48" fill="none" stroke="var(--magenta)" stroke-width="3"/>
+      </svg>
+    </div>
+    <div class="notes">四位以下开始动专家权重，质量曲线从这里明显抬头。Q4 是这条曲线最值得记住的拐点。</div>
+  </section>
+
+  <section class="slide" data-title="档位选择">
+    <div class="page-heading">
+      <h2 class="hand-title">13 个档位怎么选？</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="choice-layout">
+      <div class="choice-list">
+        <div class="choice-row"><span>169GB+</span><span class="arrow">→</span><span>UD-Q8_K_XL：<span class="marker marker-yellow">无损</span></span></div>
+        <div class="choice-row"><span>162GB</span><span class="arrow">→</span><span>UD-Q4_K_XL：<span class="ann ann-w ann-red" data-note="甜点档" style="--ann-label-max-width:110px;--ann-text-x:4px">首选</span></span></div>
+        <div class="choice-row"><span>128GB</span><span class="arrow">→</span><span>UD-IQ3_XXS：能用</span></div>
+        <div class="choice-row"><span>&lt;128GB</span><span class="arrow">→</span><span>API</span></div>
+      </div>
+      <svg class="diagram" viewBox="0 0 650 530" role="img" aria-label="内存越高，质量损失越低，Q4 是推荐拐点">
+        <path class="scribble" d="M90 446 L90 63 M90 446 L594 446"/>
+        <path class="scribble" d="M81 77 L90 61 L101 78 M579 438 L597 446 L579 456"/>
+        <text x="27" y="45" font-size="25">质量损失</text><text x="548" y="491" font-size="25">内存</text>
+        <path class="scribble scribble-blue" d="M112 96 C139 188 186 282 272 346 C350 405 438 424 546 429"/>
+        <circle cx="131" cy="148" r="10" fill="var(--blue)"/><text x="151" y="151" font-size="25">IQ3</text>
+        <circle cx="270" cy="344" r="10" fill="var(--blue)"/><text x="290" y="345" font-size="25">Q4</text>
+        <ellipse cx="303" cy="337" rx="52" ry="39" fill="none" stroke="var(--magenta)" stroke-width="3"/>
+        <circle cx="529" cy="427" r="10" fill="var(--blue)"/><text x="508" y="390" font-size="25">Q8</text>
+      </svg>
+    </div>
+    <div class="choice-result">结论：162GB 先选 UD-Q4_K_XL</div>
+    <div class="notes">一百六十九 GB 以上直接 Q8；一百六十二 GB 选 Q4；一百二十八 GB 再考虑 IQ3；更小内存建议用 API。</div>
+  </section>
+
+  <section class="slide" data-title="内存门槛">
+    <div class="page-heading">
+      <h2 class="hand-title">官方内存门槛：RAM + VRAM</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="memory-scale">
+      <div style="--w:34%"><span>1-bit</span><b>92GB</b><i></i></div>
+      <div style="--w:42%"><span>2-bit</span><b>102GB</b><i></i></div>
+      <div style="--w:58%"><span>3-bit</span><b>110–135GB</b><i></i></div>
+      <div style="--w:82%"><span>4-bit</span><b>162GB</b><i class="bar-green"></i></div>
+      <div style="--w:88%"><span>Q8</span><b>169GB</b><i class="bar-yellow"></i></div>
+    </div>
+    <div class="memory-notes">
+      <p>门槛已包含 KV cache 与上下文余量</p>
+      <p>Mac 用户直接对照统一内存</p>
+    </div>
+    <div class="wide-result">先看总内存，再决定档位</div>
+    <div class="notes">这里看的总内存包含 RAM、显存或统一内存，也已经给 KV cache 和上下文留了余量。</div>
+  </section>
+
+  <section class="slide code-slide" data-title="开始运行">
+    <div class="page-heading">
+      <h2 class="hand-title">最省事的跑法：llama.cpp 直接拉</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="command-block">
+      <code>export LLAMA_CACHE="unsloth/DeepSeek-V4-Flash-0731-GGUF"</code>
+      <code>./llama.cpp/llama-cli \</code>
+      <code>&nbsp;&nbsp;-hf unsloth/DeepSeek-V4-Flash-0731-GGUF:UD-Q8_K_XL \</code>
+      <code>&nbsp;&nbsp;--temp 1.0 --top-p 1.0 --min-p 0.0</code>
+    </div>
+    <div class="download-note">
+      <p class="note-line">一百多 GB，建议按档位过滤下载</p>
+      <div class="thin-box mono-note">--include "*UD-Q8_K_XL*"</div>
+    </div>
+    <div class="run-platforms"><span>Mac</span><span>Windows</span><span>Linux</span></div>
+    <div class="notes">命令行可以直接从 Hugging Face 拉取。文件很大，实际使用时建议先筛选档位，避免把整仓库拖下来。</div>
+  </section>
+
+  <section class="slide" data-title="思考档位">
+    <div class="page-heading">
+      <h2 class="hand-title">Non-think / High / Max 怎么切？</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="thinking-modes">
+      <div><span>Max</span><code>reasoning_effort: "max"</code><em>上下文至少 384K</em></div>
+      <div><span>High</span><code>reasoning_effort: "high"</code><em>复杂任务</em></div>
+      <div><span>Non-think</span><code>enable_thinking: false</code><em>直接回答</em></div>
+    </div>
+    <div class="sampling-row">
+      <span>temperature = 1.0</span><span>top_p = 1.0</span><span class="marker marker-yellow">Agent：top_p = 0.95</span>
+    </div>
+    <div class="wide-result">思考越深，越要给足上下文</div>
+    <div class="notes">三个档位对应不同任务节奏。Think Max 至少给三百八十四 K 上下文，避免思考还没结束就被截断。</div>
+  </section>
+
+  <section class="slide" data-title="模板陷阱">
+    <div class="page-heading">
+      <h2 class="hand-title">能跑起来，还要确认它跑对了</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="template-flow">
+      <div><span>官方</span><b>encoding 文件夹</b><em>没有 Jinja 模板</em></div>
+      <div class="flow-arrow">→</div>
+      <div><span>Unsloth</span><b class="marker marker-green">补齐 Jinja</b><em>4000+ 轮对话对齐</em></div>
+      <div class="flow-arrow">→</div>
+      <div><span>工具调用</span><b class="marker marker-yellow">reasoning_content</b><em>重新补回</em></div>
+    </div>
+    <div class="check-pair">
+      <p>① 模板处理</p><p>② MXFP4 重打包</p>
+    </div>
+    <div class="wide-result">下载第三方 GGUF 前，先核对这两件事</div>
+    <div class="notes">官方只提供 encoding 目录。第三方 GGUF 能否正确工作，要同时看聊天模板和 MXFP4 重打包。</div>
+  </section>
+
+  <section class="slide" data-title="真正值得讨论的地方">
+    <div class="page-heading">
+      <h2 class="hand-title">真正值得讨论的，是 DeepSeek 一直在换路</h2>
+      <div class="title-line"></div>
+    </div>
+    <div class="route-notes">
+      <p>大家堆参数 → 它做<span class="marker marker-green">架构创新</span></p>
+      <p>大家追万亿参数 → 它用<span class="marker marker-yellow">后训练</span>继续抬能力</p>
+      <p>一条路线跑通 → 它选择<span class="marker marker-coral">开源</span></p>
+    </div>
+    <div class="enterprise-formula">
+      <span>能力</span><b>+</b><span>成本</span><b>+</b><span>本地</span><b>+</b><span>透明</span>
+    </div>
+    <div class="wide-result">大模型还有很多路可以走，中国团队也能走在前面</div>
+    <div class="notes">榜单只是结果。更重要的是，它持续探索架构、后训练和开放路线，让企业能研究、部署和长期掌握。</div>
+  </section>
+
+  <section class="slide thanks" data-title="结束">
+    <div class="thanks-main">Thank you !</div>
+    <div class="thanks-line">你梁哥，还是你梁哥</div>
+    <div class="thanks-meta">AI学习的老章 · August 2, 2026</div>
+    <div class="notes">结束。邀请大家讨论自己的机器配置和准备选择的量化档位。</div>
+  </section>
+</div>
+<script src="../../assets/runtime.js"></script>
+</body>
+</html>

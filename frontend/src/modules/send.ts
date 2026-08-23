@@ -1,4 +1,4 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
+import { $, $$, api, toast, state } from '../core/index';
 
 /* --------------------------- Send (streaming) --------------------------- */
 $('#input').addEventListener('input', (e) => autoresize(e.target));
@@ -121,7 +121,7 @@ async function streamReply() {
     let upstreamMsg = '';
     try {
       const j = await res.clone().json();
-      upstreamMsg = j?.error?.message || j?.message || '';
+      upstreamMsg = (typeof j?.error === 'string' ? j.error : j?.error?.message) || j?.message || '';
     } catch {}
     const hint = ({
       400: '请求参数有误（通常是 model 名不识别或 messages 格式不对）',
@@ -170,6 +170,7 @@ async function streamReply() {
         // meta 事件（仅 agent 模式）：显示当前 agent 名称 + 记录 runId（用于取消）
         if (j.meta && j.meta.agent) {
           last.agentTag = j.meta.agent.name;
+          last.mcpWarnings = j.meta.mcpWarnings || [];
           if (j.meta.run && j.meta.run.id) state.currentRunId = j.meta.run.id;
           renderContent();
           continue;

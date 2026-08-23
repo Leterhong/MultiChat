@@ -1,0 +1,3 @@
+interface:
+  display_name: "周报生成"
+  short_description: "把工作要点整理为结构化周报"

@@ -1,0 +1,3 @@
+interface:
+  display_name: "安全审查"
+  short_description: "基于证据检查应用安全风险"

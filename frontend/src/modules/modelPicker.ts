@@ -1,26 +1,54 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
+import { $, esc, toast, state } from '../core/index';
 
 /* --------------------------- Model picker --------------------------- */
 function openModelPicker() {
   if (!state.providers.length) { openSettings('providers'); toast('请先添加模型'); return; }
-  const opts = [];
+  const opts: Array<{
+    pid: string;
+    model: string;
+    modelLabel: string;
+    providerName: string;
+    apiType: string;
+    initial: string;
+    custom?: boolean;
+  }> = [];
   state.providers.forEach(p => {
     const ms = p.models || (p.model ? [p.model] : []);
+    const providerName = p.name || p.id;
+    const shared = {
+      pid: p.id,
+      providerName,
+      apiType: p.apiType || 'openai',
+      initial: providerName.trim().slice(0, 1).toUpperCase() || 'M',
+    };
     if (ms.length) {
-      ms.forEach(m => opts.push({ pid: p.id, model: m, label: `${p.name || p.id} · ${m}` }));
+      ms.forEach(m => opts.push({ ...shared, model: m, modelLabel: m }));
     } else {
-      opts.push({ pid: p.id, model: '', label: `${p.name || p.id} · （手动输入模型名）`, custom: true });
+      opts.push({ ...shared, model: '', modelLabel: '手动输入模型名', custom: true });
     }
   });
   showModal({
     title: '选择模型',
-    body: `<div style="max-height:420px;overflow:auto;">
-      ${opts.map(o => `<div class="settings-tab" data-pid="${esc(o.pid)}" data-model="${esc(o.model)}" data-custom="${o.custom ? 1 : 0}" style="margin-bottom:4px;">
-        <span style="font-size:14px;">${esc(o.label)}</span>
-      </div>`).join('')}
-    </div>`,
+    body: `<div class="picker-dialog-intro">
+        <span>为接下来的消息选择运行模型</span>
+        <span>${opts.length} 个可用模型</span>
+      </div>
+      <div class="model-picker-list">
+      ${opts.map(o => {
+        const active = state.selectedProvider?.id === o.pid && state.selectedModel === o.model;
+        return `<button type="button" class="picker-option${active ? ' active' : ''}" data-pid="${esc(o.pid)}" data-model="${esc(o.model)}" data-custom="${o.custom ? 1 : 0}" aria-pressed="${active}">
+        <span class="picker-provider-mark" aria-hidden="true">${esc(o.initial)}</span>
+        <span class="picker-option-copy">
+          <strong>${esc(o.modelLabel)}</strong>
+          <small>${esc(o.providerName)} · ${esc(o.apiType)}</small>
+        </span>
+        <span class="picker-option-state" aria-hidden="true">${active ? '✓' : '›'}</span>
+      </button>`;
+      }).join('')}
+      </div>`,
     onMount: (card) => {
-      card.querySelectorAll('.settings-tab').forEach(t => {
+      card.classList.add('model-picker-modal');
+      card.querySelectorAll('.picker-option').forEach((t: HTMLButtonElement) => {
         t.onclick = () => {
           const pid = t.dataset.pid;
           const p = state.providers.find(x => x.id === pid);

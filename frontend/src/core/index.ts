@@ -2,6 +2,8 @@
 export { $, $$, esc } from './dom';
 export { toast } from './toast';
 export { api } from './api';
+export { applyTheme, getTheme, setTheme } from './theme';
+export type { ThemePreference } from './theme';
 export {
   state,
   loadParams,

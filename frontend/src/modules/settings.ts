@@ -1,12 +1,32 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
+import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, saveSelectedAgent, saveParams, getTheme, setTheme } from '../core/index';
 
 /* --------------------------- Settings --------------------------- */
 $('#settingsBtn').onclick = () => openSettings();
-function openSettings(tab = 'general') { $('#settings').classList.add('open'); $('#scrim').classList.add('open'); switchSettingsTab(tab); }
-function closeSettings() { $('#settings').classList.remove('open'); $('#scrim').classList.remove('open'); }
+let settingsReturnFocus: HTMLElement | null = null;
+function openSettings(tab = 'general') {
+  const panel = $('#settings');
+  settingsReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  $('#app').inert = true;
+  panel.inert = false;
+  panel.setAttribute('aria-hidden', 'false');
+  panel.classList.add('open');
+  $('#scrim').classList.add('open');
+  switchSettingsTab(tab);
+  window.setTimeout(() => $('#settingsBody')?.focus?.(), 220);
+}
+function closeSettings() {
+  const panel = $('#settings');
+  panel.classList.remove('open');
+  panel.setAttribute('aria-hidden', 'true');
+  $('#scrim').classList.remove('open');
+  window.setTimeout(() => { panel.inert = true; $('#app').inert = false; settingsReturnFocus?.focus(); }, 220);
+}
 $('#scrim').onclick = closeSettings;
 $('#closeSettings').onclick = closeSettings;
 $('#closeSettingsTop').onclick = closeSettings;
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && $('#settings').classList.contains('open') && !$('#modal').classList.contains('open')) closeSettings();
+});
 $$('.settings-tab[data-tab]').forEach(b => b.onclick = () => switchSettingsTab(b.dataset.tab));
 function switchSettingsTab(tab) {
   state.currentTab = tab;
@@ -18,6 +38,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
   const _prevScroll = keepScroll ? body.scrollTop : 0;
   if (tab === 'general') {
     const p = state.params;
+    const theme = getTheme();
     body.innerHTML = `
       <h3>通用设置</h3>
       <p class="lead">模型参数与外观</p>
@@ -25,15 +46,15 @@ function renderSettings(tab = 'general', keepScroll = false) {
         <h4>模型参数</h4>
         <div class="pmeta">应用于每次对话请求（OpenAI 兼容）</div>
         <div class="field">
-          <label>温度 Temperature：<span id="tVal">${p.temperature}</span></label>
+          <label for="pTemp">温度 Temperature：<span id="tVal">${p.temperature}</span></label>
           <input type="range" id="pTemp" min="0" max="2" step="0.1" value="${p.temperature}" />
         </div>
         <div class="field">
-          <label>最大输出 Token（max_tokens）</label>
+          <label for="pMax">最大输出 Token（max_tokens）</label>
           <input type="number" id="pMax" value="${p.max_tokens}" min="1" max="128000" />
         </div>
         <div class="field">
-          <label>Top P：<span id="pTopVal">${p.top_p}</span></label>
+          <label for="pTop">Top P：<span id="pTopVal">${p.top_p}</span></label>
           <input type="range" id="pTop" min="0" max="1" step="0.05" value="${p.top_p}" />
         </div>
         <div class="provider-row">
@@ -45,13 +66,13 @@ function renderSettings(tab = 'general', keepScroll = false) {
         <h4>外观</h4>
         <div class="pmeta">界面主题</div>
         <div class="field">
-          <label>主题</label>
-          <select id="themeSel"><option value="light" selected>浅色</option><option value="dark" disabled>深色（敬请期待）</option></select>
+          <label for="themeSel">主题</label>
+          <select id="themeSel"><option value="light" ${theme === 'light' ? 'selected' : ''}>晨光</option><option value="dark" ${theme === 'dark' ? 'selected' : ''}>深空</option><option value="system" ${theme === 'system' ? 'selected' : ''}>跟随系统</option></select>
         </div>
       </div>
       <div class="provider-card">
         <h4>关于</h4>
-        <div class="pmeta">MultiChat · 本地优先<br/>无登录 · 无计费 · 模型接入优先<br/>支持 OpenAI / Anthropic / Ollama / LM Studio 等 OpenAI 兼容协议</div>
+        <div class="pmeta">MultiChat · Local Agent Orbit<br/>模型、Skills、MCP 与插件在本地工作区内组合运行。<br/>支持 OpenAI / Anthropic / Ollama / LM Studio 等兼容接口。</div>
       </div>
     `;
     const tEl = $('#pTemp'), tVal = $('#tVal'), topEl = $('#pTop'), topVal = $('#pTopVal');
@@ -68,6 +89,10 @@ function renderSettings(tab = 'general', keepScroll = false) {
     };
     $('#pReset').onclick = () => {
       state.params = { ...DEFAULT_PARAMS }; saveParams(); renderSettings('general', true); toast('已重置');
+    };
+    $('#themeSel').onchange = (event) => {
+      setTheme(event.target.value);
+      toast('主题已切换');
     };
   } else if (tab === 'workspace') {
     const workspace = state.selectedWorkspace;
@@ -120,34 +145,62 @@ function renderSettings(tab = 'general', keepScroll = false) {
     };
     body.querySelectorAll('[data-del-asset]').forEach(button => button.onclick = async () => { try { await api('/api/assets/' + button.dataset.delAsset, { method: 'DELETE' }); await loadProjects(); renderSettings('workspace', true); } catch (error) { toast(error.message, 'error'); } });
   } else if (tab === 'providers') {
+    const configuredCount = state.providers.filter(p => Boolean(p.apiKey) || ['ollama', 'lmstudio', 'mock'].includes((p.apiType || '').toLowerCase())).length;
+    const modelCount = state.providers.reduce((sum, p) => sum + (p.models?.length || (p.model ? 1 : 0)), 0);
     body.innerHTML = `
-      <h3>模型</h3>
-      <p class="lead">填入各提供方的 API 密钥即可使用其模型。无登录、无计费。</p>
-      <div id="providerList">
-        ${state.providers.map(p => `
-          <div class="provider-card" data-pid="${esc(p.id)}">
-            <h4>${esc(p.name || p.id)} <span style="color:var(--label-caption);font-weight:400;font-size:12px;">${esc(p.id)}</span></h4>
-            <div class="pmeta">${esc(p.apiType || 'openai')} · ${esc((p.models||[]).join(', ') || p.model || p.baseUrl || '')}</div>
-            <div class="field">
-              <label>API 密钥</label>
-              <input type="password" data-k="${esc(p.id)}" value="${esc(p.apiKey || '')}" placeholder="输入 API 密钥" />
-            </div>
-            <div class="field">
-              <label>模型列表</label>
-              <textarea data-m="${esc(p.id)}" rows="2" placeholder="deepseek-chat, deepseek-reasoner">${esc((p.models||[]).join(', '))}</textarea>
-              <div style="font-size:11.5px;color:var(--label-caption);margin-top:4px;">逗号或换行分隔；留空则该提供方需在选模型时手动输入。</div>
-            </div>
-            <div class="provider-row">
-              <button class="btn-ghost" data-del="${esc(p.id)}">删除</button>
-              <button class="btn-primary" data-save="${esc(p.id)}" style="width:auto;padding:8px 18px;">保存</button>
-            </div>
+      <section class="provider-settings">
+        <div class="settings-page-heading">
+          <div>
+            <h3>模型</h3>
+            <p class="lead">管理提供方凭证和可选模型；所有配置仅保存在本地。</p>
           </div>
-        `).join('') || '<div style="color:var(--label-caption);font-size:13px;padding:8px 0;">还没有添加任何模型，点击下方按钮添加。</div>'}
-      </div>
-      <div class="add-provider">
-        <div class="add-tile" id="addBuiltin"><span class="ico">＋</span>添加提供方</div>
-        <div class="add-tile" id="addCustom"><span class="ico">＋</span>添加自定义提供方</div>
-      </div>
+          <div class="provider-summary" aria-label="模型配置概览">
+            <span><strong>${state.providers.length}</strong> 个提供方</span>
+            <span><strong>${modelCount}</strong> 个模型</span>
+            <span><strong>${configuredCount}</strong> 个可用</span>
+          </div>
+        </div>
+        <div id="providerList" class="provider-grid">
+        ${state.providers.map(p => {
+          const models = p.models || (p.model ? [p.model] : []);
+          const providerName = p.name || p.id;
+          const local = ['ollama', 'lmstudio', 'mock'].includes((p.apiType || '').toLowerCase()) || p.id === 'mock';
+          const ready = Boolean(p.apiKey) || local;
+          return `
+          <article class="provider-card provider-config-card" data-pid="${esc(p.id)}">
+            <div class="provider-card-head">
+              <span class="provider-mark" aria-hidden="true">${esc(providerName.trim().slice(0, 1).toUpperCase() || 'M')}</span>
+              <div class="provider-identity">
+                <h4>${esc(providerName)} <span class="provider-id">${esc(p.id)}</span></h4>
+                <div class="pmeta">${esc(p.apiType || 'openai')} · ${models.length ? `${models.length} 个模型` : '手动输入模型'}</div>
+              </div>
+              <span class="provider-state ${ready ? (local ? 'local' : 'ready') : 'missing'}">${ready ? (local ? '本地' : '已配置') : '待配置'}</span>
+            </div>
+            <div class="provider-card-fields">
+              <div class="field">
+                <label for="provider-key-${esc(p.id)}">API 密钥</label>
+                <input id="provider-key-${esc(p.id)}" type="password" data-k="${esc(p.id)}" value="${esc(p.apiKey || '')}" placeholder="${local ? '本地提供方可留空' : '输入 API 密钥'}" autocomplete="off" spellcheck="false" />
+              </div>
+              <div class="field">
+                <label for="provider-models-${esc(p.id)}">模型列表</label>
+                <textarea id="provider-models-${esc(p.id)}" data-m="${esc(p.id)}" rows="1" placeholder="deepseek-chat, deepseek-reasoner" spellcheck="false">${esc(models.join(', '))}</textarea>
+              </div>
+            </div>
+            <div class="provider-card-footer">
+              <span>模型名可用逗号或换行分隔</span>
+              <div class="provider-row">
+                <button class="btn-ghost danger-ghost" data-del="${esc(p.id)}">删除</button>
+                <button class="btn-primary" data-save="${esc(p.id)}">保存</button>
+              </div>
+            </div>
+          </article>`;
+        }).join('') || '<div class="provider-empty">还没有添加任何模型，点击下方按钮开始配置。</div>'}
+        </div>
+        <div class="add-provider provider-add-grid">
+          <button type="button" class="add-tile" id="addBuiltin"><span class="ico">＋</span><span><strong>添加提供方</strong><small>从内置模板快速配置</small></span></button>
+          <button type="button" class="add-tile" id="addCustom"><span class="ico">＋</span><span><strong>自定义提供方</strong><small>接入 OpenAI 兼容服务</small></span></button>
+        </div>
+      </section>
     `;
     body.querySelectorAll('[data-save]').forEach(b => b.onclick = async () => {
       const pid = b.dataset.save;
@@ -171,12 +224,14 @@ function renderSettings(tab = 'general', keepScroll = false) {
     const agents = state.agents;
     body.innerHTML = `
       <h3>智能体</h3>
-      <p class="lead">智能体 = 系统提示词 + 关联技能。点击卡片可编辑；对话中启用后，LLM 会按系统提示词输出并调用已启用工具。</p>
+      <p class="lead">智能体可以组合系统提示词、Agent Skills、内置工具和 MCP 服务器。点击卡片即可配置每一类能力。</p>
       ${importBarHTML()}
       <div class="card-grid">
         ${agents.map(a => {
           const active = state.selectedAgent && state.selectedAgent.id === a.id;
-          const skillIds = a.skillIds || [];
+          const skillIds = a.skillRefs || a.skillIds || [];
+          const toolIds = a.toolIds || [];
+          const mcpServerIds = a.mcpServerIds || [];
           return `
           <div class="mc-card" data-aid="${esc(a.id)}">
             <div class="mc-top">
@@ -190,6 +245,8 @@ function renderSettings(tab = 'general', keepScroll = false) {
             <div class="mc-desc">${esc(a.description || '（暂无描述）')}</div>
             <div class="mc-tags">
               <span class="mc-tag">${skillIds.length} 个技能</span>
+              <span class="mc-tag">${toolIds.length} 个内置工具</span>
+              <span class="mc-tag">${mcpServerIds.length} 个 MCP</span>
               ${skillIds.slice(0, 3).map(tid => `<span class="mc-tag">${esc(tid)}</span>`).join('')}
               ${(skillIds.length > 3) ? `<span class="mc-tag">+${skillIds.length - 3}</span>` : ''}
             </div>
@@ -200,7 +257,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
             </div>
           </div>`;
         }).join('')}
-        <div class="mc-add" id="addAgent"><span class="plus">＋</span><span class="plus-t">新建智能体</span></div>
+        <button type="button" class="mc-add" id="addAgent"><span class="plus">＋</span><span class="plus-t">新建智能体</span></button>
       </div>
     `;
     body.querySelectorAll('.mc-card[data-aid]').forEach(c => c.onclick = () => showAgentModal(c.dataset.aid));
@@ -218,87 +275,141 @@ function renderSettings(tab = 'general', keepScroll = false) {
     $('#addAgent').onclick = () => showAgentModal(null);
     wireImportBar();
   } else if (tab === 'skills') {
-    const iconOf = (type) => ({
-      datetime: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-      calculator: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15v3M8 18h4"/>',
-      web_fetch: '<path d="M12 3v11M8 10l4 4 4-4M4 20h16"/>',
-      web_search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/>',
-      prompt: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>'
-    })[type] || '<circle cx="12" cy="12" r="9"/>';
     const editIco = '<svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
     const trashIco = '<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>';
+    const skillSourceKinds = [...new Set(state.skills.map(s => s.source?.kind || 'managed'))];
     body.innerHTML = `
-      <h3>技能</h3>
-      <p class="lead">技能是可被智能体调用的工具 / 提示片段。工具类（时间 / 计算 / 抓取 / 搜索）与提示类（注入系统提示）均为内置能力，可在此启停。</p>
-      ${importBarHTML()}
-      <div class="card-grid">
+      <h3>Agent Skills</h3>
+      <p class="lead">每个 Skill 都是一个以 <code>SKILL.md</code> 为入口的目录，可按需附带 scripts、references 和 assets。项目 Skill 保存在 <code>.agents/skills</code>，Codex 会自动发现；这里的开关控制 MultiChat 是否使用它。</p>
+      <div class="resource-toolbar" aria-label="筛选 Skills">
+        <label class="resource-search" for="skillSearch"><span aria-hidden="true">⌕</span><input id="skillSearch" type="search" aria-label="搜索 Skills" placeholder="搜索名称、说明或 ID" autocomplete="off" /></label>
+        <select id="skillSource" aria-label="按来源筛选"><option value="">全部来源</option>${skillSourceKinds.map(kind => `<option value="${esc(kind)}">${esc(sourceLabel({ kind }))}</option>`).join('')}</select>
+        <select id="skillStatus" aria-label="按状态筛选"><option value="">全部状态</option><option value="enabled">已启用</option><option value="disabled">已停用</option></select>
+        <span class="resource-count" id="skillCount">${state.skills.length} 个 Skills</span>
+      </div>
+      <div class="card-grid" id="skillGrid">
         ${state.skills.map(s => `
-          <div class="mc-card" data-sid="${esc(s.id)}">
+          <div class="mc-card" data-sid="${esc(s.key || s.id)}" data-skill-search="${esc([s.name, s.id, s.description, sourceLabel(s.source)].filter(Boolean).join(' ').toLocaleLowerCase())}" data-source="${esc(s.source?.kind || 'managed')}" data-status="${s.enabled ? 'enabled' : 'disabled'}">
             <div class="mc-top">
-              <div class="mc-ico"><svg viewBox="0 0 24 24">${iconOf(s.type)}</svg></div>
+              <div class="mc-ico"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg></div>
               <div style="min-width:0;flex:1;">
                 <div class="mc-title">${esc(s.name)}</div>
                 <div class="mc-sub">${esc(s.id)}</div>
               </div>
             </div>
             <div class="mc-desc">${esc(s.description || '（暂无描述）')}</div>
+            <div class="extension-source">${esc(sourceLabel(s.source))} · ${esc(s.scope || 'project')}</div>
+            <div class="extension-command" title="${esc(s.path || '')}">${esc(s.path || '')}</div>
             <div class="mc-tags">
-              <span class="mc-tag ${s.enabled ? 'on' : ''}">${esc(s.type)}</span>
-              <span class="mc-tag">${s.enabled ? '已启用' : '已停用'}</span>
-              ${s.permissions?.length ? `<span class="mc-tag">权限：${esc(s.permissions.join(' / '))}</span>` : ''}
+              <span class="mc-tag ${s.enabled ? 'on' : ''}">SKILL.md</span>
+              <span class="mc-tag">MultiChat ${s.enabled ? '已启用' : '已停用'}</span>
+              ${(s.resources || []).map(r => `<span class="mc-tag">${esc(r)}</span>`).join('')}
+              ${s.invalid ? '<span class="mc-tag danger">格式无效</span>' : ''}
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:6px;">
-              <span class="mc-toggle ${s.enabled ? 'on' : ''}" data-toggle-s="${esc(s.id)}"><span class="mc-switch"></span><span>${s.enabled ? '启用中' : '已停用'}</span></span>
+              <button type="button" class="mc-toggle ${s.enabled ? 'on' : ''}" data-toggle-s="${esc(s.key || s.id)}" aria-pressed="${s.enabled ? 'true' : 'false'}"><span class="mc-switch" aria-hidden="true"></span><span>${s.enabled ? '启用中' : '已停用'}</span></button>
             <div class="mc-actions" style="opacity:1;position:static;">
-              <button class="mc-act" data-export-s="${esc(s.id)}" title="导出">${EXPORT_ICON}</button>
-              ${s.type === 'prompt' ? `<button class="mc-act" data-edit-s="${esc(s.id)}" title="编辑">${editIco}</button>` : ''}
-              <button class="mc-act danger" data-del-s="${esc(s.id)}" title="删除">${trashIco}</button>
+              ${['repo', 'plugin'].includes(s.source?.kind) ? `<button class="mc-act" data-diff-s="${esc(s.key || s.id)}" title="查看 Git 变更"><svg viewBox="0 0 24 24"><path d="M8 6h8M8 12h8M8 18h5"/></svg></button>` : ''}
+              ${['managed', 'repo'].includes(s.source?.kind) ? `<button class="mc-act" data-edit-s="${esc(s.key || s.id)}" title="编辑">${editIco}</button>` : ''}
+              ${['managed', 'repo'].includes(s.source?.kind) ? `<button class="mc-act danger" data-del-s="${esc(s.key || s.id)}" title="删除">${trashIco}</button>` : ''}
             </div>
             </div>
           </div>`).join('')}
-        <div class="mc-add" id="addSkill"><span class="plus">＋</span><span class="plus-t">新建技能</span></div>
+        ${state.skills.length ? '' : '<div class="extension-empty">还没有发现标准 Skill。</div>'}
+        <div class="extension-empty" id="skillNoResults" hidden>没有符合筛选条件的 Skill。</div>
+        <button type="button" class="mc-add" id="importSkill"><span class="plus">⇧</span><span class="plus-t">上传 / 导入 Skill</span><span class="mc-sub">ZIP、SKILL.md 或完整目录</span></button>
+        <button type="button" class="mc-add" id="addSkill"><span class="plus">＋</span><span class="plus-t">新建 Skill</span></button>
       </div>
     `;
+    const applySkillFilters = () => {
+      const query = ($('#skillSearch').value || '').trim().toLocaleLowerCase();
+      const source = $('#skillSource').value;
+      const status = $('#skillStatus').value;
+      let visible = 0;
+      body.querySelectorAll('.mc-card[data-sid]').forEach((card: HTMLElement) => {
+        const matches = (!query || (card.dataset.skillSearch || '').includes(query))
+          && (!source || card.dataset.source === source)
+          && (!status || card.dataset.status === status);
+        card.hidden = !matches;
+        if (matches) visible += 1;
+      });
+      $('#skillCount').textContent = `${visible} / ${state.skills.length} 个 Skills`;
+      $('#skillNoResults').hidden = visible !== 0 || state.skills.length === 0;
+    };
+    $('#skillSearch').oninput = applySkillFilters;
+    $('#skillSource').onchange = applySkillFilters;
+    $('#skillStatus').onchange = applySkillFilters;
     body.querySelectorAll('[data-toggle-s]').forEach(b => b.onclick = async (e) => {
       e.stopPropagation();
       const sid = b.dataset.toggleS;
-      const sk = state.skills.find(x => x.id === sid);
+      const sk = state.skills.find(x => (x.key || x.id) === sid);
       if (!sk) return;
       const next = !sk.enabled;
       const card = b.closest('.mc-card');
       const flip = (on) => {
         b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', String(on));
+        if (card) card.dataset.status = on ? 'enabled' : 'disabled';
         const lbl = b.querySelector('span:last-child'); if (lbl) lbl.textContent = on ? '启用中' : '已停用';
         if (card) {
           const tags = card.querySelectorAll('.mc-tag');
           if (tags[0]) tags[0].classList.toggle('on', on);
-          if (tags[1]) tags[1].textContent = on ? '已启用' : '已停用';
+          if (tags[1]) tags[1].textContent = on ? 'MultiChat 已启用' : 'MultiChat 已停用';
         }
       };
       // 乐观更新：原地翻转开关与卡片标签，避免整段 innerHTML 重建（即“页面重置”感）
       sk.enabled = next; flip(next);
       try {
-        const payload: any = { enabled: next };
-        if (sk.type === 'prompt' && sk.config) payload.config = sk.config;
-        await api('/api/skills/' + sid, { method: 'PUT', body: JSON.stringify(payload) });
+        await api('/api/skills/' + encodeURIComponent(sid) + '/toggle', { method: 'POST', body: JSON.stringify({ enabled: next }) });
       } catch (err) {
         sk.enabled = !next; flip(!next); // 失败回滚
         toast(err.message, 'error');
       }
     });
     body.querySelectorAll('[data-edit-s]').forEach(b => b.onclick = (e) => { e.stopPropagation(); showSkillModal(b.dataset.editS); });
-    body.querySelectorAll('[data-export-s]').forEach(b => b.onclick = (e) => { e.stopPropagation(); const s = state.skills.find(x => x.id === b.dataset.exportS); if (s) exportEntity(s, 'skill'); });
+    body.querySelectorAll('[data-diff-s]').forEach(b => b.onclick = async (e) => {
+      e.stopPropagation();
+      try {
+        const result = await api('/api/skills/' + encodeURIComponent(b.dataset.diffS) + '/diff');
+        showDiff('Skill 变更', result);
+      } catch (err) { toast(err.message, 'error'); }
+    });
     body.querySelectorAll('[data-del-s]').forEach(b => b.onclick = async (e) => {
       e.stopPropagation();
       if (!confirm('删除该技能？关联智能体的引用也将被移除。')) return;
-      try { await api('/api/skills/' + b.dataset.delS, { method: 'DELETE' }); } catch (err) { toast(err.message, 'error'); return; }
+      try { await api('/api/skills/' + encodeURIComponent(b.dataset.delS), { method: 'DELETE' }); } catch (err) { toast(err.message, 'error'); return; }
       await loadSkills(); await loadAgents(); renderSettings(state.currentTab || 'skills', true);
     });
-    body.querySelectorAll('.mc-card[data-sid]').forEach(c => c.onclick = () => showSkillModal(c.dataset.sid));
+    body.querySelectorAll('.mc-card[data-sid]').forEach((card: any) => {
+      const skill = state.skills.find(item => (item.key || item.id) === card.dataset.sid);
+      if (skill && ['managed', 'repo'].includes(skill.source?.kind)) card.onclick = () => showSkillModal(card.dataset.sid);
+    });
+    $('#importSkill').onclick = () => showExtensionImport('skill');
     $('#addSkill').onclick = () => showSkillModal(null);
-    wireImportBar();
+  } else if (tab === 'tools') {
+    body.innerHTML = `
+      <h3>内置工具</h3>
+      <p class="lead">这些是 MultiChat 自身实现的函数调用能力，不属于 Agent Skills，也不来自 MCP server。停用后不会暴露给模型。</p>
+      <div class="card-grid">
+        ${(state.tools || []).map(tool => `<div class="mc-card">
+          <div class="mc-top"><div class="mc-ico"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 1 5 5l-7 7-5 1 1-5z"/><path d="M3 21l6-6"/></svg></div><div style="min-width:0;flex:1;"><div class="mc-title">${esc(tool.name)}</div><div class="mc-sub">${esc(tool.id)} · ${esc(tool.type || 'function')}</div></div></div>
+          <div class="mc-desc">${esc(tool.description || '')}</div>
+          <div class="mc-tags">${(tool.permissions || []).map(permission => `<span class="mc-tag">${esc(permission)}</span>`).join('')}<span class="mc-tag ${tool.enabled ? 'on' : ''}">${tool.enabled ? '已启用' : '已停用'}</span></div>
+          <div class="mc-actions" style="opacity:1;position:static;justify-content:flex-start;"><button type="button" class="mc-toggle ${tool.enabled ? 'on' : ''}" data-toggle-tool="${esc(tool.id)}" aria-pressed="${tool.enabled ? 'true' : 'false'}"><span class="mc-switch" aria-hidden="true"></span><span>${tool.enabled ? '启用中' : '已停用'}</span></button></div>
+        </div>`).join('') || '<div class="extension-empty">没有内置工具。</div>'}
+      </div>`;
+    body.querySelectorAll('[data-toggle-tool]').forEach((element: any) => element.onclick = async () => {
+      const tool = state.tools.find(item => item.id === element.dataset.toggleTool);
+      if (!tool) return;
+      try {
+        await api('/api/tools/' + encodeURIComponent(tool.id), { method: 'PUT', body: JSON.stringify({ enabled: !tool.enabled }) });
+        await loadTools(); renderSettings('tools', true); toast(tool.enabled ? '工具已停用' : '工具已启用');
+      } catch (error) { toast(error.message, 'error'); }
+    });
   } else if (tab === 'plugins') {
     renderPlugins();
+  } else if (tab === 'mcp') {
+    renderMcpServers();
   } else if (tab === 'runs') {
     renderRuns();
   }

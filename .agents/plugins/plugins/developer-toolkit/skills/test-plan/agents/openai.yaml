@@ -1,0 +1,3 @@
+interface:
+  display_name: "测试方案"
+  short_description: "生成覆盖边界与失败路径的测试矩阵"

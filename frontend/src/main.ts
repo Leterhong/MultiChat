@@ -5,7 +5,9 @@
  *  全局调用语义，避免逐文件 import 全部交叉依赖，零回归）→ 启动 bootstrap。
  * ================================================================= */
 import './styles.css';
+import { applyTheme } from './core/theme';
 import * as Core from './core/index';
+import * as Shell from './modules/shell';
 import * as Init from './modules/init';
 import * as Data from './modules/data';
 import * as Conversations from './modules/conversations';
@@ -14,6 +16,7 @@ import * as AgentPicker from './modules/agentPicker';
 import * as Settings from './modules/settings';
 import * as PluginsUI from './modules/pluginsUI';
 import * as ImportExport from './modules/importExport';
+import * as ExtensionImport from './modules/extensionImport';
 import * as Modal from './modules/modal';
 import * as Render from './modules/render';
 import * as Markdown from './modules/markdown';
@@ -21,10 +24,11 @@ import * as Send from './modules/send';
 
 // 装配层：把所有模块导出挂到 globalThis，使业务函数之间保持原全局调用关系。
 const namespaces = [
-  Core, Init, Data, Conversations, ModelPicker, AgentPicker,
-  Settings, PluginsUI, ImportExport, Modal, Render, Markdown, Send,
+  Core, Shell, Init, Data, Conversations, ModelPicker, AgentPicker,
+  Settings, PluginsUI, ImportExport, ExtensionImport, Modal, Render, Markdown, Send,
 ];
 for (const ns of namespaces) Object.assign(globalThis, ns);
 
-window.addEventListener('DOMContentLoaded', () => { bootstrap(); });
+applyTheme();
+window.addEventListener('DOMContentLoaded', () => { Shell.setupShell(); bootstrap(); });
 window.MC = { state, send, newConversation, openSettings };

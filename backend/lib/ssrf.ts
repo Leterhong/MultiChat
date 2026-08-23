@@ -75,8 +75,21 @@ export async function safeFetch(input: string, options: RequestInit = {}, allowP
   if ([301, 302, 307, 308].includes(resp.status) && depth < 3) {
     const loc = resp.headers.get('location');
     if (!loc) throw new Error('重定向缺少 Location');
-    const next = new URL(loc, url).toString();
-    return safeFetch(next, options, allowPrivate, depth + 1);
+    const nextUrl = new URL(loc, url);
+    let nextOptions = options;
+    if (nextUrl.origin !== url.origin && options.headers) {
+      // Never forward credentials, cookies, MCP sessions or arbitrary custom
+      // headers to another origin. Only protocol/content negotiation headers
+      // are safe to retain across the redirect boundary.
+      const current = new Headers(options.headers);
+      const forwarded = new Headers();
+      for (const name of ['accept', 'accept-language', 'content-type', 'mcp-protocol-version']) {
+        const value = current.get(name);
+        if (value !== null) forwarded.set(name, value);
+      }
+      nextOptions = { ...options, headers: forwarded };
+    }
+    return safeFetch(nextUrl.toString(), nextOptions, allowPrivate, depth + 1);
   }
   return resp;
 }

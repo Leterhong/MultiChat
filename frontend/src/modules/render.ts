@@ -1,4 +1,4 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
+import { $, esc, state } from '../core/index';
 
 /* --------------------------- Render content --------------------------- */
 function renderContent() {
@@ -8,30 +8,32 @@ function renderContent() {
   if (composerWrap) composerWrap.style.display = state.messages.length ? '' : 'none';
   if (!state.messages.length) {
     const noModel = !state.selectedProvider;
-    const counts = state.runtime?.counts || { providers: state.providers.length, agents: state.agents.length, skills: state.skills.length, plugins: state.plugins.length };
+    const counts = state.runtime?.counts || { agents: state.agents.length, skills: state.skills.length, mcpServers: state.mcpServers.length, plugins: state.plugins.length };
     c.innerHTML = `
       <div class="hero">
-        <div class="hero-greeting">接入你的模型，开始对话</div>
-        <div class="hero-sub">${noModel ? '先添加一个模型提供方，即可直接对话' : '今天我能为你做什么？'}</div>
+        <div class="hero-eyebrow"><span class="signal-dot"></span>LOCAL AGENT WORKSPACE</div>
+        <div class="hero-greeting"><span>模型、工具与知识</span><br/>在一个工作台协作</div>
+        <div class="hero-sub">${noModel ? '添加模型提供方，开始组装你的本地 Agent 工作流' : '选择模型或智能体，把复杂任务交给可组合的能力系统'}</div>
         <div class="hero-card" id="heroCard">
-          <textarea class="hero-input" id="heroInput" placeholder="发消息…" rows="1"></textarea>
+          <textarea class="hero-input" id="heroInput" placeholder="描述一个目标，或直接开始对话…" rows="1"></textarea>
           <div class="hero-actions">
             <button class="hero-tag" id="heroModelTag">选择模型</button>
+            <span class="hero-mode-hint">Agent-ready</span>
             <div class="spacer"></div>
-            <button class="send-btn" id="heroSendBtn" title="发送">↑</button>
+            <button class="send-btn" id="heroSendBtn" title="发送" aria-label="发送消息">↗</button>
           </div>
         </div>
         <div class="workspace-summary">
-          <div class="workspace-summary-head"><div class="brand-logo" style="width:24px;height:24px;border-radius:7px;font-size:12px;">M</div><div><div class="workspace-summary-title">你的 Agent 工作台</div><div class="workspace-summary-sub">模型、智能体、技能和插件都在本地组合运行</div></div></div>
+          <div class="workspace-summary-head"><div class="workspace-orbit"><span></span></div><div><div class="workspace-summary-title">Capability Orbit</div><div class="workspace-summary-sub">Agent、Skills、MCP 与插件保持独立来源，在运行时组合</div></div><span class="workspace-health"><i></i>LOCAL</span></div>
           <div class="workspace-stats">
-            <div class="workspace-stat"><div class="workspace-stat-value">${esc(counts.providers || 0)}</div><div class="workspace-stat-label">模型提供方</div></div>
-            <div class="workspace-stat"><div class="workspace-stat-value">${esc(counts.agents || 0)}</div><div class="workspace-stat-label">智能体</div></div>
-            <div class="workspace-stat"><div class="workspace-stat-value">${esc(counts.skills || 0)}</div><div class="workspace-stat-label">技能</div></div>
-            <div class="workspace-stat"><div class="workspace-stat-value">${esc(counts.plugins || 0)}</div><div class="workspace-stat-label">插件</div></div>
+            <div class="workspace-stat agent"><div class="workspace-stat-value">${esc(counts.agents || 0)}</div><div class="workspace-stat-label">Agents</div></div>
+            <div class="workspace-stat skill"><div class="workspace-stat-value">${esc(counts.skills || 0)}</div><div class="workspace-stat-label">Skills</div></div>
+            <div class="workspace-stat mcp"><div class="workspace-stat-value">${esc(counts.mcpServers || 0)}</div><div class="workspace-stat-label">MCP servers</div></div>
+            <div class="workspace-stat plugin"><div class="workspace-stat-value">${esc(counts.plugins || 0)}</div><div class="workspace-stat-label">Plugins</div></div>
           </div>
-          <div class="workspace-actions"><button class="btn-ghost" id="heroAgents">配置智能体</button><button class="btn-ghost" id="heroSkills">浏览技能</button><button class="btn-ghost" id="heroPlugins">打开插件市场</button></div>
+          <div class="workspace-actions"><button class="btn-ghost" id="heroAgents">配置 Agent <span>↗</span></button><button class="btn-ghost" id="heroSkills">浏览 Skills <span>↗</span></button><button class="btn-ghost" id="heroMcp">管理 MCP <span>↗</span></button><button class="btn-ghost" id="heroPlugins">查看插件 <span>↗</span></button></div>
         </div>
-        <div class="hero-hint">回车发送，Shift+Enter 换行 · 内容由 AI 生成</div>
+        <div class="hero-hint"><kbd>Enter</kbd> 发送 <span>·</span> <kbd>Shift + Enter</kbd> 换行 <span>·</span> 本地优先</div>
       </div>
     `;
     syncModelUI();
@@ -43,7 +45,8 @@ function renderContent() {
     hi.focus();
     $('#heroAgents').onclick = () => openSettings('agents');
     $('#heroSkills').onclick = () => openSettings('skills');
-    $('#heroPlugins').onclick = () => showMarketplace();
+    $('#heroMcp').onclick = () => openSettings('mcp');
+    $('#heroPlugins').onclick = () => openSettings('plugins');
   } else {
     c.innerHTML = `<div class="transcript" id="transcript">${state.messages.map(renderMessage).join('')}</div>`;
     if (state.streaming) c.scrollTop = c.scrollHeight; // 仅流式追加时自动贴底；手动重渲染（编辑/重新生成）保留当前滚动位置
@@ -122,6 +125,9 @@ function renderMessage(m, i) {
   }
   // Approval 审批卡片（C1）：等待用户授权的工具调用，实时渲染批准/拒绝按钮
   const approvalBlock = renderApprovalCards(m);
+  const warningBlock = Array.isArray(m.mcpWarnings) && m.mcpWarnings.length
+    ? `<div class="mcp-warning"><strong>MCP 连接失败</strong>${m.mcpWarnings.map(item => `<span>${esc(item.name || item.serverId)}：${esc(item.error || '')}</span>`).join('')}</div>`
+    : '';
   // 执行轨迹（B1）：Agent 完整的「模型请求 → 工具调用 → 结果」时间线
   let traceBlock = '';
   if (Array.isArray(m.trace) && m.trace.length > 0) {
@@ -189,12 +195,12 @@ function renderMessage(m, i) {
     }
   }
   return `
-    <div class="msg ${m.role}" data-idx="${i}">
-      <div class="msg-avatar">${m.role === 'user' ? '我' : 'M'}</div>
+    <div class="msg ${m.role}" data-idx="${i}" aria-label="${m.role === 'user' ? '你的消息' : 'MultiChat 回复'}">
+      ${m.role === 'assistant' ? '<div class="msg-avatar" aria-hidden="true">M</div>' : ''}
       <div class="msg-body">
-        <div class="msg-role">${m.role === 'user' ? '我' : 'MultiChat'}${agentTag}${modelTag}${m.streaming ? '<span class="busy-label">生成中</span>' : ''}</div>
+        ${m.role === 'assistant' ? `<div class="msg-role">MultiChat${agentTag}${modelTag}${m.streaming ? '<span class="busy-label">生成中</span>' : ''}</div>` : ''}
         ${thinkBlock}
-        <div class="msg-content">${md}${toolBlock}${approvalBlock}${traceBlock}</div>
+        <div class="msg-content">${warningBlock}${md}${toolBlock}${approvalBlock}${traceBlock}</div>
         ${statsBlock}
         <div class="msg-actions">
           ${m.role === 'assistant' && !m.streaming ? `<button class="msg-action" data-copy="${i}">复制</button><button class="msg-action" data-regen="${i}">重新生成</button>` : ''}

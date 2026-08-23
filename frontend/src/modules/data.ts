@@ -1,4 +1,4 @@
-import { $, $$, esc, api, toast, state, DEFAULT_PARAMS, loadSelectedAgent, saveSelectedAgent, saveParams } from '../core/index';
+import { api, state } from '../core/index';
 
 /* --------------------------- Providers --------------------------- */
 async function loadProviders() {
@@ -48,10 +48,24 @@ async function loadSkills() {
   catch (e) { state.skills = []; }
 }
 
+async function loadTools() {
+  try { state.tools = await api('/api/tools'); }
+  catch { state.tools = []; }
+}
+
+async function loadMcpServers() {
+  try { state.mcpServers = await api('/api/mcp-servers'); }
+  catch { state.mcpServers = []; }
+}
+
 /* --------------------------- Agents --------------------------- */
 async function loadAgents() {
-  try { state.agents = await api('/api/agents'); }
-  catch (e) { state.agents = []; }
+  const selectedId = state.selectedAgent?.id;
+  try {
+    state.agents = await api('/api/agents');
+    if (selectedId) state.selectedAgent = state.agents.find(agent => agent.id === selectedId) || null;
+  }
+  catch (e) { state.agents = []; if (selectedId) state.selectedAgent = null; }
 }
 
 /* --------------------------- Plugins --------------------------- */
@@ -60,4 +74,4 @@ async function loadPlugins() {
   catch (e) { state.plugins = []; }
 }
 
-export { loadProviders,loadRuntime,loadRuns,loadWorkspaces,loadProjects,loadSkills,loadAgents,loadPlugins };
+export { loadProviders,loadRuntime,loadRuns,loadWorkspaces,loadProjects,loadSkills,loadTools,loadMcpServers,loadAgents,loadPlugins };
