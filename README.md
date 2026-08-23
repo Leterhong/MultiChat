@@ -88,7 +88,7 @@ Orbit 的视觉语言来自“本地 Agent 控制轨道”：
 
 - 单个 `SKILL.md`；
 - 包含 `SKILL.md` 的完整目录；
-- WorkBuddy 常见目录布局的 Skill ZIP；
+- 包含顶层目录或嵌套目录的 Skill ZIP；
 - 可选的 `scripts/`、`references/`、`assets/` 和 `agents/openai.yaml`。
 
 最小目录：
@@ -152,16 +152,15 @@ MultiChat 会校验 manifest、组件路径、Skill 目录、MCP 配置和凭据
 
 当前 Runtime 会加载插件中的 **Skills 与 MCP servers**。Agents、Commands、Hooks、Apps 等文件可以随包保留，但上传的 JS/TS 与 hook 不会直接注入 MultiChat 主进程。
 
-## 兼容边界
+## 支持范围
 
-| 格式或生态 | 状态 | 说明 |
+| 能力格式 | 状态 | 说明 |
 |---|---|---|
 | 标准 Agent Skill 目录 | 支持 | 以 `SKILL.md` 为入口，保留附属资源 |
-| WorkBuddy 风格 Skill 包 | 支持导入 | 支持常见 ZIP/目录布局，不宣称 WorkBuddy 宿主 API 兼容 |
+| Skill ZIP 或完整目录 | 支持导入 | 支持顶层目录和嵌套目录布局 |
 | MCP STDIO | 支持 | 本地子进程，不是沙箱 |
 | MCP Streamable HTTP | 支持 | 默认限制私网地址，需显式放行 |
-| Codex Plugin 完整包 | 支持 | 以 `.codex-plugin/plugin.json` 为准 |
-| DeepSeek Harness / Cordis npm Plugin ABI | 不兼容 | 不伪装成 DSH/Cordis 插件运行时 |
+| Plugin 完整包 | 支持 | 以 `.codex-plugin/plugin.json` 为入口，保留包内组件与资源 |
 | 任意上传的 JS/TS、Hook 或 App | 仅保留 | 未进入经过隔离和授权的宿主模型前，不直接执行 |
 | 远程 URL 扩展安装 | 不支持 | 当前只接受本地文件、ZIP、目录或声明式配置 |
 
@@ -196,14 +195,7 @@ TypeScript 不是只用于界面类型提示，而是 MultiChat 的主开发语�
 - **验证**：前后端分别执行 `tsc --noEmit`，测试也直接运行 TypeScript；
 - **兼容入口**：标准 MCP 演示 server 与 Windows 启动 shim 可保留小型 JS/CJS 入口，避免破坏已有配置路径。
 
-这样做的目标不是追求某个仓库语言百分比，而是让请求、资源、扩展、运行时和 UI 之间共享可检查的契约。DeepSeek Harness 在 GitHub 显示的 TypeScript 占比是 Linguist 按文件字节计算的统计值，会随版本变化；它能说明工程重心，但不能替代类型覆盖率、测试和边界设计。
-
-MultiChat 借鉴了 DeepSeek Harness 的 TypeScript 工程组织和一条命令启动体验，但没有复制或冒充其插件 ABI。相关官方资料：
-
-- [DeepSeek Harness — Run](https://github.com/deepseek-ai/deepseek-harness#run)
-- [DeepSeek Harness — TypeScript project layout](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/development.md#typescript-project-layout)
-- [DeepSeek Harness — Architecture](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md)
-- [GitHub Languages API：deepseek-harness](https://api.github.com/repos/deepseek-ai/deepseek-harness/languages)
+这套工程组织由 MultiChat 自身的产品边界和运行需求驱动。它的目标是让请求、资源、扩展、运行时与 UI 共享可检查的类型契约，并以类型检查、自动化测试和明确的安全边界衡量工程质量。
 
 ## CLI
 
