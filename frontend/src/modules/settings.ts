@@ -5,21 +5,38 @@ $('#settingsBtn').onclick = () => openSettings();
 let settingsReturnFocus: HTMLElement | null = null;
 function openSettings(tab = 'general') {
   const panel = $('#settings');
-  settingsReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  $('#app').inert = true;
+  if (!panel.classList.contains('open')) {
+    settingsReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }
   panel.inert = false;
   panel.setAttribute('aria-hidden', 'false');
   panel.classList.add('open');
   $('#scrim').classList.add('open');
   switchSettingsTab(tab);
-  window.setTimeout(() => $('#settingsBody')?.focus?.(), 220);
+  $('#settingsBody')?.focus?.({ preventScroll: true });
+
+  // Focus is now inside the dialog, so the application can safely become inert.
+  $('#app').inert = true;
 }
 function closeSettings() {
   const panel = $('#settings');
+  if (!panel.classList.contains('open')) return;
+
+  const app = $('#app');
+  app.inert = false;
+  const fallback = $('#settingsBtn') as HTMLElement;
+  const target = settingsReturnFocus?.isConnected && app.contains(settingsReturnFocus)
+    ? settingsReturnFocus
+    : fallback;
+  try { target?.focus?.({ preventScroll: true }); }
+  catch { target?.focus?.(); }
+  if (panel.contains(document.activeElement)) fallback?.focus?.({ preventScroll: true });
+
   panel.classList.remove('open');
+  panel.inert = true;
   panel.setAttribute('aria-hidden', 'true');
   $('#scrim').classList.remove('open');
-  window.setTimeout(() => { panel.inert = true; $('#app').inert = false; settingsReturnFocus?.focus(); }, 220);
+  settingsReturnFocus = null;
 }
 $('#scrim').onclick = closeSettings;
 $('#closeSettings').onclick = closeSettings;

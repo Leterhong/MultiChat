@@ -11,12 +11,49 @@ function sourceLabel(source) {
   return labels[source?.kind] || source?.kind || '未知来源';
 }
 
-function showDiff(title, result) {
+function showDiff(title, result, subject = null) {
+  const status = String(result?.status || 'clean').trim() || 'clean';
+  const diff = String(result?.diff || '').trim();
+  const isClean = status === 'clean' && !diff;
+  const isUnavailable = status === 'unavailable';
+  const isExternal = status === 'external';
+  const isWarning = isUnavailable || isExternal;
+  const changeCount = status.split(/\r?\n/).filter(Boolean).length;
+  const tone = isClean ? 'clean' : isWarning ? 'warning' : 'changed';
+  const label = isClean
+    ? '没有未提交变更'
+    : isUnavailable
+      ? '暂时无法读取变更'
+      : isExternal
+        ? '不在项目仓库中'
+        : `检测到 ${changeCount} 项未提交变更`;
+  const description = isClean
+    ? '当前内容与 Git 中记录的版本一致。'
+    : isUnavailable
+      ? '请确认当前目录可由 Git 读取后再试。'
+      : isExternal
+        ? '该内容位于项目仓库之外，无法提供项目级 Git 差异。'
+        : '请在启用或发布前检查下面的差异内容。';
+  const context = subject?.name
+    ? `<div class="diff-context"><div><span>检查对象</span><strong>${esc(subject.name)}</strong></div>${subject.meta ? `<code title="${esc(subject.meta)}">${esc(subject.meta)}</code>` : ''}</div>`
+    : '';
+  const details = isClean
+    ? ''
+    : isWarning
+      ? `<div class="diff-message ${isUnavailable ? 'error' : 'warning'}">${esc(result?.error || '此目录不属于当前项目仓库。')}</div>`
+      : `<div class="diff-git-status"><span>Git 状态</span><code title="${esc(status)}">${esc(status)}</code></div>
+        ${diff
+          ? `<pre class="extension-diff" aria-label="Git 变更内容">${esc(diff)}</pre>`
+          : '<div class="diff-message">Git 已检测到状态变化，但没有可展示的文本差异。</div>'}`;
   showModal({
     title,
-    body: `<div class="field"><label>状态</label><div class="pmeta">${esc(result.status || 'clean')}</div></div>
-      <pre class="extension-diff">${esc(result.diff || '没有未提交改动。')}</pre>
-      <div class="row"><button class="btn-primary" id="diffClose" style="width:auto;padding:8px 18px;">关闭</button></div>`,
+    body: `${context}
+      <div class="diff-summary ${tone}" role="status">
+        <span class="diff-summary-icon" aria-hidden="true">${isClean ? '✓' : isUnavailable ? '!' : '↗'}</span>
+        <div><strong>${label}</strong><span>${description}</span></div>
+      </div>
+      ${details}
+      <div class="row diff-actions"><button class="btn-primary" id="diffClose">关闭</button></div>`,
     onMount: card => { $('#diffClose', card).onclick = closeModal; },
   });
 }
@@ -67,7 +104,14 @@ function renderPlugins() {
     } catch (error) { toast(error.message, 'error'); }
   });
   body.querySelectorAll('[data-plugin-diff]').forEach((element: any) => element.onclick = async () => {
-    try { showDiff('插件变更 · ' + element.dataset.pluginDiff, await api('/api/plugins/' + encodeURIComponent(element.dataset.pluginDiff) + '/diff')); }
+    const plugin = plugins.find(item => (item.key || item.id) === element.dataset.pluginDiff);
+    try {
+      const result = await api('/api/plugins/' + encodeURIComponent(element.dataset.pluginDiff) + '/diff');
+      const meta = plugin
+        ? [plugin.id, plugin.version ? `v${plugin.version}` : ''].filter(Boolean).join(' · ')
+        : '';
+      showDiff('插件变更', result, { name: plugin?.name || '插件包', meta });
+    }
     catch (error) { toast(error.message, 'error'); }
   });
   body.querySelectorAll('[data-plugin-delete]').forEach((element: any) => element.onclick = async () => {
