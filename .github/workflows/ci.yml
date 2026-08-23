@@ -12,23 +12,23 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
-      # 后端含 TS（lib/*.ts）与 JS 混合；lock 含 win32 平台偏见，与 frontend 一致
-      # 用 --no-package-lock 让 runner 重新解析并装 typescript/tsx/@types 等工具链。
+          node-version: 22
+          package-manager-cache: false
+      # 在 Linux runner 上重新解析跨平台依赖，避免复用本机平台二进制。
       - name: Install deps
         run: npm install --no-package-lock --no-audit --no-fund
-      - name: Run integration tests (smoke / approval / filecontext)
+      - name: Run backend tests
         run: npm test
-      - name: Typecheck (tsc --noEmit, 渐进 strict:false)
+      - name: Typecheck (tsc --noEmit)
         run: npm run typecheck
-      - name: Syntax check all backend modules
+      - name: Syntax check JavaScript compatibility entries
         run: |
-          for f in lib/*.js runtime/*.js routes/*.js adapters/*.js mcp.js server.js; do
-            node --check "$f" || exit 1
-          done
+          node --check .eslintrc.cjs
+          node --check lib/tsx-windows-shim.cjs
+          node --check extensions/demo-mcp-server.js
       - name: Lint (eslint — errors block, warnings allowed)
         run: npm run lint
 
@@ -39,10 +39,11 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
+          package-manager-cache: false
       # 本地 Windows 生成的 lock 只记录了 win32 的 esbuild/rollup 平台二进制，
       # npm ci 严格按 lock 只装 win32、npm install 也会沿用 lock 的 win32 记录，
       # 都会导致 ubuntu runner 缺 linux 原生二进制、vite import rollup 时崩溃。

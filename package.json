@@ -2,6 +2,7 @@
   "name": "@leterhong/multichat",
   "version": "1.0.0",
   "description": "Local-first multi-model agent workspace with Skills, MCP servers, and plugins",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "multichat": "bin/multichat.mjs"
