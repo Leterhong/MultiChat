@@ -26,6 +26,16 @@ if (corsOrigins.length) app.use(cors({ origin: corsOrigins, credentials: false }
 // behind the same reverse proxies as the rest of MultiChat.  The importer
 // applies a stricter 20 MB compressed / 80 MB unpacked limit of its own.
 app.use(express.json({ limit: '32mb' }));
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http://127.0.0.1:* http://localhost:*");
+  if (req.path.startsWith('/api/') || req.path.startsWith('/v1/')) res.setHeader('Cache-Control', 'no-store');
+  next();
+});
 // 统一请求ID：每个请求分配 id 并写入响应头 X-Request-Id（A3）
 app.use(requestIdMiddleware);
 
@@ -35,6 +45,8 @@ require('./routes/conversations')(app);
 require('./routes/workspaces')(app);
 require('./routes/assistants')(app);
 require('./routes/runs')(app);
+require('./routes/usage')(app);
+require('./routes/control-plane')(app);
 require('./routes/skills')(app);
 require('./routes/tools')(app);
 require('./routes/mcp-servers')(app);
@@ -42,6 +54,7 @@ require('./routes/agents')(app);
 require('./routes/plugins')(app);
 require('./routes/extensions-import')(app);
 require('./routes/import')(app);
+require('./routes/mock')(app);
 require('./routes/chat')(app);
 require('./routes/meta')(app);
 

@@ -67,7 +67,8 @@ class AnthropicAdapter extends BaseAdapter {
   }
 
   getEndpoint() {
-    return `${(this.config.baseUrl || 'https://api.anthropic.com/v1').replace(/\/+$/, '')}/messages`;
+    const base = (this.config.baseUrl || 'https://api.anthropic.com/v1').replace(/\/+$/, '');
+    return `${base}${/\/v1$/i.test(base) ? '' : '/v1'}/messages`;
   }
 
   transformSSEChunk(line: string) {

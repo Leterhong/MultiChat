@@ -96,6 +96,9 @@ export interface ProjectRecord {
   description: string;
   createdAt: string;
   updatedAt: string;
+  defaultAgentId?: string | null;
+  defaultProviderId?: string | null;
+  defaultModel?: string | null;
 }
 
 export interface AssetRecord {

@@ -7,6 +7,7 @@ const path = require('path');
 const { getMcpClient, closeMcpClient, closeAllMcpClients } = require('../mcp');
 const { createJsonStore } = require('./store');
 const { createWorkspaceStore } = require('./workspace-store');
+const { createProviderStore } = require('./provider-store');
 const { safeFetch } = require('./ssrf');
 const { createAdapter, ADAPTER_MAP } = require('../adapters');
 const { readPackageVersion, safeId } = require('./catalog');
@@ -15,6 +16,7 @@ const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const store = createJsonStore(DATA_DIR);
 const workspaceStore = createWorkspaceStore(store);
+const providerStore = createProviderStore(store);
 const VERSION = readPackageVersion();
 
 // 插件 / 技能 / 智能体 / 运行 相关常量（原 server.ts 顶层常量集中于此）
@@ -39,6 +41,7 @@ module.exports = {
   closeAllMcpClients,
   store,
   workspaceStore,
+  providerStore,
   safeFetch,
   createAdapter,
   ADAPTER_MAP,

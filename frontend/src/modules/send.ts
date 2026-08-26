@@ -60,8 +60,8 @@ async function streamReply() {
     if (last) { last.content = '**未选择模型**：请先在「设置 → 模型」中添加并选择模型。'; last.streaming = false; }
     renderContent(); return;
   }
-  const needsKey = !['ollama', 'lmstudio'].includes((provider.apiType || '').toLowerCase());
-  if (needsKey && !provider.apiKey) {
+  const needsKey = !['ollama', 'lmstudio', 'mock'].includes((provider.apiType || '').toLowerCase());
+  if (needsKey && !provider.apiKey && !provider.apiKeyMasked) {
     const last = state.messages[state.messages.length - 1];
     if (last) { last.content = `**缺少 API Key**：Provider「${provider.name}」尚未填写 API Key。请到「设置 → 模型」中编辑。`; last.streaming = false; }
     renderContent(); return;
@@ -86,13 +86,12 @@ async function streamReply() {
     top_p: state.params.top_p,
     workspaceId: state.selectedWorkspace?.id || null,
     projectId: state.selectedProject?.id || null,
+    conversationId: state.currentConvId || null,
+    interactionId: `${state.currentConvId || 'chat'}_${Date.now().toString(36)}`,
     assetIds: [...state.selectedAssetIds]  // D1：只把用户勾选的文件作为上下文注入
   };
-  // Forward the full provider object (so the backend proxies even without a stored record)
-  body._provider = {
-    id: provider.id, name: provider.name, apiType: provider.apiType || 'openai',
-    baseUrl: provider.baseUrl, apiKey: provider.apiKey
-  };
+  // Provider credentials stay on the backend. The browser only names the
+  // configured provider through the model prefix and never echoes API keys.
 
   state.abortCtrl = new AbortController();
   let res;

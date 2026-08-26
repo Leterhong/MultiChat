@@ -67,7 +67,8 @@ class ZhipuAdapter extends BaseAdapter {
 
   getEndpoint() {
     const baseUrl = this.config.baseUrl || 'https://open.bigmodel.cn';
-    return `${baseUrl.replace(/\/+$/, '')}/api/paas/v4/chat/completions`;
+    const base = baseUrl.replace(/\/+$/, '');
+    return `${base}${/\/api\/paas\/v4$/i.test(base) ? '' : '/api/paas/v4'}/chat/completions`;
   }
 
   transformSSEChunk(line) {

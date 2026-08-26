@@ -37,9 +37,27 @@ export function isPrivateV6(ip: string): boolean {
   if (a === '::1' || a === '::') return true;
   if (a.startsWith('fe80:')) return true; // link-local
   if (a.startsWith('fc') || a.startsWith('fd')) return true; // unique local fc00::/7
-  const m = a.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/); // IPv4-mapped
-  if (m) return isPrivateV4(m[1]);
+  const mapped = mappedV4(a);
+  if (mapped) return isPrivateV4(mapped);
   return false;
+}
+
+function mappedV4(ip: string): string | null {
+  const dotted = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+  if (dotted) return dotted[1];
+  const hex = ip.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+  if (!hex) return null;
+  const high = Number.parseInt(hex[1], 16), low = Number.parseInt(hex[2], 16);
+  return `${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`;
+}
+
+function isMetadataAddress(ip: string): boolean {
+  const value = ip.toLowerCase();
+  const mapped = mappedV4(value);
+  const v4 = mapped || (net.isIP(value) === 4 ? value : null);
+  return Boolean(
+    v4 && (v4.startsWith('0.') || v4.startsWith('169.254.') || v4 === '100.100.100.200')
+  ) || value === '::' || value === 'fd00:ec2::254' || value.startsWith('fe80:');
 }
 
 export async function assertSafeUrl(input: string, { allowPrivate = false }: { allowPrivate?: boolean } = {}): Promise<URL> {
@@ -52,15 +70,20 @@ export async function assertSafeUrl(input: string, { allowPrivate = false }: { a
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new Error('仅支持 http/https 链接');
   }
-  const host = url.hostname;
+  // Node keeps square brackets around IPv6 URL hostnames; net.isIP expects the
+  // bare address. Normalize before applying private/metadata checks.
+  const host = url.hostname.replace(/^\[|\]$/g, '');
   if (net.isIP(host) === 4) {
+    if (isMetadataAddress(host)) throw new Error('SSRF: 目标为保留、元数据或链路本地地址 ' + host);
     if (!allowPrivate && isPrivateV4(host)) throw new Error('SSRF: 目标为内网地址 ' + host);
   } else if (net.isIP(host) === 6) {
+    if (isMetadataAddress(host)) throw new Error('SSRF: 目标为保留、元数据或链路本地地址 ' + host);
     if (!allowPrivate && isPrivateV6(host)) throw new Error('SSRF: 目标为内网地址 ' + host);
   } else {
     const addrs = await dns.lookup(host, { all: true });
     for (const { address } of addrs) {
       const v = net.isIP(address);
+      if (isMetadataAddress(address)) throw new Error('SSRF: 解析到保留、元数据或链路本地地址 ' + address);
       if (v === 4 && !allowPrivate && isPrivateV4(address)) throw new Error('SSRF: 解析到内网地址 ' + address);
       if (v === 6 && !allowPrivate && isPrivateV6(address)) throw new Error('SSRF: 解析到内网地址 ' + address);
     }

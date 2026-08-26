@@ -49,6 +49,11 @@ function switchSettingsTab(tab) {
   state.currentTab = tab;
   $$('.settings-tab[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   renderSettings(tab);
+  if (tab === 'usage') {
+    loadUsage(state.usageRange).then(() => { if (state.currentTab === 'usage') renderSettings('usage'); });
+  } else if (tab === 'capabilities') {
+    loadCapabilities().then(() => { if (state.currentTab === 'capabilities') renderSettings('capabilities'); });
+  }
 }
 function renderSettings(tab = 'general', keepScroll = false) {
   const body = $('#settingsBody');
@@ -128,9 +133,18 @@ function renderSettings(tab = 'general', keepScroll = false) {
       </div>
       <div class="provider-card">
         <h4>项目文件</h4>
-        <div class="pmeta">支持本地文本文件和 URL 文本资源，单个文件最大 2 MB。</div>
+        <div class="pmeta">支持本地文本文件和 URL 文本资源；对话时会按相关性截取并附带文件/行号来源。</div>
         <div class="provider-row" style="margin-top:12px;"><button class="btn-ghost" id="uploadAsset">上传本地文件</button><button class="btn-ghost" id="importAssetUrl">从 URL 添加</button><input type="file" id="assetFileInput" accept=".txt,.md,.json,.csv,.js,.ts,.py,.html,.css,.yaml,.yml" style="display:none" /></div>
         <div class="run-list" style="margin-top:14px;">${state.assets.map(asset => `<div class="run-row"><span class="run-dot completed"></span><div class="run-main"><div class="run-title">${esc(asset.name)}</div><div class="run-meta">${esc(asset.mimeType)} · ${esc(asset.size)} bytes · ${esc(asset.source)}</div></div><button class="mc-act danger" data-del-asset="${esc(asset.id)}" title="删除">删除</button></div>`).join('') || '<div style="color:var(--label-caption);font-size:13px;padding:8px 0;">当前项目还没有文件。</div>'}</div>
+        <form class="knowledge-search" id="knowledgeSearch"><input id="knowledgeQuery" placeholder="搜索项目知识，例如：认证流程在哪里实现？" /><button class="btn-ghost">搜索知识</button></form><div id="knowledgeResults"></div>
+      </div>
+      <div class="provider-card">
+        <div class="control-card-head"><div><h4>项目记忆</h4><div class="pmeta">由你明确维护的事实和偏好；可逐条停用，不会从聊天中偷偷学习。</div></div><button class="btn-ghost" id="addMemory">新增记忆</button></div>
+        <div class="memory-list">${(state.memories || []).map(item => `<article class="memory-item ${item.enabled === false ? 'disabled' : ''}"><button class="memory-toggle" data-toggle-memory="${esc(item.id)}" aria-pressed="${item.enabled !== false}"><i></i>${item.enabled !== false ? '已启用' : '已停用'}</button><div><strong>${esc(item.title)}</strong><p>${esc(item.content)}</p></div><div class="memory-actions"><button class="mc-act" data-edit-memory="${esc(item.id)}">编辑</button><button class="mc-act danger" data-del-memory="${esc(item.id)}">删除</button></div></article>`).join('') || '<div class="control-empty">还没有项目记忆。只保存值得长期复用的事实和偏好。</div>'}</div>
+      </div>
+      <div class="provider-card">
+        <div class="control-card-head"><div><h4>项目时光机</h4><div class="pmeta">保存项目设置、知识文件、记忆、默认 Agent 和当前 Git 状态；恢复前会自动再备份一次。</div></div><button class="btn-primary" id="createSnapshot">创建快照</button></div>
+        <div class="snapshot-list">${(state.snapshots || []).map(item => `<article class="snapshot-item"><span class="snapshot-mark">${item.git?.commit ? esc(item.git.commit) : 'LOCAL'}</span><div><strong>${esc(item.title)}</strong><p>${new Date(item.createdAt).toLocaleString('zh-CN')} · ${item.assets} 文件 · ${item.memories} 记忆 · ${compactNumber(item.size)}B${item.git?.branch ? ` · ${esc(item.git.branch)}${item.git.dirty ? '（有改动）' : ''}` : ''}</p></div><div class="memory-actions"><button class="mc-act" data-restore-snapshot="${esc(item.id)}">恢复</button><button class="mc-act danger" data-del-snapshot="${esc(item.id)}">删除</button></div></article>`).join('') || '<div class="control-empty">尚未创建项目快照。</div>'}</div>
       </div>
     `;
     $('#workspaceSelect').onchange = async (event) => { state.selectedWorkspace = state.workspaces.find(x => x.id === event.target.value) || null; await loadProjects(); renderTopbar(); renderSettings('workspace', true); renderFileContext(); };
@@ -161,8 +175,21 @@ function renderSettings(tab = 'general', keepScroll = false) {
       fileInput.value = '';
     };
     body.querySelectorAll('[data-del-asset]').forEach(button => button.onclick = async () => { try { await api('/api/assets/' + button.dataset.delAsset, { method: 'DELETE' }); await loadProjects(); renderSettings('workspace', true); } catch (error) { toast(error.message, 'error'); } });
+    $('#knowledgeSearch').onsubmit = async event => {
+      event.preventDefault(); const query = $('#knowledgeQuery').value.trim(); if (!query || !state.selectedProject) return;
+      const results = $('#knowledgeResults'); results.innerHTML = '<div class="pmeta">正在检索…</div>';
+      try { const rows = await api(`/api/projects/${encodeURIComponent(state.selectedProject.id)}/search?q=${encodeURIComponent(query)}`); results.innerHTML = rows.map(item => `<article class="knowledge-hit"><strong>${esc(item.name)} <span>L${item.lineStart}–L${item.lineEnd}</span></strong><p>${esc(item.snippet.slice(0,500))}</p></article>`).join('') || '<div class="control-empty">没有找到相关片段。</div>'; }
+      catch (error) { results.innerHTML = `<div class="auth-error">${esc(error.message)}</div>`; }
+    };
+    $('#addMemory').onclick = () => showMemoryModal();
+    body.querySelectorAll('[data-edit-memory]').forEach(button => button.onclick = () => showMemoryModal(button.dataset.editMemory));
+    body.querySelectorAll('[data-toggle-memory]').forEach(button => button.onclick = async () => { const item = state.memories.find(row => row.id === button.dataset.toggleMemory); if (!item) return; await api('/api/memories/' + item.id, { method: 'PUT', body: JSON.stringify({ enabled: item.enabled === false }) }); await loadProjectControlData(); renderSettings('workspace', true); });
+    body.querySelectorAll('[data-del-memory]').forEach(button => button.onclick = async () => { if (!confirm('删除这条项目记忆？')) return; await api('/api/memories/' + button.dataset.delMemory, { method: 'DELETE' }); await loadProjectControlData(); renderSettings('workspace', true); });
+    $('#createSnapshot').onclick = async () => { if (!state.selectedProject) return; const title = prompt('快照名称', `项目快照 ${new Date().toLocaleString('zh-CN')}`); if (title == null) return; try { await api('/api/snapshots', { method: 'POST', body: JSON.stringify({ projectId: state.selectedProject.id, title }) }); await loadProjectControlData(); renderSettings('workspace', true); toast('项目快照已创建'); } catch (error) { toast(error.message, 'error'); } };
+    body.querySelectorAll('[data-restore-snapshot]').forEach(button => button.onclick = async () => { if (!confirm('恢复该快照？当前状态会先自动备份，随后替换项目文件、记忆和默认配置。')) return; try { await api('/api/snapshots/' + button.dataset.restoreSnapshot + '/restore', { method: 'POST' }); await loadProjects(); await loadAgents(); renderSettings('workspace'); renderFileContext(); toast('快照已恢复'); } catch (error) { toast(error.message, 'error'); } });
+    body.querySelectorAll('[data-del-snapshot]').forEach(button => button.onclick = async () => { if (!confirm('删除该项目快照？')) return; await api('/api/snapshots/' + button.dataset.delSnapshot, { method: 'DELETE' }); await loadProjectControlData(); renderSettings('workspace', true); });
   } else if (tab === 'providers') {
-    const configuredCount = state.providers.filter(p => Boolean(p.apiKey) || ['ollama', 'lmstudio', 'mock'].includes((p.apiType || '').toLowerCase())).length;
+    const configuredCount = state.providers.filter(p => Boolean(p.apiKeyMasked || p.apiKey) || ['ollama', 'lmstudio', 'mock'].includes((p.apiType || '').toLowerCase())).length;
     const modelCount = state.providers.reduce((sum, p) => sum + (p.models?.length || (p.model ? 1 : 0)), 0);
     body.innerHTML = `
       <section class="provider-settings">
@@ -182,7 +209,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
           const models = p.models || (p.model ? [p.model] : []);
           const providerName = p.name || p.id;
           const local = ['ollama', 'lmstudio', 'mock'].includes((p.apiType || '').toLowerCase()) || p.id === 'mock';
-          const ready = Boolean(p.apiKey) || local;
+          const ready = Boolean(p.apiKeyMasked || p.apiKey) || local;
           return `
           <article class="provider-card provider-config-card" data-pid="${esc(p.id)}">
             <div class="provider-card-head">
@@ -196,7 +223,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
             <div class="provider-card-fields">
               <div class="field">
                 <label for="provider-key-${esc(p.id)}">API 密钥</label>
-                <input id="provider-key-${esc(p.id)}" type="password" data-k="${esc(p.id)}" value="${esc(p.apiKey || '')}" placeholder="${local ? '本地提供方可留空' : '输入 API 密钥'}" autocomplete="off" spellcheck="false" />
+                <input id="provider-key-${esc(p.id)}" type="password" data-k="${esc(p.id)}" value="" placeholder="${p.apiKeyMasked ? `已安全保存 ····${esc(p.apiKeyPreview || '')}` : (local ? '本地提供方可留空' : '输入 API 密钥')}" autocomplete="new-password" spellcheck="false" />
               </div>
               <div class="field">
                 <label for="provider-models-${esc(p.id)}">模型列表</label>
@@ -204,7 +231,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
               </div>
             </div>
             <div class="provider-card-footer">
-              <span>模型名可用逗号或换行分隔</span>
+              <label class="provider-private"><input type="checkbox" data-private="${esc(p.id)}" ${p.allowPrivate ? 'checked' : ''} /> 允许访问本机 / 内网</label>
               <div class="provider-row">
                 <button class="btn-ghost danger-ghost" data-del="${esc(p.id)}">删除</button>
                 <button class="btn-primary" data-save="${esc(p.id)}">保存</button>
@@ -225,7 +252,8 @@ function renderSettings(tab = 'general', keepScroll = false) {
       const models = (body.querySelector(`[data-m="${pid}"]`).value || '')
         .split(/[,\n]/).map(s => s.trim()).filter(Boolean);
       try {
-        await api('/api/providers/' + pid, { method: 'PUT', body: JSON.stringify({ apiKey, models }) });
+        const allowPrivate = Boolean(body.querySelector(`[data-private="${pid}"]`)?.checked);
+        await api('/api/providers/' + pid, { method: 'PUT', body: JSON.stringify({ ...(apiKey ? { apiKey } : {}), models, allowPrivate }) });
         toast('已保存'); await loadProviders(); renderSettings('providers', true); renderTopbar();
       } catch (e) { toast(e.message, 'error'); }
     });
@@ -427,10 +455,122 @@ function renderSettings(tab = 'general', keepScroll = false) {
     renderPlugins();
   } else if (tab === 'mcp') {
     renderMcpServers();
+  } else if (tab === 'capabilities') {
+    renderCapabilities();
+  } else if (tab === 'usage') {
+    renderUsage();
   } else if (tab === 'runs') {
     renderRuns();
   }
   if (keepScroll) body.scrollTop = Math.min(_prevScroll, Math.max(0, body.scrollHeight - body.clientHeight));
+}
+
+function renderCapabilities() {
+  const body = $('#settingsBody');
+  const data = state.capabilities;
+  if (!data) {
+    body.innerHTML = '<h3>能力审计</h3><p class="lead">正在生成能力护照…</p><div class="usage-loading"></div>';
+    return;
+  }
+  const typeLabel = { plugin: '插件', skill: 'Skill', mcp: 'MCP', tool: '内置工具' };
+  const riskLabel = { high: '高风险', medium: '中风险', low: '低风险' };
+  body.innerHTML = `<section class="passport-page">
+    <div class="settings-page-heading"><div><div class="usage-kicker">CAPABILITY PASSPORTS</div><h3>能力审计</h3><p class="lead">统一查看每项能力的来源、版本、权限、信任边界和结构完整性。</p></div><button class="btn-ghost" id="refreshCapabilities">重新扫描</button></div>
+    <div class="passport-summary"><span><strong>${data.summary.total}</strong> 项能力</span><span><strong>${data.summary.enabled}</strong> 项启用</span><span class="${data.summary.highRisk ? 'warn' : ''}"><strong>${data.summary.highRisk}</strong> 项高风险</span><span class="${data.summary.issues ? 'warn' : ''}"><strong>${data.summary.issues}</strong> 个待处理问题</span></div>
+    <div class="resource-toolbar passport-toolbar"><label class="resource-search"><span>⌕</span><input id="passportSearch" type="search" placeholder="搜索能力、来源或权限" /></label><select id="passportType"><option value="">全部类型</option>${Object.entries(typeLabel).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select><select id="passportRisk"><option value="">全部风险</option><option value="high">高风险</option><option value="medium">中风险</option><option value="low">低风险</option></select><span class="resource-count" id="passportCount">${data.items.length} 项</span></div>
+    <div class="passport-grid">${data.items.map(item => `<article class="passport-card" data-passport data-type="${esc(item.type)}" data-risk="${esc(item.risk)}" data-search="${esc([item.name,item.id,item.source,item.scope,...(item.permissions||[])].join(' ').toLowerCase())}">
+      <div class="passport-head"><span class="passport-type ${esc(item.type)}">${typeLabel[item.type] || esc(item.type)}</span><span class="passport-risk ${esc(item.risk)}">${riskLabel[item.risk] || esc(item.risk)}</span></div>
+      <h4>${esc(item.name)}</h4><code>${esc(item.id)}</code><p>${esc(item.description || '暂无说明')}</p>
+      <dl><div><dt>来源</dt><dd>${esc(item.source)} · ${esc(item.scope || 'project')}</dd></div><div><dt>版本 / 完整性</dt><dd>${esc(item.version || '未声明')} · ${esc(item.integrity || 'unknown')}</dd></div><div><dt>信任</dt><dd>${esc(item.trust || 'unknown')}</dd></div></dl>
+      <div class="passport-perms">${(item.permissions || []).map(permission=>`<span>${esc(permission)}</span>`).join('') || '<span class="none">无特殊权限</span>'}</div>
+      ${(item.issues || []).length ? `<div class="passport-issues">${item.issues.map(issue=>`<span>${esc(issue)}</span>`).join('')}</div>` : '<div class="passport-clean">结构检查通过</div>'}
+    </article>`).join('')}</div><div class="extension-empty" id="passportEmpty" hidden>没有符合筛选条件的能力。</div>
+  </section>`;
+  const apply = () => {
+    const query = ($('#passportSearch').value || '').trim().toLowerCase(), type = $('#passportType').value, risk = $('#passportRisk').value;
+    let visible = 0;
+    body.querySelectorAll('[data-passport]').forEach(card => { const show = (!query || card.dataset.search.includes(query)) && (!type || card.dataset.type === type) && (!risk || card.dataset.risk === risk); card.hidden = !show; if (show) visible += 1; });
+    $('#passportCount').textContent = `${visible} / ${data.items.length} 项`; $('#passportEmpty').hidden = visible !== 0;
+  };
+  $('#passportSearch').oninput = apply; $('#passportType').onchange = apply; $('#passportRisk').onchange = apply;
+  $('#refreshCapabilities').onclick = async () => { state.capabilities = null; renderCapabilities(); await loadCapabilities(); renderCapabilities(); };
+}
+
+function compactNumber(value) {
+  const number = Number(value || 0);
+  if (number >= 1_000_000_000) return (number / 1_000_000_000).toFixed(number >= 10_000_000_000 ? 0 : 1) + 'B';
+  if (number >= 1_000_000) return (number / 1_000_000).toFixed(number >= 10_000_000 ? 0 : 1) + 'M';
+  if (number >= 1_000) return (number / 1_000).toFixed(number >= 10_000 ? 0 : 1) + 'K';
+  return number.toLocaleString('zh-CN');
+}
+
+function usageTrend(data) {
+  const rows = data || [];
+  const width = 760, height = 226, left = 38, top = 18, bottom = 30;
+  const plotW = width - left - 12, plotH = height - top - bottom;
+  const max = Math.max(1, ...rows.map(item => Number(item.totalTokens || 0)));
+  const step = plotW / Math.max(1, rows.length);
+  const bars = rows.map((item, index) => {
+    const x = left + index * step + Math.max(1, step * .16);
+    const barW = Math.max(2, step * .68);
+    const inputH = plotH * Number(item.inputTokens || 0) / max;
+    const outputH = plotH * Number(item.outputTokens || 0) / max;
+    const yBase = top + plotH;
+    return `<g><title>${esc(item.date)} · ${compactNumber(item.totalTokens)} tokens</title><rect class="usage-bar-input" x="${x}" y="${yBase - inputH}" width="${barW}" height="${inputH}" rx="2"/><rect class="usage-bar-output" x="${x}" y="${yBase - inputH - outputH}" width="${barW}" height="${outputH}" rx="2"/></g>`;
+  }).join('');
+  const points = rows.map((item, index) => `${left + index * step + step / 2},${top + plotH - plotH * Number(item.totalTokens || 0) / max}`).join(' ');
+  const ticks = [0, .5, 1].map(ratio => `<g><line x1="${left}" x2="${width - 12}" y1="${top + plotH * (1-ratio)}" y2="${top + plotH * (1-ratio)}"/><text x="0" y="${top + plotH * (1-ratio) + 4}">${compactNumber(max * ratio)}</text></g>`).join('');
+  const first = rows[0]?.date?.slice(5) || '', last = rows[rows.length - 1]?.date?.slice(5) || '';
+  return `<svg class="usage-trend" viewBox="0 0 ${width} ${height}" role="img" aria-label="每日 Token 用量趋势"><g class="usage-grid">${ticks}</g>${bars}${points ? `<polyline class="usage-line" points="${points}"/>` : ''}<text class="usage-date" x="${left}" y="${height - 5}">${esc(first)}</text><text class="usage-date" x="${width - 12}" y="${height - 5}" text-anchor="end">${esc(last)}</text></svg>`;
+}
+
+function renderUsage() {
+  const body = $('#settingsBody');
+  const usage = state.usage;
+  if (state.usageLoading && !usage) {
+    body.innerHTML = '<h3>用量中心</h3><p class="lead">正在汇总本地运行记录…</p><div class="usage-loading"></div>';
+    return;
+  }
+  const totals = usage?.totals || {};
+  const today = usage?.daily?.[usage.daily.length - 1] || {};
+  const models = usage?.models || [];
+  const providers = usage?.providers || [];
+  const palette = ['#6158e8','#16aabd','#9b77f2','#ef9f52','#46a575','#d65f7a'];
+  let angle = 0;
+  const stops = models.slice(0, 6).map((model, index) => { const start = angle; angle += Number(model.share || 0) * 360; return `${palette[index % palette.length]} ${start}deg ${angle}deg`; }).join(',');
+  const rangeButton = (value, label) => `<button class="usage-range ${state.usageRange === value ? 'active' : ''}" data-usage-range="${value}">${label}</button>`;
+  body.innerHTML = `
+    <section class="usage-page">
+      <div class="settings-page-heading usage-heading"><div><div class="usage-kicker">LOCAL USAGE LEDGER</div><h3>每日 Token 用量</h3><p class="lead">按本机请求汇总；上游未返回 usage 时会明确标记为估算，不读取任何提示词正文。</p></div>
+        <div class="usage-heading-actions"><div class="usage-ranges">${rangeButton('7','近 7 天')}${rangeButton('30','近 30 天')}${rangeButton('all','全部')}</div><button class="btn-ghost" id="exportUsage">导出 CSV</button></div></div>
+      <div class="usage-metrics">
+        <article class="usage-metric primary"><span>Token 总量</span><strong>${compactNumber(totals.totalTokens)}</strong><small>输入 ${compactNumber(totals.inputTokens)} · 输出 ${compactNumber(totals.outputTokens)}</small></article>
+        <article class="usage-metric"><span>今日用量</span><strong>${compactNumber(today.totalTokens)}</strong><small>${today.requests || 0} 次模型请求</small></article>
+        <article class="usage-metric"><span>有效交互</span><strong>${compactNumber(totals.messages)}</strong><small>${totals.requests || 0} 次模型调用</small></article>
+        <article class="usage-metric"><span>活跃天数</span><strong>${totals.activeDays || 0}</strong><small>连续 ${totals.currentStreak || 0} 天 · 最长 ${totals.longestStreak || 0} 天</small></article>
+      </div>
+      <div class="usage-insights">
+        <span><i class="success"></i>成功率 <strong>${((totals.successRate ?? 1) * 100).toFixed(1)}%</strong></span>
+        <span>日均 <strong>${compactNumber(totals.averagePerActiveDay)}</strong></span>
+        <span>峰值时段 <strong>${String(totals.peakHour || 0).padStart(2,'0')}:00–${String(((totals.peakHour || 0)+1)%24).padStart(2,'0')}:00</strong></span>
+        <span>真实上报 <strong>${((totals.reportedShare || 0) * 100).toFixed(0)}%</strong></span>
+        ${totals.estimatedTokens ? `<span class="estimate-note">约 ${compactNumber(totals.estimatedTokens)} Token 为本地估算</span>` : ''}
+      </div>
+      <div class="usage-layout">
+        <article class="usage-panel usage-wide"><div class="usage-panel-head"><div><h4>按天趋势</h4><p>紫色为输入，青色为输出；悬停柱形查看当天明细。</p></div><div class="usage-legend"><span class="input"></span>输入 <span class="output"></span>输出</div></div>${usageTrend(usage?.daily || [])}</article>
+        <article class="usage-panel"><div class="usage-panel-head"><div><h4>模型用量</h4><p>选定周期内的 Token 占比</p></div></div><div class="usage-model-wrap"><div class="usage-donut" style="background:conic-gradient(${stops || 'var(--border-l2) 0 360deg'})"><div><strong>${models.length}</strong><span>模型</span></div></div><div class="usage-model-list">${models.slice(0,6).map((model,index)=>`<div><i style="background:${palette[index%palette.length]}"></i><span title="${esc(model.name)}">${esc(model.name)}</span><strong>${(Number(model.share || 0)*100).toFixed(1)}%</strong><small>${compactNumber(model.totalTokens)}</small></div>`).join('') || '<p class="usage-empty">还没有用量记录</p>'}</div></div></article>
+        <article class="usage-panel usage-wide"><div class="usage-panel-head"><div><h4>活跃热力图</h4><p>最近 26 周的本地模型调用</p></div><span>${usage?.heatmap?.filter(item=>item.totalTokens>0).length || 0} 个活跃日</span></div><div class="usage-heatmap" aria-label="最近 26 周活跃情况">${(usage?.heatmap || []).map(item=>{ const level=item.totalTokens===0?0:item.totalTokens<1000?1:item.totalTokens<10000?2:item.totalTokens<100000?3:4; return `<i data-level="${level}"><span>${esc(item.date)} · ${compactNumber(item.totalTokens)} tokens</span></i>`;}).join('')}</div></article>
+        <article class="usage-panel"><div class="usage-panel-head"><div><h4>提供方健康</h4><p>请求、用量与错误率</p></div></div><div class="usage-provider-list">${providers.map(provider=>`<div><span><i></i>${esc(provider.name)}</span><strong>${compactNumber(provider.totalTokens)}</strong><small>${provider.requests} 次 · ${provider.requests ? (provider.errors/provider.requests*100).toFixed(0) : 0}% 错误</small></div>`).join('') || '<p class="usage-empty">还没有提供方记录</p>'}</div></article>
+      </div>
+    </section>`;
+  body.querySelectorAll('[data-usage-range]').forEach(button => button.onclick = async () => {
+    state.usageRange = button.dataset.usageRange; state.usage = null; renderUsage(); await loadUsage(state.usageRange); renderUsage();
+  });
+  $('#exportUsage').onclick = () => {
+    const rows = [['date','input_tokens','output_tokens','total_tokens','requests','errors'], ...(usage?.daily || []).map(item => [item.date,item.inputTokens,item.outputTokens,item.totalTokens,item.requests,item.errors])];
+    const blob = new Blob([rows.map(row => row.join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
+    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `multichat-usage-${state.usageRange}d.csv`; link.click(); setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+  };
 }
 
 function showWorkspaceForm() {
@@ -440,6 +580,23 @@ function showWorkspaceForm() {
     onMount: (card) => {
       $('#workspaceCancel', card).onclick = closeModal;
       $('#workspaceForm', card).onsubmit = async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(event.target).entries()); try { await api('/api/workspaces', { method: 'POST', body: JSON.stringify(data) }); await loadWorkspaces(); renderTopbar(); renderSettings('workspace'); closeModal(); toast('工作区已创建'); } catch (error) { toast(error.message, 'error'); } };
+    }
+  });
+}
+
+function showMemoryModal(id = null) {
+  const editing = id ? state.memories.find(item => item.id === id) : null;
+  showModal({
+    title: editing ? '编辑项目记忆' : '新增项目记忆',
+    body: `<form id="memoryForm"><div class="field"><label>标题</label><input name="title" required maxlength="120" value="${esc(editing?.title || '')}" placeholder="例如：代码风格" /></div><div class="field"><label>事实或偏好</label><textarea name="content" required maxlength="4000" rows="6" placeholder="只记录可长期复用、由你确认的信息。">${esc(editing?.content || '')}</textarea><div class="pmeta">记忆作为上下文参考，不会被当作可执行指令。</div></div><div id="memoryErr" class="auth-error"></div><div class="row"><button type="button" class="btn-ghost" id="memoryCancel">取消</button><button class="btn-primary" type="submit">保存</button></div></form>`,
+    onMount: card => {
+      $('#memoryCancel', card).onclick = closeModal;
+      $('#memoryForm', card).onsubmit = async event => {
+        event.preventDefault(); const values = Object.fromEntries(new FormData(event.target).entries());
+        const payload = { ...values, projectId: state.selectedProject?.id, enabled: editing ? editing.enabled !== false : true };
+        try { await api(editing ? '/api/memories/' + editing.id : '/api/memories', { method: editing ? 'PUT' : 'POST', body: JSON.stringify(payload) }); await loadProjectControlData(); renderSettings('workspace', true); closeModal(); toast('项目记忆已保存'); }
+        catch (error) { $('#memoryErr', card).textContent = error.message; }
+      };
     }
   });
 }
@@ -471,19 +628,46 @@ function showAssetUrlModal() {
 function renderRuns() {
   const body = $('#settingsBody');
   const runs = state.runs || [];
+  const completed = runs.filter(run => run.status === 'completed').length;
+  const totalTokens = runs.reduce((sum, run) => sum + Number(run.usage?.totalTokens || 0), 0);
   body.innerHTML = `
-    <h3>运行记录</h3>
-    <p class="lead">查看智能体每次运行的状态、步骤和工具调用，便于复盘失败原因。</p>
-    <div class="provider-row" style="margin-bottom:14px;"><button class="btn-ghost" id="refreshRuns">刷新</button><span class="pmeta">保留最近 ${runs.length} 条记录</span></div>
+    <div class="settings-page-heading"><div><div class="usage-kicker">RUN FLIGHT RECORDER</div><h3>运行黑匣子</h3><p class="lead">复盘模型请求、工具权限、上下文来源、耗时与 Token；点击记录打开上下文透镜。</p></div><button class="btn-ghost" id="refreshRuns">刷新</button></div>
+    <div class="passport-summary"><span><strong>${runs.length}</strong> 条记录</span><span><strong>${completed}</strong> 次完成</span><span><strong>${compactNumber(totalTokens)}</strong> tokens</span><span class="${runs.length - completed ? 'warn' : ''}"><strong>${runs.length - completed}</strong> 次未完成</span></div>
     <div class="run-list">
       ${runs.map(r => `
-        <div class="run-row">
+        <button class="run-row run-row-button" data-run-id="${esc(r.id)}">
           <span class="run-dot ${esc(r.status || '')}"></span>
-          <div class="run-main"><div class="run-title">${esc(r.agentName || r.agentId || '智能体运行')}</div><div class="run-meta">${esc(r.model || '未指定模型')} · ${esc(r.steps || 0)} 步 · ${esc(r.toolCalls || 0)} 次工具调用 · ${esc(r.startedAt || '')}</div></div>
-          <span class="run-status">${r.status === 'completed' ? '已完成' : r.status === 'error' ? '失败' : '进行中'}</span>
-        </div>`).join('') || '<div style="color:var(--label-caption);font-size:13px;padding:8px 0;">还没有 Agent 运行记录。</div>'}
+          <div class="run-main"><div class="run-title">${esc(r.agentName || r.agentId || '智能体运行')} <span>${esc(r.provider?.name || '')}</span></div><div class="run-meta">${esc(r.model || '未指定模型')} · ${esc(r.steps || 0)} 步 · ${esc(r.toolCalls || 0)} 次工具 · ${compactNumber(r.usage?.totalTokens || 0)} tokens · ${r.finishedAt ? ((Date.parse(r.finishedAt)-Date.parse(r.startedAt))/1000).toFixed(1)+'s' : '运行中'}</div></div>
+          <span class="run-status">${r.status === 'completed' ? '已完成' : r.status === 'error' ? '失败' : r.status === 'cancelled' ? '已取消' : '进行中'}</span><span class="run-open">›</span>
+        </button>`).join('') || '<div style="color:var(--label-caption);font-size:13px;padding:8px 0;">还没有 Agent 运行记录。</div>'}
     </div>`;
   $('#refreshRuns').onclick = async () => { await loadRuns(); renderSettings('runs', true); };
+  body.querySelectorAll('[data-run-id]').forEach(button => button.onclick = () => showRunDetail(button.dataset.runId));
 }
 
-export { openSettings,closeSettings,switchSettingsTab,renderSettings,showWorkspaceForm,showProjectForm,showAssetUrlModal,renderRuns };
+async function showRunDetail(id) {
+  try {
+    const run = await api('/api/runs/' + encodeURIComponent(id));
+    const steps = (run.turns || []).flatMap(turn => turn.steps || []);
+    const context = run.contextManifest || {};
+    const usage = run.usage || {};
+    const chip = (label, value) => `<span><small>${esc(label)}</small><strong>${esc(value)}</strong></span>`;
+    const statusText = run.status === 'completed' ? '已完成' : run.status === 'error' ? '失败' : run.status === 'cancelled' ? '已取消' : '运行中';
+    showModal({
+      title: `运行详情 · ${run.agentName || run.agentId}`,
+      body: `<div class="run-detail-summary">${chip('状态', statusText)}${chip('模型', run.model || '—')}${chip('Token', compactNumber(usage.totalTokens || 0))}${chip('步骤', String(steps.length))}${chip('策略', run.toolPolicy === 'safe' ? '安全' : '自动')}</div>
+        <div class="run-detail-grid"><section><h4>执行时间线</h4><div class="flight-timeline">${steps.map((step,index)=>`<article class="flight-step ${esc(step.status)}"><i>${index+1}</i><div><strong>${step.kind === 'tool_call' ? esc(step.tool || '工具调用') : `模型请求 · ${esc(step.model || '')}`}</strong><p>${step.kind === 'tool_call' ? `${esc((step.permissions||[]).join(', ') || '无特殊权限')} · ${esc(step.risk || 'low')}` : `${step.messageCount || 0} 条上下文 · ${compactNumber(step.usage?.total || 0)} tokens`}</p>${step.error ? `<code>${esc(step.error)}</code>` : ''}</div><span>${step.durationMs != null ? (step.durationMs/1000).toFixed(2)+'s' : step.status}</span></article>`).join('') || '<div class="control-empty">没有步骤轨迹。</div>'}</div></section>
+        <section><h4>上下文透镜</h4><div class="context-lens"><div><span>消息</span><strong>${context.messages || 0}</strong></div><div><span>系统上下文</span><strong>${compactNumber(context.systemCharacters || 0)} 字</strong></div><div><span>项目文件</span><strong>${(context.assets || []).length}</strong></div><div><span>记忆</span><strong>${(context.memories || []).length}</strong></div></div>
+        <div class="context-source"><h5>注入来源</h5>${[['文件',context.assets],['记忆',context.memories],['Skills',context.skills],['工具',context.tools],['MCP',context.mcpServers]].map(([label,items])=>`<div><strong>${label}</strong><span>${(items||[]).map(item=>esc(item.name || item.id)).join('、') || '无'}</span></div>`).join('')}</div>
+        <div class="context-source"><h5>Token 构成</h5><div><strong>输入</strong><span>${compactNumber(usage.inputTokens || 0)}</span></div><div><strong>输出</strong><span>${compactNumber(usage.outputTokens || 0)}</span></div><div><strong>缓存</strong><span>${compactNumber(usage.cachedTokens || 0)}</span></div><div><strong>估算</strong><span>${compactNumber(usage.estimatedTokens || 0)}</span></div></div></section></div>
+        <div class="row"><button class="btn-ghost" id="exportRun">导出运行快照</button><button class="btn-primary" id="closeRunDetail">关闭</button></div>`,
+      onMount: card => {
+        card.classList.add('run-detail-modal');
+        $('#closeRunDetail', card).onclick = closeModal;
+        $('#exportRun', card).onclick = () => { const blob = new Blob([JSON.stringify(run,null,2)],{type:'application/json'}); const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`${run.id}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000); };
+      }
+    });
+  } catch (error) { toast(error.message, 'error'); }
+}
+
+export { openSettings,closeSettings,switchSettingsTab,renderSettings,renderUsage,renderCapabilities,showRunDetail,showMemoryModal,showWorkspaceForm,showProjectForm,showAssetUrlModal,renderRuns };

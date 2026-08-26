@@ -5,6 +5,7 @@
 // Streamable HTTP is supported for remote servers. Connections are cached by
 // server configuration so tools/list and tools/call share one session.
 const { spawn } = require('child_process');
+const { redactSecrets } = require('./lib/redact');
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import type { JsonRecord, RequestOptions } from './types';
 
@@ -110,7 +111,7 @@ class McpStdioClient {
     this.proc.stderr.setEncoding('utf8');
     this.proc.stderr.on('data', (chunk: string) => {
       const text = String(chunk).trim();
-      if (text) console.error('[mcp stderr]', text.slice(0, 500));
+      if (text) console.error('[mcp stderr]', redactSecrets(text).slice(0, 500));
     });
     this.proc.on('error', (error: Error) => this._disconnect(error));
     this.proc.on('exit', (code: number | null) => this._disconnect(new Error(`MCP server exited with code ${code}`)));
@@ -201,7 +202,7 @@ class McpStdioClient {
       let message;
       try { message = JSON.parse(line); }
       catch {
-        console.error('[mcp] ignored non-JSON stdout line:', line.slice(0, 200));
+        console.error('[mcp] ignored non-JSON stdout line:', redactSecrets(line).slice(0, 200));
         continue;
       }
       if (message.id === undefined || message.id === null) continue;

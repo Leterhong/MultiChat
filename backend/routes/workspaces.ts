@@ -1,7 +1,7 @@
 'use strict';
 // ── Workspaces / Projects / Assets / Prompts 路由 ───────────────────────
 const ctx = require('../lib/context');
-const { assetMeta } = require('../lib/util');
+const { assetMeta, readResponseText } = require('../lib/util');
 
 function sendWorkspaceError(res, error) {
   const status = /not found/i.test(error.message) ? 404 : 400;
@@ -90,16 +90,15 @@ module.exports = function registerWorkspaces(app) {
       if (body.url) {
         let value = String(body.url).trim();
         let sameOrigin = false;
-        if (value.startsWith('/')) { value = 'http://' + (req.headers.host || ('127.0.0.1:' + ctx.PORT)) + value; sameOrigin = true; }
+        if (value.startsWith('/')) { value = 'http://127.0.0.1:' + ctx.PORT + value; sameOrigin = true; }
         if (!/^https?:\/\//i.test(value)) return res.status(400).json({ error: 'only http(s) URL is allowed' });
         const response = await ctx.safeFetch(value, { signal: AbortSignal.timeout(20000), headers: { accept: 'text/plain, text/markdown, application/json, text/html' } }, sameOrigin);
         if (!response.ok) return res.status(502).json({ error: 'asset fetch failed with HTTP ' + response.status });
         const contentType = response.headers.get('content-type') || '';
-        if (!/^(text\/|application\/(json|xml)|image\/)/i.test(contentType)) {
+        if (!/^(text\/|application\/(json|xml))/i.test(contentType)) {
           return res.status(415).json({ error: '不支持的内容类型: ' + contentType });
         }
-        content = await response.text();
-        if (Buffer.byteLength(content, 'utf8') > 2_000_000) return res.status(413).json({ error: 'asset content exceeds 2 MB' });
+        content = await readResponseText(response, 2_000_000);
         source = 'url';
         url = value;
         mimeType = response.headers.get('content-type') || mimeType;

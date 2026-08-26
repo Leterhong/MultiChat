@@ -22,7 +22,10 @@ class OpenAIAdapter extends BaseAdapter {
   }
 
   getEndpoint() {
-    return `${this.config.baseUrl.replace(/\/+$/, '')}/v1/chat/completions`;
+    const base = this.config.baseUrl.replace(/\/+$/, '');
+    if (/\/chat\/completions$/i.test(base)) return base;
+    const versioned = /\/(?:v\d+(?:[a-z0-9_-]+)?|openai)$/i.test(base);
+    return `${base}${versioned ? '' : '/v1'}/chat/completions`;
   }
 
   transformSSEChunk(line) {

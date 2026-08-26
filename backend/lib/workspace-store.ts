@@ -100,7 +100,16 @@ function createWorkspaceStore(store: JsonStore) {
     const index = rows.findIndex(x => x.id === id);
     if (index < 0) throw new Error('project not found');
     const current = rows[index];
-    rows[index] = { ...current, ...(input.name !== undefined ? { name: String(input.name).trim() } : {}), ...(input.description !== undefined ? { description: String(input.description).trim() } : {}), updatedAt: now(), id: current.id, workspaceId: current.workspaceId };
+    const nullableId = (value, label) => value == null || value === '' ? null : safeId(value, label);
+    rows[index] = {
+      ...current,
+      ...(input.name !== undefined ? { name: String(input.name).trim() } : {}),
+      ...(input.description !== undefined ? { description: String(input.description).trim() } : {}),
+      ...(input.defaultAgentId !== undefined ? { defaultAgentId: nullableId(input.defaultAgentId, 'agent id') } : {}),
+      ...(input.defaultProviderId !== undefined ? { defaultProviderId: nullableId(input.defaultProviderId, 'provider id') } : {}),
+      ...(input.defaultModel !== undefined ? { defaultModel: input.defaultModel == null || input.defaultModel === '' ? null : String(input.defaultModel).trim().slice(0, 200) } : {}),
+      updatedAt: now(), id: current.id, workspaceId: current.workspaceId,
+    };
     if (!rows[index].name) throw new Error('project name is required');
     store.write(PROJECT_FILE, rows);
     return rows[index];

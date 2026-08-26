@@ -107,7 +107,7 @@ function showImportPreview(kind: ImportKind, payload: any, preview: any) {
       ${previewDetails(kind, preview)}
       ${warnings.length ? `<div class="extension-import-warnings"><strong>启用前请确认</strong>${warnings.map((warning: string) => `<div>• ${esc(warning)}</div>`).join('')}</div>` : ''}
       ${conflicts.length ? `<div class="extension-import-conflicts"><strong>发现同名项</strong>${conflicts.map((item: any) => `<div>${esc(item.id)}${item.path ? ` · ${esc(item.path)}` : ''}${item.replaceable === false ? ' · 其他来源，不可覆盖' : ''}</div>`).join('')}</div>` : ''}
-      ${kind === 'plugin' ? '<div class="extension-import-note">这是 DeepSeek Harness 风格的“整包安装 / 独立启停”体验，包契约使用 Codex plugin。MultiChat 当前会加载其中的 Skills 与 MCP；其他资源会保留，但不会把上传的 JS、hooks 直接注入网站主进程。</div>' : ''}
+      ${kind === 'plugin' ? '<div class="extension-import-note">插件以完整资源包安装并独立启停，包契约使用 Codex plugin。MultiChat 当前会加载其中的 Skills 与 MCP；其他资源会保留，但不会把上传的 JS、hooks 直接注入网站主进程。</div>' : ''}
       ${conflicts.length && !cannotReplace ? '<label class="extension-import-confirm"><input type="checkbox" id="replaceExtension" /> 我已确认，用这个包覆盖当前项目中的同名项</label>' : ''}
       <div id="extensionImportErr" class="auth-error">${cannotReplace ? '同名项来自插件或其他受保护来源，本次导入不能覆盖。' : ''}</div>
       <div class="row"><button type="button" class="btn-ghost" id="importBack">重新选择</button><button type="button" class="btn-primary" id="importCommit" style="width:auto;padding:9px 18px;" ${cannotReplace ? 'disabled' : ''}>确认导入</button></div>`,

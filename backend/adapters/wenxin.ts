@@ -1,4 +1,5 @@
 const BaseAdapter = require('./base');
+const { readResponseJson } = require('../lib/util');
 import type { AdapterConfig, JsonRecord } from '../types';
 
 interface WenxinTokenResponse {
@@ -28,10 +29,10 @@ class WenxinAdapter extends BaseAdapter {
       throw new Error('Wenxin API key format error. Expected: apiKey:secretKey');
     }
 
-    const tokenUrl = `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${apiKey}&client_secret=${secretKey}`;
-
-    const response = await fetch(tokenUrl);
-    const data = await response.json() as WenxinTokenResponse;
+    const tokenUrl = 'https://aip.baidubce.com/oauth/2.0/token';
+    const form = new URLSearchParams({ grant_type: 'client_credentials', client_id: apiKey, client_secret: secretKey });
+    const response = await fetch(tokenUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form });
+    const data = await readResponseJson(response, 256_000) as WenxinTokenResponse;
 
     if (data.error) {
       throw new Error(`Failed to get Wenxin access token: ${data.error_description}`);

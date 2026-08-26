@@ -21,6 +21,9 @@ declare global {
   const loadProviders: any;
   const loadRuntime: any;
   const loadRuns: any;
+  const loadUsage: any;
+  const loadCapabilities: any;
+  const loadProjectControlData: any;
   const loadWorkspaces: any;
   const loadProjects: any;
   const loadSkills: any;
@@ -47,6 +50,10 @@ declare global {
   const showProjectForm: any;
   const showAssetUrlModal: any;
   const renderRuns: any;
+  const renderUsage: any;
+  const renderCapabilities: any;
+  const showRunDetail: any;
+  const showMemoryModal: any;
 
   // ── modal ──
   const showModal: any;

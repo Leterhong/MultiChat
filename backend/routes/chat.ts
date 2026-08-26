@@ -4,7 +4,39 @@
 const ctx = require('../lib/context');
 const agent = require('../runtime/agent');
 const extensions = require('../extensions/manager');
+const usageLedger = require('../lib/usage');
+const { readResponseText, readResponseJson } = require('../lib/util');
+const { redactSecrets } = require('../lib/redact');
 import type { ChatMessage, ChatRequestOptions, JsonRecord, ToolCall } from '../types';
+
+function configuredProvider(providerId: string | null, modelName: string) {
+  const providers = ctx.providerStore.list();
+  if (providerId) {
+    const provider = providers.find(item => item.id === providerId) || null;
+    if (provider?.id === 'mock' && /(?:127\.0\.0\.1|localhost):3099/i.test(String(provider.baseUrl || ''))) {
+      return { ...provider, apiType: 'openai', baseUrl: `http://127.0.0.1:${ctx.PORT}/api/mock`, allowPrivate: true };
+    }
+    return provider;
+  }
+  const matches = providers.filter(provider => (provider.models || []).includes(modelName));
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function allowPrivateProvider(provider) {
+  return provider.allowPrivate === true || ['ollama', 'lmstudio'].includes(String(provider.apiType || '').toLowerCase());
+}
+
+function usageContext(body, provider, modelName, extra: JsonRecord = {}) {
+  return {
+    providerId: provider.id,
+    providerName: provider.name || provider.id,
+    model: modelName,
+    workspaceId: body.workspaceId || null,
+    projectId: body.projectId || null,
+    conversationId: body.conversationId || null,
+    ...extra,
+  };
+}
 
 // 挂起等待用户对某个工具调用的审批决策。
 // 超时（默认 5 分钟）自动拒绝；signal 触发（前端停止）则取消。
@@ -41,6 +73,8 @@ module.exports = function registerChat(app) {
   // ── OpenAI 兼容统一端点（透传上游，做 SSE 适配） ──
   app.post('/v1/chat/completions', async (req, res) => {
     const body = req.body;
+    const requestStartedAt = new Date().toISOString();
+    const requestStartedMs = Date.now();
     const requestedModel = body.model || '';
 
     // model format: "providerId:modelName" or plain "modelName"
@@ -55,36 +89,15 @@ module.exports = function registerChat(app) {
       providerId = null;
     }
 
-    // 优先使用前端传来的 provider 配置（_provider 字段）
-    // 兼容 IndexedDB 前端存储 + providers.json 后端存储
-    console.log('[DEBUG] body._provider =', body._provider ? 'present (' + body._provider.id + ', ' + body._provider.apiType + ')' : 'MISSING', '| providerId from model =', providerId, '| model =', requestedModel);
-    let provider = body._provider || null;
-
-    if (!provider && providerId) {
-      // 回退到 providers.json 文件查找
-      const providers = ctx.store.read('providers.json', []);
-      provider = providers.find(p => p.id === providerId) || null;
-    }
-
-    // 最后防线：如果 _provider 字段存在但缺少关键字段，补全
-    if (provider && !provider.apiType) {
-      if (provider.baseUrl && provider.baseUrl.includes('localhost:1234')) {
-        provider.apiType = 'lmstudio';
-      } else if (provider.baseUrl && provider.baseUrl.includes('localhost:11434')) {
-        provider.apiType = 'ollama';
-      } else {
-        provider.apiType = 'openai';
-      }
-      console.log('[DEBUG] Inferred apiType =', provider.apiType, 'for provider', provider.id);
-    }
+    // Provider credentials and network policy are server-owned. Never trust a
+    // browser-supplied _provider/baseUrl/apiKey override.
+    const provider = configuredProvider(providerId, modelName);
 
     if (!provider && providerId) {
       return res.status(400).json({ error: { message: `Provider "${providerId}" not found` } });
     }
 
-    if (!provider) {
-      return res.status(400).json({ error: { message: 'No provider specified and no provider config in request body' } });
-    }
+    if (!provider) return res.status(400).json({ error: { message: 'No uniquely configured provider matches this model' } });
 
     const stream = body.stream === true;
 
@@ -107,20 +120,34 @@ module.exports = function registerChat(app) {
       // 与 agent 模式（buildAssetContext）保持一致，由前端勾选 assetIds 决定注入哪些文件。
       let messages = body.messages;
       if (body.projectId) {
-        const assetCtx = agent.buildAssetContext(body.projectId, body.assetIds);
-        if (assetCtx) messages = [{ role: 'system', content: assetCtx }].concat(messages);
+        const query = [...(body.messages || [])].reverse().find(message => message.role === 'user')?.content || '';
+        const assetCtx = agent.buildAssetContext(body.projectId, body.assetIds, query);
+        const memoryCtx = agent.buildMemoryContext(body.projectId);
+        const projectContext = [memoryCtx, assetCtx].filter(Boolean).join('\n\n');
+        if (projectContext) messages = [{ role: 'system', content: projectContext }].concat(messages);
       }
       const upstreamBody = adapter.buildRequestBody(modelName, messages, stream, extra);
 
-      const upstream = await fetch(upstreamUrl, {
+      const upstreamAbort = new AbortController();
+      const onDisconnect = () => upstreamAbort.abort();
+      res.once('close', onDisconnect);
+      const signal = typeof AbortSignal.any === 'function'
+        ? AbortSignal.any([AbortSignal.timeout(180000), upstreamAbort.signal])
+        : upstreamAbort.signal;
+      const upstream = await ctx.safeFetch(upstreamUrl, {
         method: 'POST',
         headers: adapter.getHeaders(),
         body: JSON.stringify(upstreamBody),
-      });
-
+        signal,
+      }, allowPrivateProvider(provider));
       if (!upstream.ok) {
-        const errText = await upstream.text();
-        return res.status(upstream.status).type('application/json').send(errText);
+        const errText = await readResponseText(upstream, 128_000);
+        await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+          timestamp: requestStartedAt, durationMs: Date.now() - requestStartedMs,
+          interactionId: body.interactionId || res.locals?.requestId, mode: 'chat', status: 'error', errorCode: `HTTP_${upstream.status}`,
+          usage: { input: 0, output: 0, total: 0, source: 'estimated' },
+        }));
+        return res.status(upstream.status).type('application/json').send(redactSecrets(errText));
       }
 
       if (stream) {
@@ -133,8 +160,11 @@ module.exports = function registerChat(app) {
         const reader = upstream.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let observedUsage: JsonRecord = {};
+        let output = '';
 
         (async () => {
+          let status = 'success';
           try {
             while (true) {
               const { done, value } = await reader.read();
@@ -149,25 +179,51 @@ module.exports = function registerChat(app) {
 
                 const transformed = adapter.transformSSEChunk(line);
                 if (transformed) {
+                  if (transformed.usage) observedUsage = usageLedger.mergeUsage(observedUsage, transformed.usage);
+                  for (const choice of transformed.choices || []) {
+                    output += choice?.delta?.content || choice?.message?.content || '';
+                  }
                   res.write(`data: ${JSON.stringify(transformed)}\n\n`);
                 }
               }
             }
           } catch (e) {
-            console.error('Stream read error:', e.message);
+            status = upstreamAbort.signal.aborted ? 'cancelled' : 'error';
+            console.error('Stream read error:', redactSecrets(e.message));
           } finally {
-            res.write('data: [DONE]\n\n');
-            res.end();
+            const normalized = usageLedger.normalizeUsage(observedUsage, messages, output);
+            await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+              timestamp: requestStartedAt, durationMs: Date.now() - requestStartedMs,
+              interactionId: body.interactionId || res.locals?.requestId, mode: 'chat', status,
+              usage: normalized,
+            }));
+            if (!res.writableEnded && !res.destroyed) {
+              res.write('data: [DONE]\n\n');
+              res.end();
+            }
           }
         })();
       } else {
-        const data = await upstream.json();
+        const data = await readResponseJson(upstream, 20_000_000);
         const transformed = adapter.transformResponse(data);
+        const output = transformed?.choices?.[0]?.message?.content || '';
+        await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+          timestamp: requestStartedAt, durationMs: Date.now() - requestStartedMs,
+          interactionId: body.interactionId || res.locals?.requestId, mode: 'chat', status: 'success',
+          usage: usageLedger.normalizeUsage(transformed.usage, messages, output),
+        }));
         res.json(transformed);
       }
     } catch (err) {
-      console.error('Upstream error:', err.message);
-      res.status(502).json({ error: { message: `Upstream request failed: ${err.message}` } });
+      const safeMessage = redactSecrets(err.message);
+      console.error('Upstream error:', safeMessage);
+      await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+        timestamp: requestStartedAt, durationMs: Date.now() - requestStartedMs,
+        interactionId: body.interactionId || res.locals?.requestId, mode: 'chat', status: err.name === 'AbortError' ? 'cancelled' : 'error', errorCode: err.name || 'UPSTREAM_ERROR',
+        usage: { input: 0, output: 0, total: 0, source: 'estimated' },
+      }));
+      if (res.headersSent || res.destroyed) return;
+      res.status(502).json({ error: { message: `Upstream request failed: ${safeMessage}` } });
     }
   });
 
@@ -189,10 +245,8 @@ module.exports = function registerChat(app) {
       modelName = requestedModel;
       providerId = null;
     }
-    let provider = body._provider || null;
-    if (!provider && providerId) provider = ctx.store.read('providers.json', []).find(p => p.id === providerId) || null;
+    const provider = configuredProvider(providerId, modelName);
     if (!provider) return res.status(400).json({ error: { message: 'No provider specified' } });
-    if (!provider.apiType) provider.apiType = 'openai';
 
     const legacyCapabilities = ctx.store.read(ctx.SKILL_FILE, []);
     const workflowSkills = extensions.listSkills();
@@ -205,6 +259,9 @@ module.exports = function registerChat(app) {
     const stream = body.stream !== false; // 默认 true
     if (!stream) return res.status(400).json({ error: { message: 'Only streaming mode is supported for agent chat' } });
     const run = await agent.createRun(found, body);
+    run.model = modelName;
+    run.provider = { id: provider.id, name: provider.name || provider.id, apiType: provider.apiType || 'openai' };
+    run.usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0, cachedTokens: 0, reasoningTokens: 0, reportedTokens: 0, estimatedTokens: 0 };
     // 注册取消句柄：前端停止时可真正中断上游 fetch 与 MCP 子进程
     const runAbort = new AbortController();
     ctx.runAborts.set(run.id, runAbort);
@@ -248,8 +305,29 @@ module.exports = function registerChat(app) {
     }
     const tools = [...agent.buildToolsFor(enabledTools), ...workflowRuntime.definitions, ...mcpRuntime.definitions];
     const mcpWarningText = mcpRuntime.errors.length ? '[Unavailable MCP servers]\n' + mcpRuntime.errors.map(item => `- ${item.name}: ${item.error}`).join('\n') : '';
-    const systemParts = [agent.buildAgentSystemText(found, selectedWorkflowSkills), mcpWarningText, agent.buildAssetContext(body.projectId, body.assetIds)].filter(Boolean);
+    const userQuery = [...(body.messages || [])].reverse().find(message => message.role === 'user')?.content || '';
+    const assetContext = agent.buildAssetContext(body.projectId, body.assetIds, userQuery);
+    const memoryContext = agent.buildMemoryContext(body.projectId);
+    const systemParts = [agent.buildAgentSystemText(found, selectedWorkflowSkills), mcpWarningText, memoryContext, assetContext].filter(Boolean);
     const systemText = systemParts.join('\n\n');
+    const selectedAssetIds = Array.isArray(body.assetIds) ? new Set(body.assetIds) : null;
+    const selectedAssets = body.projectId
+      ? ctx.workspaceStore.assets().filter(item => item.projectId === body.projectId && (!selectedAssetIds || selectedAssetIds.has(item.id)))
+      : [];
+    run.contextManifest = {
+      workspaceId: body.workspaceId || null,
+      projectId: body.projectId || null,
+      conversationId: body.conversationId || null,
+      messages: Array.isArray(body.messages) ? body.messages.length : 0,
+      systemCharacters: systemText.length,
+      assets: selectedAssets.map(item => ({ id: item.id, name: item.name, size: item.size })),
+      memories: memoryContext ? ctx.store.read('memories.json', []).filter(item => item.projectId === body.projectId && item.enabled !== false).map(item => ({ id: item.id, title: item.title })) : [],
+      skills: selectedWorkflowSkills.map(item => ({ id: item.key || item.id, name: item.name, source: item.source?.kind || 'unknown' })),
+      tools: enabledTools.map(item => ({ id: item.id, name: item.name, permissions: agent.skillPermissions(item) })),
+      mcpServers: (found.mcpServerIds || []).map(id => ({ id })),
+      mcpWarnings: mcpRuntime.errors,
+    };
+    await agent.persistRun(run);
     if (mcpRuntime.errors.length) {
       res.write('data: ' + JSON.stringify({ meta: { agent: { id: found.id, name: found.name }, run, mcpWarnings: mcpRuntime.errors } }) + '\n\n');
     }
@@ -300,35 +378,45 @@ module.exports = function registerChat(app) {
 
         let upstream;
         try {
-          upstream = await fetch(upstreamUrl, {
+          upstream = await ctx.safeFetch(upstreamUrl, {
             method: 'POST',
             headers: adapterHeaders,
             body: JSON.stringify(upstreamBody),
             signal,
-          });
+          }, allowPrivateProvider(provider));
         } catch (fe) {
           const cancelled = fe.name === 'AbortError';
           modelStep.status = 'error';
           modelStep.finishedAt = nowIso();
-          modelStep.error = cancelled ? 'cancelled by user' : fe.message;
+          modelStep.error = cancelled ? 'cancelled by user' : redactSecrets(fe.message);
           emit('step_update', modelStep);
           run.status = cancelled ? 'cancelled' : 'error';
           run.error = modelStep.error;
+          await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+            timestamp: modelStep.startedAt, durationMs: Date.parse(modelStep.finishedAt) - Date.parse(modelStep.startedAt),
+            interactionId: run.id, runId: run.id, mode: 'agent', status: run.status, errorCode: cancelled ? 'CANCELLED' : 'NETWORK_ERROR', step: iter,
+            usage: { input: 0, output: 0, total: 0, source: 'estimated' },
+          }));
           await agent.persistRun(run);
           if (cancelled) res.write('data: ' + JSON.stringify({ agentEvent: { type: 'cancelled' } }) + '\n\n');
-          else res.write('data: ' + JSON.stringify({ error: { message: 'Upstream request failed: ' + fe.message } }) + '\n\n');
+          else res.write('data: ' + JSON.stringify({ error: { message: 'Upstream request failed: ' + redactSecrets(fe.message) } }) + '\n\n');
           res.write('data: [DONE]\n\n'); res.end(); clearAbort(); return;
         }
         if (!upstream.ok) {
-          const errText = await upstream.text();
+          const errText = await readResponseText(upstream, 128_000);
           modelStep.status = 'error';
           modelStep.finishedAt = nowIso();
           modelStep.error = 'Upstream HTTP ' + upstream.status;
           emit('step_update', modelStep);
           run.status = 'error';
           run.error = modelStep.error;
+          await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+            timestamp: modelStep.startedAt, durationMs: Date.parse(modelStep.finishedAt) - Date.parse(modelStep.startedAt),
+            interactionId: run.id, runId: run.id, mode: 'agent', status: 'error', errorCode: `HTTP_${upstream.status}`, step: iter,
+            usage: { input: 0, output: 0, total: 0, source: 'estimated' },
+          }));
           await agent.persistRun(run);
-          res.write('data: ' + JSON.stringify({ error: { message: 'Upstream HTTP ' + upstream.status + ': ' + errText.substring(0, 500), upstreamStatus: upstream.status } }) + '\n\n');
+          res.write('data: ' + JSON.stringify({ error: { message: 'Upstream HTTP ' + upstream.status + ': ' + redactSecrets(errText).substring(0, 500), upstreamStatus: upstream.status } }) + '\n\n');
           res.write('data: [DONE]\n\n'); res.end(); clearAbort(); return;
         }
         if (!upstream.body) {
@@ -338,6 +426,11 @@ module.exports = function registerChat(app) {
           emit('step_update', modelStep);
           run.status = 'error';
           run.error = modelStep.error;
+          await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+            timestamp: modelStep.startedAt, durationMs: Date.parse(modelStep.finishedAt) - Date.parse(modelStep.startedAt),
+            interactionId: run.id, runId: run.id, mode: 'agent', status: 'error', errorCode: 'EMPTY_BODY', step: iter,
+            usage: { input: 0, output: 0, total: 0, source: 'estimated' },
+          }));
           await agent.persistRun(run);
           res.write('data: ' + JSON.stringify({ error: { message: 'upstream has no body' } }) + '\n\n');
           res.write('data: [DONE]\n\n'); res.end(); clearAbort(); return;
@@ -349,6 +442,7 @@ module.exports = function registerChat(app) {
         let accContent = '';
         const toolCalls: Record<number, ToolCall> = {}; // by index
         let finishReason = '';
+        let observedUsage: JsonRecord = {};
 
         while (true) {
           const { done, value } = await reader.read();
@@ -360,6 +454,7 @@ module.exports = function registerChat(app) {
             if (!line.trim()) continue;
             const transformed = adapter.transformSSEChunk(line);
             if (!transformed) continue;
+            if (transformed.usage) observedUsage = usageLedger.mergeUsage(observedUsage, transformed.usage);
             res.write('data: ' + JSON.stringify(transformed) + '\n\n');
             if (transformed.choices) {
               for (const ch of transformed.choices) {
@@ -386,6 +481,20 @@ module.exports = function registerChat(app) {
         modelStep.durationMs = Date.parse(modelStep.finishedAt) - Date.parse(modelStep.startedAt);
         modelStep.outputLen = accContent.length;
         modelStep.status = 'success';
+        const normalized = usageLedger.normalizeUsage(observedUsage, messages, accContent);
+        modelStep.usage = normalized;
+        run.usage.inputTokens += normalized.input;
+        run.usage.outputTokens += normalized.output;
+        run.usage.totalTokens += normalized.total;
+        run.usage.cachedTokens += normalized.cached;
+        run.usage.reasoningTokens += normalized.reasoning;
+        if (normalized.source === 'reported') run.usage.reportedTokens += normalized.total;
+        else run.usage.estimatedTokens += normalized.total;
+        await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+          timestamp: modelStep.startedAt, durationMs: modelStep.durationMs,
+          interactionId: run.id, runId: run.id, mode: 'agent', status: 'success', step: iter,
+          usage: normalized,
+        }));
         emit('step_update', modelStep);
         await agent.persistRun(run);
 
@@ -507,7 +616,7 @@ module.exports = function registerChat(app) {
     } catch (err) {
       const cancelled = err.name === 'AbortError';
       run.status = cancelled ? 'cancelled' : 'error';
-      run.error = cancelled ? 'cancelled by user' : ('agent error: ' + err.message);
+      run.error = cancelled ? 'cancelled by user' : ('agent error: ' + redactSecrets(err.message));
       turn.finishedAt = nowIso();
       await agent.finishRun(run, { status: run.status, error: run.error, steps: run.steps, toolCalls: run.toolCalls, turns: run.turns });
       res.write('data: ' + JSON.stringify({ error: { message: run.error } }) + '\n\n');

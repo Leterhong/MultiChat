@@ -223,6 +223,7 @@ function showAddCustom() {
         <option value="lmstudio">lmstudio</option>
       </select></div>
       <div class="field"><label>API 密钥</label><input name="apiKey" type="password" placeholder="输入 API 密钥" /></div>
+      <label class="provider-private"><input name="allowPrivate" type="checkbox" /> 允许该提供方访问本机或内网地址（仅本地网关需要）</label>
       <div id="customErr" class="auth-error"></div>
       <div class="row">
         <button type="button" class="btn-ghost" id="customCancel">取消</button>
@@ -237,6 +238,7 @@ function showAddCustom() {
         const body: Record<string, any> = Object.fromEntries(fd.entries());
         const raw = (body.models || '').toString();
         body.models = raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+        body.allowPrivate = fd.get('allowPrivate') === 'on';
         if (body.id) body.id = body.id.trim();
         if (body.name) body.name = body.name.trim();
         try {

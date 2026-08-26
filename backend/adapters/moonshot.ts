@@ -23,7 +23,8 @@ class MoonshotAdapter extends BaseAdapter {
 
   getEndpoint() {
     const baseUrl = this.config.baseUrl || 'https://api.moonshot.cn';
-    return `${baseUrl.replace(/\/+$/, '')}/v1/chat/completions`;
+    const base = baseUrl.replace(/\/+$/, '');
+    return `${base}${/\/v1$/i.test(base) ? '' : '/v1'}/chat/completions`;
   }
 
   transformSSEChunk(line) {

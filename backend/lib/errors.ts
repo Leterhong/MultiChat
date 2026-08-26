@@ -3,6 +3,7 @@
 // 为每次请求附加 requestId，并为错误响应附加 code 字段，便于排障与日志关联。
 import crypto from 'crypto';
 import type { Request, Response, NextFunction } from 'express';
+import { redactSecrets } from './redact';
 
 // 业务错误码 → HTTP 状态码 映射
 export const ERROR_CODES: Record<string, number> = {
@@ -39,9 +40,10 @@ export class AppError extends Error {
 
 // 请求ID 中间件：每个请求分配一个 id（允许上游透传 X-Request-Id）
 export function requestIdMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const id =
-    (typeof req.headers['x-request-id'] === 'string' && req.headers['x-request-id']) ||
-    crypto.randomBytes(8).toString('hex');
+  const supplied = typeof req.headers['x-request-id'] === 'string' ? req.headers['x-request-id'] : '';
+  const id = /^[A-Za-z0-9._:-]{1,128}$/.test(supplied)
+    ? supplied
+    : crypto.randomBytes(8).toString('hex');
   (req as any).requestId = id;
   res.locals.requestId = id;
   res.setHeader('X-Request-Id', id);
@@ -62,9 +64,9 @@ export function errorHandler(err: any, req: Request, res: Response, next: NextFu
   if (res.headersSent) return next(err);
   const status = err.statusCode || 500;
   const code = err.code || 'INTERNAL';
-  const message = err.message || 'Internal Server Error';
+  const message = redactSecrets(err.message || 'Internal Server Error');
   if (status >= 500) {
-    console.error('[error]', code, message, 'reqId=', (req as any).requestId, err.stack ? '\n' + err.stack : '');
+    console.error('[error]', code, redactSecrets(message), 'reqId=', (req as any).requestId, err.stack ? '\n' + redactSecrets(err.stack) : '');
   }
   res.status(status).json({
     error: message,

@@ -35,7 +35,8 @@ class LMStudioAdapter extends BaseAdapter {
 
   getEndpoint() {
     const base = (this.config.baseUrl || 'http://localhost:1234').replace(/\/+$/, '');
-    return `${base}/v1/chat/completions`;
+    if (/\/chat\/completions$/i.test(base)) return base;
+    return `${base}${/\/v1$/i.test(base) ? '' : '/v1'}/chat/completions`;
   }
 
   transformSSEChunk(line) {

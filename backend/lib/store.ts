@@ -19,6 +19,13 @@ function createJsonStore(rootDir: string): JsonStore {
     try {
       return JSON.parse(fs.readFileSync(file, 'utf8'));
     } catch {
+      // A partially written/corrupted JSON file should not silently erase the
+      // user's view of their data. Every successful write keeps one local
+      // recovery copy, so prefer that before falling back to an empty value.
+      const backup = `${file}.bak`;
+      try {
+        if (fs.existsSync(backup)) return JSON.parse(fs.readFileSync(backup, 'utf8'));
+      } catch {}
       return fallback;
     }
   }
@@ -28,7 +35,21 @@ function createJsonStore(rootDir: string): JsonStore {
     fs.mkdirSync(rootDir, { recursive: true });
     const temp = `${file}.${process.pid}.${Date.now()}.tmp`;
     fs.writeFileSync(temp, JSON.stringify(value, null, 2), 'utf8');
-    fs.renameSync(temp, file);
+    // Keep one known-good recovery point. On Windows rename-over-existing can
+    // fail with EPERM, so use a guarded replacement fallback while retaining
+    // the backup. The temporary file is always cleaned up.
+    try {
+      if (fs.existsSync(file)) fs.copyFileSync(file, `${file}.bak`);
+      try {
+        fs.renameSync(temp, file);
+      } catch (error) {
+        if (!['EEXIST', 'EPERM'].includes(error?.code)) throw error;
+        fs.rmSync(file, { force: true });
+        fs.renameSync(temp, file);
+      }
+    } finally {
+      if (fs.existsSync(temp)) fs.rmSync(temp, { force: true });
+    }
   }
 
   function remove(name: string) {
