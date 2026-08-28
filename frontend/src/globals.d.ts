@@ -58,6 +58,8 @@ declare global {
   // ── modal ──
   const showModal: any;
   const closeModal: any;
+  const showConfirm: any;
+  const showPrompt: any;
 
   // ── modelPicker ──
   const openModelPicker: any;

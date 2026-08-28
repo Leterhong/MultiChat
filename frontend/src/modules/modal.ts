@@ -76,8 +76,55 @@ function closeModal() {
     cleanupTimer = undefined;
   }, 160);
 }
-$('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
-document.addEventListener('keydown', event => {
+type ConfirmOptions = { title?: string; message: string; confirmLabel?: string; cancelLabel?: string; danger?: boolean };
+type PromptOptions = { title: string; message?: string; label?: string; value?: string; placeholder?: string; required?: boolean; maxLength?: number; multiline?: boolean; rows?: number; confirmLabel?: string };
+
+/* Promise 化的确认/输入对话框，替代原生 confirm() 与 prompt()，样式与系统弹窗一致。
+   Esc、背景点击或取消都 resolve(false/null)；onClose 兜底保证 Promise 永不悬挂。 */
+function showConfirm({ title = '请确认', message, confirmLabel = '确认', cancelLabel = '取消', danger = false }: ConfirmOptions): Promise<boolean> {
+  let settled = false;
+  return new Promise((resolve) => {
+    const finish = (value: boolean) => { if (!settled) { settled = true; resolve(value); } };
+    showModal({
+      title,
+      body: `<div class="confirm-message">${esc(message)}</div><div class="row"><button type="button" class="btn-ghost" id="dialogCancel">${esc(cancelLabel)}</button><button type="button" class="${danger ? 'btn-danger' : 'btn-primary'}" id="dialogAccept" style="width:auto;padding:9px 18px;">${esc(confirmLabel)}</button></div>`,
+      onMount: (card: HTMLElement) => {
+        $('#dialogCancel', card).onclick = () => { finish(false); closeModal(); };
+        $('#dialogAccept', card).onclick = () => { finish(true); closeModal(); };
+      },
+      onClose: () => finish(false),
+    });
+  });
+}
+
+function showPrompt({ title, message = '', label = '名称', value = '', placeholder = '', required = true, maxLength, multiline = false, rows = 5, confirmLabel = '确定' }: PromptOptions): Promise<string | null> {
+  let settled = false;
+  return new Promise((resolve) => {
+    const finish = (result: string | null) => { if (!settled) { settled = true; resolve(result); } };
+    const control = multiline
+      ? `<textarea name="value" rows="${rows}" placeholder="${esc(placeholder)}" ${maxLength ? `maxlength="${maxLength}"` : ''} autofocus>${esc(value)}</textarea>`
+      : `<input name="value" value="${esc(value)}" placeholder="${esc(placeholder)}" ${maxLength ? `maxlength="${maxLength}"` : ''} autofocus />`;
+    showModal({
+      title,
+      body: `${message ? `<p class="lead" style="margin-bottom:12px;">${esc(message)}</p>` : ''}
+        <form id="dialogPromptForm"><div class="field"><label>${esc(label)}</label>${control}</div><div class="row"><button type="button" class="btn-ghost" id="dialogCancel">取消</button><button class="btn-primary" type="submit" style="width:auto;padding:9px 18px;">${esc(confirmLabel)}</button></div></form>`,
+      onMount: (card: HTMLElement) => {
+        $('#dialogCancel', card).onclick = () => { finish(null); closeModal(); };
+        $('#dialogPromptForm', card).onsubmit = (event: SubmitEvent) => {
+          event.preventDefault();
+          const input = card.querySelector<HTMLInputElement | HTMLTextAreaElement>('[name="value"]');
+          const text = (input?.value ?? '').trim();
+          if (required && !text) return;
+          finish(text);
+          closeModal();
+        };
+      },
+      onClose: () => finish(null),
+    });
+  });
+}
+
+$('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });document.addEventListener('keydown', event => {
   const modal = $('#modal') as HTMLDivElement;
   if (!modal.classList.contains('open')) return;
   if (event.key === 'Escape') { event.preventDefault(); closeModal(); return; }
@@ -90,4 +137,4 @@ document.addEventListener('keydown', event => {
   else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 });
 
-export { showModal,closeModal };
+export { showModal,closeModal, showConfirm, showPrompt };

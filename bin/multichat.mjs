@@ -222,6 +222,45 @@ function assertRuntime(runtime) {
   }
 }
 
+// 源码比构建产物新，说明上次改完没有重新构建——这正是“改了源码却不生效”的
+// 常见根因。只告警不阻断：dist 仍是可用的上一版行为。
+function newestSourceMtime(dir, skipNames, state = { mtime: 0 }) {
+  let entries;
+  try { entries = readdirSync(dir, { withFileTypes: true }); }
+  catch { return state; }
+  for (const entry of entries) {
+    if (skipNames.has(entry.name)) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) newestSourceMtime(full, skipNames, state);
+    else if (/\.(?:ts|tsx|css)$/.test(entry.name)) {
+      try { state.mtime = Math.max(state.mtime, statSync(full).mtimeMs); }
+      catch { // 文件可能在扫描间隙被删除，忽略。
+      }
+    }
+  }
+  return state;
+}
+
+function warnIfStaleDist(runtime) {
+  if (runtime.backendEntry !== runtime.compiledEntry) return;
+  const backendRoot = path.join(PACKAGE_ROOT, 'backend');
+  const newestSource = newestSourceMtime(backendRoot, new Set(['node_modules', 'dist', '.test-dist', 'data'])).mtime;
+  let builtAt;
+  try { builtAt = statSync(runtime.compiledEntry).mtimeMs; }
+  catch { return; }
+  if (newestSource > builtAt + 1500) {
+    console.warn(`⚠  backend 源码比 backend/dist 新（上次构建后源码有改动）。当前运行的是旧构建；请执行 cd backend && npm run build 后重启。`);
+    try {
+      const newestFrontend = newestSourceMtime(path.join(PACKAGE_ROOT, 'frontend', 'src'), new Set()).mtime;
+      const frontendIndex = statSync(runtime.frontendIndex).mtimeMs;
+      if (newestFrontend > frontendIndex + 1500) {
+        console.warn(`⚠  frontend 源码比 frontend/dist 新。请执行 cd frontend && npm run build 后刷新页面。`);
+      }
+    } catch { // frontend/src 不存在（发布包）时跳过。
+    }
+  }
+}
+
 function checkPort(host, port) {
   return new Promise((resolvePort) => {
     const server = net.createServer();
@@ -288,6 +327,7 @@ async function runWeb(options, deployAlias = false) {
   assertNodeVersion();
   const runtime = resolveRuntime();
   assertRuntime(runtime);
+  warnIfStaleDist(runtime);
   if (!isDirectory(options.workspace)) {
     throw new CliError(`工作区不存在或不是目录：${options.workspace}`);
   }

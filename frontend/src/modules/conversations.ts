@@ -29,7 +29,7 @@ function renderConvList() {
     b.onclick = async (e) => {
       e.stopPropagation();
       const id = b.dataset.del;
-      if (!confirm('删除该对话？')) return;
+      if (!(await showConfirm({ title: '删除对话', message: '删除该对话？', confirmLabel: '删除', danger: true }))) return;
       try { await api('/api/conversations/' + id, { method: 'DELETE' }); } catch {}
       state.conversations = state.conversations.filter(c => c.id !== id);
       if (state.currentConvId === id) { state.currentConvId = null; state.messages = []; renderContent(); $('#topbarTitle').textContent = '新对话'; }

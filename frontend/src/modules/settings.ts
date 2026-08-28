@@ -91,7 +91,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
     mountExtensionSettings(ProviderSettings, {
       providers: state.providers,
       onSave: async (provider: any, payload: any) => { try { await api(`/api/providers/${encodeURIComponent(provider.id)}`, { method: 'PUT', body: JSON.stringify(payload) }); await loadProviders(); renderTopbar(); toast('已保存'); return true; } catch (error: any) { toast(error.message, 'error'); return false; } },
-      onDelete: async (provider: any) => { if (!confirm(`删除模型提供方「${provider.name || provider.id}」？`)) return false; try { await api(`/api/providers/${encodeURIComponent(provider.id)}`, { method: 'DELETE' }); await loadProviders(); renderTopbar(); toast('已删除'); return true; } catch (error: any) { toast(error.message, 'error'); return false; } },
+      onDelete: async (provider: any) => { if (!(await showConfirm({ title: '删除模型提供方', message: `删除「${provider.name || provider.id}」？此操作不可撤销。`, confirmLabel: '删除', danger: true }))) return false; try { await api(`/api/providers/${encodeURIComponent(provider.id)}`, { method: 'DELETE' }); await loadProviders(); renderTopbar(); toast('已删除'); return true; } catch (error: any) { toast(error.message, 'error'); return false; } },
       onAddBuiltin: showAddBuiltin,
       onAddCustom: showAddCustom,
     });
@@ -102,7 +102,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
       onToggle: async (skill: any) => { try { await api(`/api/skills/${encodeURIComponent(skill.key || skill.id)}/toggle`, { method: 'POST', body: JSON.stringify({ enabled: !skill.enabled }) }); await loadSkills(); return true; } catch (error: any) { toast(error.message, 'error'); return false; } },
       onEdit: (skill: any) => showSkillModal(skill.key || skill.id),
       onDiff: async (skill: any) => { try { showDiff('Skill 变更', await api(`/api/skills/${encodeURIComponent(skill.key || skill.id)}/diff`)); } catch (error: any) { toast(error.message, 'error'); } },
-      onDelete: async (skill: any) => { if (!confirm('删除该 Skill？关联运行配置的引用也将被移除。')) return false; try { await api(`/api/skills/${encodeURIComponent(skill.key || skill.id)}`, { method: 'DELETE' }); await Promise.all([loadSkills(), loadAgents()]); return true; } catch (error: any) { toast(error.message, 'error'); return false; } },
+      onDelete: async (skill: any) => { if (!(await showConfirm({ title: '删除 Skill', message: '删除该 Skill？关联运行配置的引用也将被移除。', confirmLabel: '删除', danger: true }))) return false; try { await api(`/api/skills/${encodeURIComponent(skill.key || skill.id)}`, { method: 'DELETE' }); await Promise.all([loadSkills(), loadAgents()]); return true; } catch (error: any) { toast(error.message, 'error'); return false; } },
       onImport: () => showExtensionImport('skill'),
       onAdd: () => showSkillModal(null),
     });
@@ -153,10 +153,10 @@ function mountWorkspaceSettings() {
     onAddMemory: () => showMemoryModal(),
     onEditMemory: (id: string) => showMemoryModal(id),
     onToggleMemory: async (item: any) => { await api(`/api/memories/${encodeURIComponent(item.id)}`, { method: 'PUT', body: JSON.stringify({ enabled: item.enabled === false }) }); await loadProjectControlData(); },
-    onDeleteMemory: async (id: string) => { if (!confirm('删除这条项目记忆？')) return; await api(`/api/memories/${encodeURIComponent(id)}`, { method: 'DELETE' }); await loadProjectControlData(); },
-    onCreateSnapshot: async () => { if (!state.selectedProject) return; const title = prompt('快照名称', `项目快照 ${new Date().toLocaleString('zh-CN')}`); if (title == null) return; try { await api('/api/snapshots', { method: 'POST', body: JSON.stringify({ projectId: state.selectedProject.id, title }) }); await loadProjectControlData(); toast('项目快照已创建'); } catch (error: any) { toast(error.message, 'error'); } },
-    onRestoreSnapshot: async (id: string) => { if (!confirm('恢复该快照？当前状态会先自动备份，随后替换项目文件、记忆和默认配置。')) return; try { await api(`/api/snapshots/${encodeURIComponent(id)}/restore`, { method: 'POST' }); await Promise.all([loadProjects(), loadAgents()]); renderFileContext(); toast('快照已恢复'); } catch (error: any) { toast(error.message, 'error'); } },
-    onDeleteSnapshot: async (id: string) => { if (!confirm('删除该项目快照？')) return; await api(`/api/snapshots/${encodeURIComponent(id)}`, { method: 'DELETE' }); await loadProjectControlData(); },
+    onDeleteMemory: async (id: string) => { if (!(await showConfirm({ title: '删除项目记忆', message: '删除这条项目记忆？', confirmLabel: '删除', danger: true }))) return; await api(`/api/memories/${encodeURIComponent(id)}`, { method: 'DELETE' }); await loadProjectControlData(); },
+    onCreateSnapshot: async () => { if (!state.selectedProject) return; const title = await showPrompt({ title: '新建项目快照', label: '快照名称', value: `项目快照 ${new Date().toLocaleString('zh-CN')}`, maxLength: 120 }); if (title == null) return; try { await api('/api/snapshots', { method: 'POST', body: JSON.stringify({ projectId: state.selectedProject.id, title }) }); await loadProjectControlData(); toast('项目快照已创建'); } catch (error: any) { toast(error.message, 'error'); } },
+    onRestoreSnapshot: async (id: string) => { if (!(await showConfirm({ title: '恢复快照', message: '恢复该快照？当前状态会先自动备份，随后替换项目文件、记忆和默认配置。', confirmLabel: '恢复快照', danger: true }))) return; try { await api(`/api/snapshots/${encodeURIComponent(id)}/restore`, { method: 'POST' }); await Promise.all([loadProjects(), loadAgents()]); renderFileContext(); toast('快照已恢复'); } catch (error: any) { toast(error.message, 'error'); } },
+    onDeleteSnapshot: async (id: string) => { if (!(await showConfirm({ title: '删除项目快照', message: '删除该项目快照？', confirmLabel: '删除', danger: true }))) return; await api(`/api/snapshots/${encodeURIComponent(id)}`, { method: 'DELETE' }); await loadProjectControlData(); },
   });
 }
 
@@ -165,7 +165,7 @@ function mountAgentSettings() {
     onEdit: (id: string | null) => showAgentModal(id),
     onExport: (agent: any) => exportEntity(agent, 'agent'),
     onDelete: async (agent: any) => {
-      if (!confirm('删除该运行配置？')) return;
+      if (!(await showConfirm({ title: '删除运行配置', message: '删除该运行配置？', confirmLabel: '删除', danger: true }))) return;
       try { await api(`/api/agents/${encodeURIComponent(agent.id)}`, { method: 'DELETE' }); } catch (error: any) { toast(error.message, 'error'); return; }
       if (state.selectedAgent?.id === agent.id) state.selectedAgent = null;
       saveSelectedAgent(); await loadAgents(); renderTopbar();

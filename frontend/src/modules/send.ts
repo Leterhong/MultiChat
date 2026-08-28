@@ -257,10 +257,10 @@ async function copyMessage(index: number) {
   toast('已复制');
 }
 
-function editMessage(index: number) {
+async function editMessage(index: number) {
   const message = state.messages[index];
   if (!message) return;
-  const newText = prompt('编辑消息', message.content);
+  const newText = await showPrompt({ title: '编辑消息', label: '消息内容', value: message.content, multiline: true, rows: 7, required: false, confirmLabel: '保存' });
   if (newText == null) return;
   message.content = newText;
   state.messages = state.messages.slice(0, index + 1);

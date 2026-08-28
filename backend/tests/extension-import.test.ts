@@ -81,6 +81,40 @@ test('inspects and installs a wrapped Skill directory without flattening resourc
   assert.equal(registered.enabled, false);
 });
 
+test('preserves inert x-* Skill frontmatter extensions without accepting arbitrary fields', () => {
+  const skillMarkdown = [
+    '---',
+    'name: astron-compatible',
+    'description: Import a Skill with vendor metadata',
+    'x-astron-category: productivity',
+    'x-astron-version: 1',
+    '---',
+    '',
+    'Run the compatible workflow.',
+    '',
+  ].join('\n');
+  const payload = {
+    fileName: 'SKILL.md',
+    contentBase64: Buffer.from(skillMarkdown).toString('base64'),
+  };
+
+  const preview = importer.inspect('skill', payload);
+  assert.equal(preview.name, 'astron-compatible');
+  assert.match(preview.warnings.join('\n'), /x-astron-category/);
+
+  const installed = importer.install('skill', { ...payload, expectedFingerprint: preview.fingerprint });
+  assert.equal(installed.ok, true);
+  const installedMarkdown = fs.readFileSync(path.join(tempRoot, '.agents', 'skills', 'astron-compatible', 'SKILL.md'), 'utf8');
+  assert.match(installedMarkdown, /^x-astron-category: productivity$/m);
+  assert.match(installedMarkdown, /^x-astron-version: 1$/m);
+
+  const unsafeMarkdown = skillMarkdown.replace('x-astron-category: productivity', 'astron-category: productivity');
+  assert.throws(() => importer.inspect('skill', {
+    fileName: 'SKILL.md',
+    contentBase64: Buffer.from(unsafeMarkdown).toString('base64'),
+  }), /不支持的字段：astron-category/);
+});
+
 test('requires explicit replacement when a Skill name conflicts', () => {
   const before = extensions.listSkills().find(item => item.id === 'release-notes');
   extensions.setSkillEnabled(before.key, true);

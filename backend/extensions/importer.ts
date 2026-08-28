@@ -30,6 +30,8 @@ const REPO_SKILLS_ROOT = path.join(extensions.PROJECT_ROOT, '.agents', 'skills')
 const REPO_PLUGIN_ROOT = path.join(extensions.PROJECT_ROOT, '.agents', 'plugins', 'plugins');
 const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 const PACKAGE_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const SKILL_EXTENSION_FIELD_RE = /^x-[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const STANDARD_SKILL_FIELDS = new Set(['name', 'description', 'license', 'allowed-tools', 'metadata']);
 const EXECUTABLE_RE = /\.(?:bat|cmd|com|cpl|dll|exe|hta|jar|js|mjs|cjs|node|ps1|py|rb|sh|ts|vbs|wsf)$/i;
 const WINDOWS_RESERVED_RE = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
 const FORBIDDEN_PACKAGE_DIRS = new Set(['.git', '.ssh', 'node_modules']);
@@ -205,13 +207,14 @@ function validateSkillFiles(files, skillPath = 'SKILL.md') {
   const parsed = extensions.parseSkillMarkdown(text, skillPath);
   const name = validatePackageName(parsed.metadata.name, `${skillPath} 的 name`);
   const description = String(parsed.metadata.description || '').trim();
-  const allowed = new Set(['name', 'description', 'license', 'allowed-tools', 'metadata']);
-  const unexpected = Object.keys(parsed.metadata).filter(key => !allowed.has(key));
-  if (unexpected.length) packageError(`${skillPath} frontmatter 包含不支持的字段：${unexpected.join(', ')}`);
+  const fields = Object.keys(parsed.metadata);
+  const extensionFields = fields.filter(key => SKILL_EXTENSION_FIELD_RE.test(key));
+  const unexpected = fields.filter(key => !STANDARD_SKILL_FIELDS.has(key) && !SKILL_EXTENSION_FIELD_RE.test(key));
+  if (unexpected.length) packageError(`${skillPath} frontmatter 包含不支持的字段：${unexpected.join(', ')}。当前支持 name、description、license、allowed-tools、metadata，以及 x- 开头的厂商扩展字段（会原样保留但不执行）`);
   if (!description || description.length > 1024 || /[<>]/.test(description)) packageError(`${skillPath} 的 description 必须为 1-1024 个字符且不能包含尖括号`);
   if (!parsed.instructions.trim()) packageError(`${skillPath} 必须包含正文指令`);
   if (/(?:^|\n)[ \t]{0,3}\[TODO:[^\n]*\][ \t]*(?:\n|$)/.test(parsed.instructions)) packageError(`${skillPath} 仍包含 [TODO: ...] 占位符`);
-  return { name, description, instructions: parsed.instructions };
+  return { name, description, instructions: parsed.instructions, extensionFields };
 }
 
 function executableWarnings(files) {
@@ -227,6 +230,9 @@ function inspectSkill(input) {
   const conflict = fs.existsSync(destination);
   const resources = ['scripts', 'references', 'assets', 'templates'].filter(folder => rebased.files.some(file => file.path.startsWith(folder + '/')));
   const warnings = executableWarnings(rebased.files);
+  if (metadata.extensionFields.length) {
+    warnings.push(`已保留 ${metadata.extensionFields.length} 个 x-* 扩展元数据字段；MultiChat 不会执行这些字段：${metadata.extensionFields.join(', ')}`);
+  }
   if (rebased.ignoredFiles) warnings.push(`包根目录之外的 ${rebased.ignoredFiles} 个文件不会导入`);
   return {
     kind: 'skill',

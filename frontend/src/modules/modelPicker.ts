@@ -49,13 +49,13 @@ function openModelPicker() {
     onMount: (card) => {
       card.classList.add('model-picker-modal');
       card.querySelectorAll('.picker-option').forEach((t: HTMLButtonElement) => {
-        t.onclick = () => {
+        t.onclick = async () => {
           const pid = t.dataset.pid;
           const p = state.providers.find(x => x.id === pid);
           if (!p) return;
           let model = t.dataset.model;
           if (t.dataset.custom === '1') {
-            const name = prompt('输入该提供方的模型名称：\n（例如 deepseek-chat）');
+            const name = await showPrompt({ title: '自定义模型', message: `为「${p.name || p.id}」输入模型名称`, label: '模型名称', placeholder: '例如 deepseek-chat', maxLength: 120 });
             if (!name) return;
             model = name.trim();
             if (!p.models) p.models = [];

@@ -2,6 +2,10 @@ import { $, esc, api, toast } from '../core/index';
 
 type ImportKind = 'skill' | 'mcp' | 'plugin';
 
+const DROP_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>';
+
+let lastSelection: { kind: ImportKind; files: FileList | File[] } | null = null;
+
 const IMPORT_COPY: Record<ImportKind, any> = {
   skill: {
     title: '导入 Agent Skill',
@@ -141,14 +145,19 @@ function showImportPreview(kind: ImportKind, payload: any, preview: any) {
 
 async function inspectSelection(kind: ImportKind, files: FileList | File[], card: any) {
   const status = $('#extensionPickStatus', card) as HTMLElement;
+  status.classList.remove('error');
   status.textContent = '正在读取并预检…';
+  const retry = $('#extensionPickRetry', card) as HTMLButtonElement | null;
+  if (retry) { retry.hidden = true; retry.disabled = true; }
   try {
     const payload = await filesPayload(files);
     const preview = await api(`/api/extensions/import/${kind}/inspect`, { method: 'POST', body: JSON.stringify(payload) });
     showImportPreview(kind, payload, preview);
   } catch (error: any) {
+    lastSelection = { kind, files };
     status.textContent = error.message;
     status.classList.add('error');
+    if (retry) { retry.hidden = false; retry.disabled = false; retry.onclick = () => lastSelection && inspectSelection(lastSelection.kind, lastSelection.files, card); }
   }
 }
 
@@ -158,7 +167,7 @@ function showExtensionImport(kind: ImportKind) {
     title: copy.title,
     body: `<p class="lead" style="margin-bottom:14px;">${esc(copy.help)}</p>
       <div class="extension-dropzone" id="extensionDropzone" tabindex="0">
-        <div class="extension-drop-icon">⇧</div><strong>拖入文件进行预检</strong><span>不会在预检阶段执行任何脚本或 MCP 命令</span>
+        <div class="extension-drop-icon">${DROP_ICON}</div><strong>拖入文件进行预检</strong><span>不会在预检阶段执行任何脚本或 MCP 命令</span>
       </div>
       <div class="extension-picker-actions">
         <button type="button" class="btn-primary" id="pickExtensionFile" style="width:auto;padding:9px 16px;">${esc(copy.fileLabel)}</button>
@@ -166,7 +175,8 @@ function showExtensionImport(kind: ImportKind) {
       </div>
       <input type="file" id="extensionFileInput" accept="${esc(copy.accept)}" hidden />
       ${copy.directory ? '<input type="file" id="extensionDirectoryInput" hidden multiple />' : ''}
-      <div id="extensionPickStatus" class="auth-error"></div>
+      <div id="extensionPickStatus" class="extension-pick-status" role="status"></div>
+      <button type="button" class="btn-ghost" id="extensionPickRetry" hidden>用刚才的文件重新预检</button>
       <div class="extension-import-note">默认冲突策略是拒绝覆盖；只有预检发现冲突且你再次勾选确认后，才会替换旧版本。</div>
       <div class="row"><button type="button" class="btn-ghost" id="extensionImportCancel">取消</button></div>`,
     onMount: (card: any) => {

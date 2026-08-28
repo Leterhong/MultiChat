@@ -76,7 +76,7 @@ function showMcpModal(id: string | null = null) {
         try {
           const env = parseJsonObject(payload.env, 'Environment'); if (env) payload.env = env; else delete payload.env;
           const headers = parseJsonObject(payload.headers, 'Headers'); if (headers) payload.headers = headers; else delete payload.headers;
-          if (payload.transport === 'stdio' && (!editing || payload.command !== current?.command || payload.args.join('\n') !== (current?.args || []).join('\n')) && !confirm(`允许 MultiChat 启动这个本地 MCP 进程？\n\n${payload.command} ${payload.args.join(' ')}`)) return;
+          if (payload.transport === 'stdio' && (!editing || payload.command !== current?.command || payload.args.join('\n') !== (current?.args || []).join('\n')) && !(await showConfirm({ title: '允许启动本地进程', message: `允许 MultiChat 启动这个本地 MCP 进程？\n\n${payload.command} ${payload.args.join(' ')}`, confirmLabel: '允许并保存' }))) return;
           const endpoint = editing ? `/api/mcp-servers/${encodeURIComponent(id!)}` : '/api/mcp-servers';
           await api(endpoint, { method: editing ? 'PUT' : 'POST', body: JSON.stringify(payload) });
           await loadMcpServers(); renderSettings('mcp', true); closeModal(); toast('MCP server 已保存并同步');
@@ -107,7 +107,7 @@ function renderPlugins() {
     plugins, sourceLabel,
     onImport: () => showExtensionImport('plugin'),
     onToggle: async (plugin: any) => {
-      if (!plugin.enabled && (plugin.components?.mcpServers || 0) > 0 && !confirm(`启用插件「${plugin.name}」？\n\n它包含 MCP server。只有被运行配置选中时才会连接，但本地进程仍以当前用户权限运行，请先审核来源和 Diff。`)) return;
+      if (!plugin.enabled && (plugin.components?.mcpServers || 0) > 0 && !(await showConfirm({ title: '启用插件', message: `启用插件「${plugin.name}」？\n\n它包含 MCP server。只有被运行配置选中时才会连接，但本地进程仍以当前用户权限运行，请先审核来源和 Diff。`, confirmLabel: '启用插件' }))) return;
       try { await api(`/api/plugins/${encodeURIComponent(plugin.key || plugin.id)}/toggle`, { method: 'POST', body: JSON.stringify({ enabled: !plugin.enabled }) }); await Promise.all([loadPlugins(), loadSkills(), loadMcpServers()]); renderSettings('plugins', true); toast(plugin.enabled ? '插件已停用' : '插件已启用'); }
       catch (error: any) { toast(error.message, 'error'); }
     },
@@ -116,7 +116,7 @@ function renderPlugins() {
       catch (error: any) { toast(error.message, 'error'); }
     },
     onDelete: async (plugin: any) => {
-      if (!confirm(`卸载插件「${plugin.name}」？\n\n整包目录、项目市场条目，以及运行配置对其 Skill / MCP 的引用都会移除。`)) return;
+      if (!(await showConfirm({ title: '卸载插件', message: `卸载插件「${plugin.name}」？\n\n整包目录、项目市场条目，以及运行配置对其 Skill / MCP 的引用都会移除。`, confirmLabel: '卸载', danger: true }))) return;
       try { await api(`/api/plugins/${encodeURIComponent(plugin.key || plugin.id)}`, { method: 'DELETE' }); await Promise.all([loadPlugins(), loadSkills(), loadMcpServers(), loadAgents(), loadRuntime()]); renderSettings('plugins', true); toast('插件已卸载'); }
       catch (error: any) { toast(error.message, 'error'); }
     },
@@ -134,12 +134,12 @@ function renderMcpServers() {
     onSync: async () => { try { const result = await api('/api/mcp-servers/sync/codex', { method: 'POST' }); toast(`已同步 ${result.servers} 个 server 到项目 Codex 配置`); } catch (error: any) { toast(error.message, 'error'); } },
     onDiscover: async (server: any) => { try { const result = await api(`/api/mcp-servers/${encodeURIComponent(server.id)}/discover`, { method: 'POST' }); await reload(); toast(`发现 ${result.tools.length} 个 tools`); } catch (error: any) { await reload(); toast(error.message, 'error'); } },
     onToggle: async (server: any) => {
-      if (!server.enabled) { const endpoint = server.transport === 'http' ? server.url : [server.command, ...(server.args || [])].join(' '); if (!confirm(`启用 MCP server「${server.name}」？\n\n${endpoint}\n\nSTDIO 命令会以当前用户权限运行；HTTP server 会连接所示地址。`)) return; }
+      if (!server.enabled) { const endpoint = server.transport === 'http' ? server.url : [server.command, ...(server.args || [])].join(' '); if (!(await showConfirm({ title: '启用 MCP server', message: `启用 MCP server「${server.name}」？\n\n${endpoint}\n\nSTDIO 命令会以当前用户权限运行；HTTP server 会连接所示地址。`, confirmLabel: '启用' }))) return; }
       try { await api(`/api/mcp-servers/${encodeURIComponent(server.id)}`, { method: 'PUT', body: JSON.stringify({ enabled: !server.enabled }) }); await reload(); toast(server.enabled ? 'MCP server 已停用' : 'MCP server 已启用'); } catch (error: any) { toast(error.message, 'error'); }
     },
     onTrust: async (server: any) => { try { const trustLevel = server.trustLevel === 'trusted' ? 'untrusted' : 'trusted'; await api(`/api/mcp-servers/${encodeURIComponent(server.id)}`, { method: 'PUT', body: JSON.stringify({ trustLevel }) }); await reload(); toast(trustLevel === 'trusted' ? '已设为受信任；工具调用将不再逐次审批' : '已恢复工具调用审批'); } catch (error: any) { toast(error.message, 'error'); } },
-    onPrivate: async (server: any) => { if (!server.allowPrivate && !confirm('允许此 HTTP MCP 访问 localhost 或内网地址？只应对你信任的服务器启用。')) return; try { await api(`/api/mcp-servers/${encodeURIComponent(server.id)}`, { method: 'PUT', body: JSON.stringify({ allowPrivate: !server.allowPrivate }) }); await reload(); toast(server.allowPrivate ? '已阻止内网地址' : '已允许内网地址'); } catch (error: any) { toast(error.message, 'error'); } },
-    onDelete: async (server: any) => { if (!confirm('删除这个 MCP server？项目 Codex 配置也会同步移除。')) return; try { await api(`/api/mcp-servers/${encodeURIComponent(server.id)}`, { method: 'DELETE' }); await reload(); toast('已删除'); } catch (error: any) { toast(error.message, 'error'); } },
+    onPrivate: async (server: any) => { if (!server.allowPrivate && !(await showConfirm({ title: '允许内网访问', message: '允许此 HTTP MCP 访问 localhost 或内网地址？只应对你信任的服务器启用。', confirmLabel: '允许内网' }))) return; try { await api(`/api/mcp-servers/${encodeURIComponent(server.id)}`, { method: 'PUT', body: JSON.stringify({ allowPrivate: !server.allowPrivate }) }); await reload(); toast(server.allowPrivate ? '已阻止内网地址' : '已允许内网地址'); } catch (error: any) { toast(error.message, 'error'); } },
+    onDelete: async (server: any) => { if (!(await showConfirm({ title: '删除 MCP server', message: '删除这个 MCP server？项目 Codex 配置也会同步移除。', confirmLabel: '删除', danger: true }))) return; try { await api(`/api/mcp-servers/${encodeURIComponent(server.id)}`, { method: 'DELETE' }); await reload(); toast('已删除'); } catch (error: any) { toast(error.message, 'error'); } },
   });
 }
 

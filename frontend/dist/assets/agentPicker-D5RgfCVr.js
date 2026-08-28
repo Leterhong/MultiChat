@@ -1,4 +1,4 @@
-import{d as e,f as t,g as n,m as r,p as i}from"./index-pV9jFbC9.js";r(`#workspacePicker`).onclick=()=>{let e=t.workspaces.map(e=>({id:e.id,name:e.name,description:e.description}));if(!e.length){openSettings(`workspace`);return}showModal({title:`选择工作区`,body:`<div class="picker-dialog-intro"><span>切换对话与项目所在的工作区</span><span>${e.length} 个工作区</span></div>
+import{d as e,f as t,g as n,m as r,p as i}from"./index-B9CklcdV.js";r(`#workspacePicker`).onclick=()=>{let e=t.workspaces.map(e=>({id:e.id,name:e.name,description:e.description}));if(!e.length){openSettings(`workspace`);return}showModal({title:`选择工作区`,body:`<div class="picker-dialog-intro"><span>切换对话与项目所在的工作区</span><span>${e.length} 个工作区</span></div>
       <div class="model-picker-list">${e.map(e=>{let r=t.selectedWorkspace?.id===e.id;return`<button type="button" class="picker-option${r?` active`:``}" data-wid="${n(e.id)}" aria-pressed="${r}">
           <span class="picker-provider-mark" aria-hidden="true">${n(e.name.trim().slice(0,1).toUpperCase()||`W`)}</span>
           <span class="picker-option-copy"><strong>${n(e.name)}</strong><small>${n(e.description||`本地工作区`)}</small></span>
