@@ -46,7 +46,7 @@ export function AppShell() {
       <aside className="sidebar" id="sidebar" aria-label="对话导航">
         <div className="brand">
           <div className="brand-logo" aria-hidden="true">M</div>
-          <div className="brand-copy"><strong>MultiChat</strong><span>Local orchestration</span></div>
+          <div className="brand-copy"><strong>MultiChat</strong><span>本地智能工作台</span></div>
           <IconButton id="sidebarClose" className="sidebar-close" label="关闭对话导航" icon={X} />
         </div>
         <button className="new-chat" id="newChatBtn">
@@ -56,27 +56,27 @@ export function AppShell() {
           <Search size={15} strokeWidth={1.8} aria-hidden />
           <input className="conv-search" id="convSearch" placeholder="搜索对话" aria-label="搜索对话" />
         </label>
-        <div className="conv-section-title">最近对话</div>
+        <div className="conv-section-title"><span>最近对话</span><small>本机保存</small></div>
         <div className="conv-list" id="convList"><div className="sidebar-empty">还没有对话</div></div>
         <nav className="sidebar-tools" aria-label="工作台入口">
-          <button type="button" data-open-settings="capabilities"><Blocks size={16} aria-hidden /><span>能力</span></button>
-          <button type="button" data-open-compare><SquareStack size={16} aria-hidden /><span>模型对比</span></button>
-          <button type="button" data-open-settings="runs"><Activity size={16} aria-hidden /><span>运行</span></button>
-          <button type="button" data-open-settings="usage"><Zap size={16} aria-hidden /><span>用量</span></button>
+          <button type="button" data-open-settings="capabilities"><Blocks size={16} aria-hidden /><span>能力清单</span></button>
+          <button type="button" data-open-compare><SquareStack size={16} aria-hidden /><span>模型实验</span></button>
+          <button type="button" data-open-settings="runs"><Activity size={16} aria-hidden /><span>运行记录</span></button>
+          <button type="button" data-open-settings="usage"><Zap size={16} aria-hidden /><span>Token 用量</span></button>
         </nav>
       </aside>
 
       <main className="main" id="mainWorkspace">
         <header className="topbar">
           <IconButton id="sidebarToggle" className="mobile-menu" label="打开对话导航" icon={Menu} aria-expanded="false" />
-          <div className="topbar-context"><div className="topbar-path" id="topbarPath">默认工作区 / 默认项目</div><div className="topbar-title" id="topbarTitle">新对话</div></div>
+          <div className="topbar-context"><div className="topbar-title" id="topbarTitle">新对话</div><div className="topbar-path" id="topbarPath">默认工作区 / 默认项目</div></div>
           <div className="topbar-spacer" />
           <button className="model-picker workspace-picker" id="workspacePicker"><span className="picker-prefix">项目</span><span className="mp-name" id="workspacePickerName">默认工作区</span><ChevronDown size={14} aria-hidden /></button>
           <button className="model-picker" id="agentPicker"><span className="picker-status" aria-hidden /><span className="mp-name" id="agentPickerName">直接对话</span><ChevronDown size={14} aria-hidden /></button>
           <IconButton id="forkBtn" label="创建分支" title="从当前对话创建分支" icon={GitFork}><span className="icon-btn-label">分支</span></IconButton>
-          <IconButton id="compareBtn" label="模型对比" icon={SquareStack}><span className="icon-btn-label">对比</span></IconButton>
+          <IconButton id="compareBtn" label="模型实验" icon={SquareStack}><span className="icon-btn-label">模型实验</span></IconButton>
           <button className="command-btn" id="commandBtn" type="button" aria-haspopup="dialog" aria-controls="commandPalette"><Command size={15} aria-hidden /><span>命令</span><kbd>Ctrl K</kbd></button>
-          <IconButton id="inspectorBtn" label="会话检查器" icon={PanelRight} aria-controls="sessionInspector" aria-expanded="false"><span className="icon-btn-label">检查</span></IconButton>
+          <IconButton id="inspectorBtn" label="上下文检查" icon={PanelRight} aria-controls="sessionInspector" aria-expanded="false"><span className="icon-btn-label">上下文</span></IconButton>
           <IconButton id="settingsBtn" label="设置" icon={Settings} />
         </header>
 
@@ -99,7 +99,7 @@ export function AppShell() {
         </div>
 
         <aside className="session-inspector" id="sessionInspector" aria-label="会话检查器" aria-hidden="true" inert>
-          <div className="inspector-head"><div><span>SESSION</span><strong>会话检查器</strong></div><IconButton id="inspectorClose" className="inspector-close" label="关闭会话检查器" icon={X} /></div>
+          <div className="inspector-head"><div><strong>上下文检查</strong><span>核对模型真正收到的内容</span></div><IconButton id="inspectorClose" className="inspector-close" label="关闭上下文检查" icon={X} /></div>
           <div className="inspector-body" id="inspectorBody" />
         </aside>
       </main>

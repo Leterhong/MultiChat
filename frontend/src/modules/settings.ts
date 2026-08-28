@@ -475,7 +475,7 @@ function renderCapabilities() {
   const typeLabel = { plugin: '插件', skill: 'Skill', mcp: 'MCP', tool: '内置工具' };
   const riskLabel = { high: '高风险', medium: '中风险', low: '低风险' };
   body.innerHTML = `<section class="passport-page">
-    <div class="settings-page-heading"><div><div class="usage-kicker">CAPABILITY PASSPORTS</div><h3>能力审计</h3><p class="lead">统一查看每项能力的来源、版本、权限、信任边界和结构完整性。</p></div><button class="btn-ghost" id="refreshCapabilities">重新扫描</button></div>
+    <div class="settings-page-heading"><div><div class="usage-kicker">能力治理</div><h3>能力审计</h3><p class="lead">统一查看每项能力的来源、版本、权限、信任边界和结构完整性。</p></div><button class="btn-ghost" id="refreshCapabilities">重新扫描</button></div>
     <div class="passport-summary"><span><strong>${data.summary.total}</strong> 项能力</span><span><strong>${data.summary.enabled}</strong> 项启用</span><span class="${data.summary.highRisk ? 'warn' : ''}"><strong>${data.summary.highRisk}</strong> 项高风险</span><span class="${data.summary.issues ? 'warn' : ''}"><strong>${data.summary.issues}</strong> 个待处理问题</span></div>
     <div class="resource-toolbar passport-toolbar"><label class="resource-search"><span>⌕</span><input id="passportSearch" type="search" placeholder="搜索能力、来源或权限" /></label><select id="passportType"><option value="">全部类型</option>${Object.entries(typeLabel).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select><select id="passportRisk"><option value="">全部风险</option><option value="high">高风险</option><option value="medium">中风险</option><option value="low">低风险</option></select><span class="resource-count" id="passportCount">${data.items.length} 项</span></div>
     <div class="passport-grid">${data.items.map(item => `<article class="passport-card" data-passport data-type="${esc(item.type)}" data-risk="${esc(item.risk)}" data-search="${esc([item.name,item.id,item.source,item.scope,...(item.permissions||[])].join(' ').toLowerCase())}">
@@ -541,7 +541,7 @@ function renderUsage() {
   const rangeButton = (value, label) => `<button class="usage-range ${state.usageRange === value ? 'active' : ''}" data-usage-range="${value}">${label}</button>`;
   body.innerHTML = `
     <section class="usage-page">
-      <div class="settings-page-heading usage-heading"><div><div class="usage-kicker">LOCAL USAGE LEDGER</div><h3>每日 Token 用量</h3><p class="lead">按本机请求汇总；上游未返回 usage 时会明确标记为估算，不读取任何提示词正文。</p></div>
+      <div class="settings-page-heading usage-heading"><div><div class="usage-kicker">本地用量统计</div><h3>每日 Token 用量</h3><p class="lead">按本机请求汇总；上游未返回 usage 时会明确标记为估算，不读取任何提示词正文。</p></div>
         <div class="usage-heading-actions"><div class="usage-ranges">${rangeButton('7','近 7 天')}${rangeButton('30','近 30 天')}${rangeButton('all','全部')}</div><button class="btn-ghost" id="exportUsage">导出 CSV</button></div></div>
       <div class="usage-metrics">
         <article class="usage-metric primary"><span>Token 总量</span><strong>${compactNumber(totals.totalTokens)}</strong><small>输入 ${compactNumber(totals.inputTokens)} · 输出 ${compactNumber(totals.outputTokens)}</small></article>
@@ -557,7 +557,7 @@ function renderUsage() {
         ${totals.estimatedTokens ? `<span class="estimate-note">约 ${compactNumber(totals.estimatedTokens)} Token 为本地估算</span>` : ''}
       </div>
       <div class="usage-layout">
-        <article class="usage-panel usage-wide"><div class="usage-panel-head"><div><h4>按天趋势</h4><p>紫色为输入，青色为输出；悬停柱形查看当天明细。</p></div><div class="usage-legend"><span class="input"></span>输入 <span class="output"></span>输出</div></div>${usageTrend(usage?.daily || [])}</article>
+        <article class="usage-panel usage-wide"><div class="usage-panel-head"><div><h4>按天趋势</h4><p>深色为输入，浅色为输出；悬停柱形查看当天明细。</p></div><div class="usage-legend"><span class="input"></span>输入 <span class="output"></span>输出</div></div>${usageTrend(usage?.daily || [])}</article>
         <article class="usage-panel"><div class="usage-panel-head"><div><h4>模型用量</h4><p>选定周期内的 Token 占比</p></div></div><div class="usage-model-wrap"><div class="usage-donut" style="background:conic-gradient(${stops || 'var(--border-l2) 0 360deg'})"><div><strong>${models.length}</strong><span>模型</span></div></div><div class="usage-model-list">${models.slice(0,6).map((model,index)=>`<div><i style="background:${palette[index%palette.length]}"></i><span title="${esc(model.name)}">${esc(model.name)}</span><strong>${(Number(model.share || 0)*100).toFixed(1)}%</strong><small>${compactNumber(model.totalTokens)}</small></div>`).join('') || '<p class="usage-empty">还没有用量记录</p>'}</div></div></article>
         <article class="usage-panel usage-wide"><div class="usage-panel-head"><div><h4>活跃热力图</h4><p>最近 26 周的本地模型调用</p></div><span>${usage?.heatmap?.filter(item=>item.totalTokens>0).length || 0} 个活跃日</span></div><div class="usage-heatmap" aria-label="最近 26 周活跃情况">${(usage?.heatmap || []).map(item=>{ const level=item.totalTokens===0?0:item.totalTokens<1000?1:item.totalTokens<10000?2:item.totalTokens<100000?3:4; return `<i data-level="${level}"><span>${esc(item.date)} · ${compactNumber(item.totalTokens)} tokens</span></i>`;}).join('')}</div></article>
         <article class="usage-panel"><div class="usage-panel-head"><div><h4>提供方健康</h4><p>请求、用量与错误率</p></div></div><div class="usage-provider-list">${providers.map(provider=>`<div><span><i></i>${esc(provider.name)}</span><strong>${compactNumber(provider.totalTokens)}</strong><small>${provider.requests} 次 · ${provider.requests ? (provider.errors/provider.requests*100).toFixed(0) : 0}% 错误</small></div>`).join('') || '<p class="usage-empty">还没有提供方记录</p>'}</div></article>
@@ -631,7 +631,7 @@ function renderRuns() {
   const completed = runs.filter(run => run.status === 'completed').length;
   const totalTokens = runs.reduce((sum, run) => sum + Number(run.usage?.totalTokens || 0), 0);
   body.innerHTML = `
-    <div class="settings-page-heading"><div><div class="usage-kicker">RUN FLIGHT RECORDER</div><h3>运行黑匣子</h3><p class="lead">复盘模型请求、工具权限、上下文来源、耗时与 Token；点击记录打开上下文透镜。</p></div><button class="btn-ghost" id="refreshRuns">刷新</button></div>
+    <div class="settings-page-heading"><div><div class="usage-kicker">运行记录</div><h3>执行与复盘</h3><p class="lead">复盘模型请求、工具权限、上下文来源、耗时与 Token；点击记录查看完整上下文。</p></div><button class="btn-ghost" id="refreshRuns">刷新</button></div>
     <div class="passport-summary"><span><strong>${runs.length}</strong> 条记录</span><span><strong>${completed}</strong> 次完成</span><span><strong>${compactNumber(totalTokens)}</strong> tokens</span><span class="${runs.length - completed ? 'warn' : ''}"><strong>${runs.length - completed}</strong> 次未完成</span></div>
     <div class="run-list">
       ${runs.map(r => `

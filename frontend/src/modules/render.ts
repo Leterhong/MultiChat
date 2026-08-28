@@ -11,63 +11,61 @@ function renderContent() {
     const selectedFiles = state.selectedAssetIds?.size || 0;
     const enabledMemories = (state.memories || []).filter(item => item.enabled !== false).length;
     const agent = state.selectedAgent;
-    const latestRun = state.runs?.[0];
-    const readyParts = [!noModel, Boolean(state.selectedProject), Boolean(state.selectedWorkspace), Boolean(agent || state.selectedModel)];
-    const readiness = Math.round((readyParts.filter(Boolean).length / readyParts.length) * 100);
     const configuredTools = (agent?.toolIds?.length || 0) + (agent?.mcpServerIds?.length || 0);
+    const recentConversations = (state.conversations || []).slice(0, 5);
+    const recentMarkup = recentConversations.length
+      ? recentConversations.map((conversation: any) => {
+        const stamp = conversation.updatedAt || conversation.createdAt;
+        const date = stamp ? new Date(stamp) : null;
+        const time = date && !Number.isNaN(date.getTime())
+          ? date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })
+          : '最近';
+        return `<button type="button" class="recent-work-item" data-open-home-conv="${esc(conversation.id)}"><span>${esc(conversation.title || '未命名对话')}</span><small>${time}</small></button>`;
+      }).join('')
+      : '<div class="home-empty"><strong>还没有历史工作</strong><span>发起第一项任务后，它会出现在这里。</span></div>';
     c.innerHTML = `
       <div class="home-workbench">
         <header class="home-intro">
-          <div class="home-eyebrow"><span class="status-pulse ${noModel ? 'warn' : ''}"></span>${noModel ? '需要配置模型' : '工作台已就绪'}<span class="home-location">${esc(state.selectedWorkspace?.name || '工作区')} / ${esc(state.selectedProject?.name || '未选择项目')}</span></div>
-          <h1>把一次工作组织清楚</h1>
-          <p>选择模型、装配能力、核对上下文，然后保留可追溯的运行记录。</p>
+          <div class="home-location">${esc(state.selectedWorkspace?.name || '默认工作区')} <span>/</span> ${esc(state.selectedProject?.name || '未选择项目')}</div>
+          <h1>今天想完成什么？</h1>
+          <p>MultiChat 会把模型、项目文件和可用能力组织在同一次工作中。</p>
         </header>
-        <section class="home-launcher" aria-label="发起工作">
-          <div class="home-composer" id="heroCard">
-            <label for="heroInput">本次目标</label>
-            <textarea class="hero-input" id="heroInput" placeholder="描述要完成的事情、验收标准和限制条件…" rows="2"></textarea>
-            <div class="hero-actions">
-              <button class="hero-tag" id="heroModelTag">选择模型</button>
-              <span class="hero-mode-hint">${esc(agent?.name || '直接对话')}</span>
-              <button class="hero-context-tag" id="heroWorkspace" type="button">${selectedFiles} 文件 · ${enabledMemories} 记忆</button>
-              <div class="spacer"></div>
-              <button class="btn-secondary home-compare" id="heroCompare" type="button">并行对比</button>
-              <button class="send-btn" id="heroSendBtn" title="开始" aria-label="开始运行">↑</button>
-            </div>
-          </div>
-          <div class="home-shortcuts" aria-label="任务起点">
-            <button type="button" data-quick-prompt="请分析当前项目上下文，先列出关键事实、未知项和建议的下一步。"><span>01</span><strong>理解项目</strong><small>先梳理上下文与风险</small></button>
-            <button type="button" data-quick-prompt="请审查当前方案，指出优先级最高的缺陷、潜在漏洞和可以验证的改进项。"><span>02</span><strong>审查方案</strong><small>输出可执行检查清单</small></button>
-            <button type="button" id="quickCompare"><span>03</span><strong>比较模型</strong><small>同一任务并行得到结果</small></button>
+        <section class="home-composer" id="heroCard" aria-label="发起工作">
+          <div class="home-composer-label"><label for="heroInput">任务描述</label><span><i class="status-pulse ${noModel ? 'warn' : ''}"></i>${noModel ? '需要连接模型' : '可以开始'}</span></div>
+          <textarea class="hero-input" id="heroInput" placeholder="描述目标、已有信息和你希望得到的结果…" rows="3"></textarea>
+          <div class="hero-actions">
+            <button class="hero-tag" id="heroModelTag">选择模型</button>
+            <button class="hero-tag" id="heroAgents" type="button">${esc(agent?.name || '直接对话')}</button>
+            <button class="hero-context-tag" id="heroWorkspace" type="button">${selectedFiles} 个文件 · ${enabledMemories} 条记忆</button>
+            <div class="spacer"></div>
+            <button class="btn-secondary home-compare" id="heroCompare" type="button">模型实验</button>
+            <button class="send-btn" id="heroSendBtn" title="开始" aria-label="开始运行">↑</button>
           </div>
         </section>
-        <div class="home-grid">
-          <section class="home-panel assembly-panel">
-            <div class="home-panel-head"><div><span>RUN PROFILE</span><strong>${esc(agent?.name || '直接对话')}</strong></div><button type="button" id="heroAgents">编辑配置</button></div>
-            <dl class="home-facts">
-              <div><dt>模型</dt><dd>${esc(state.selectedModel || '未选择')}</dd></div>
-              <div><dt>项目</dt><dd>${esc(state.selectedProject?.name || '未选择')}</dd></div>
-              <div><dt>能力</dt><dd>${agent ? `${agent.skillRefs?.length || 0} Skills · ${configuredTools} 工具` : '无能力注入'}</dd></div>
-              <div><dt>上下文</dt><dd>${selectedFiles} 文件 · ${enabledMemories} 记忆</dd></div>
+        <div class="home-quick" aria-label="常用任务">
+          <span>快速开始</span>
+          <button type="button" data-quick-prompt="请分析当前项目上下文，先列出关键事实、未知项和建议的下一步。">理解当前项目</button>
+          <button type="button" data-quick-prompt="请审查当前方案，指出优先级最高的缺陷、潜在漏洞和可以验证的改进项。">审查问题与风险</button>
+          <button type="button" data-quick-prompt="请基于当前上下文制定一份按优先级排序、可直接执行且包含验收标准的实施计划。">制定实施计划</button>
+        </div>
+        <div class="home-overview">
+          <section class="home-section recent-work">
+            <div class="home-section-head"><div><h2>继续工作</h2><p>最近打开过的对话</p></div><button type="button" id="heroRuns">查看运行记录</button></div>
+            <div class="recent-work-list">${recentMarkup}</div>
+          </section>
+          <section class="home-section context-overview">
+            <div class="home-section-head"><div><h2>本次运行</h2><p>发送前可以随时调整</p></div><button type="button" id="heroInspector">检查上下文</button></div>
+            <dl class="context-overview-list">
+              <div><dt>模型</dt><dd>${esc(state.selectedProvider?.name || '未连接')} · ${esc(state.selectedModel || '未选择')}</dd></div>
+              <div><dt>运行方式</dt><dd>${esc(agent?.name || '直接对话')}</dd></div>
+              <div><dt>项目资料</dt><dd>${selectedFiles} 个文件 · ${enabledMemories} 条记忆</dd></div>
+              <div><dt>可用能力</dt><dd>${agent ? `${agent.skillRefs?.length || 0} 个 Skills · ${configuredTools} 个工具` : '按需选择运行配置'}</dd></div>
             </dl>
-          </section>
-          <section class="home-panel readiness-panel">
-            <div class="home-panel-head"><div><span>PREFLIGHT</span><strong>运行前检查</strong></div><button type="button" id="heroInspector">查看详情</button></div>
-            <div class="readiness-score"><strong>${readiness}</strong><span>%</span><div><b>${readiness === 100 ? '可以开始' : '仍有配置项待处理'}</b><small>模型、项目、上下文与能力组合</small></div></div>
-            <div class="readiness-track"><span style="width:${readiness}%"></span></div>
-          </section>
-          <section class="home-panel recent-panel">
-            <div class="home-panel-head"><div><span>LAST RUN</span><strong>最近运行</strong></div><button type="button" id="heroRuns">全部记录</button></div>
-            ${latestRun ? `<div class="home-run"><span class="run-state ${esc(latestRun.status || '')}">${esc(latestRun.status === 'completed' ? '已完成' : latestRun.status || '未知')}</span><div><strong>${esc(latestRun.agentName || latestRun.agentId || '直接对话')}</strong><small>${esc(latestRun.model || state.selectedModel || '')}</small></div><dl><div><dt>步骤</dt><dd>${esc(latestRun.steps || 0)}</dd></div><div><dt>工具</dt><dd>${esc(latestRun.toolCalls || 0)}</dd></div></dl></div>` : '<div class="home-empty-run"><strong>还没有运行记录</strong><span>完成第一项工作后会在这里汇总。</span></div>'}
+            <div class="home-links" aria-label="能力入口">
+              <button id="heroSkills">Skills</button><button id="heroMcp">MCP</button><button id="heroPlugins">插件</button><button id="heroCapabilities">全部能力</button>
+            </div>
           </section>
         </div>
-        <div class="home-links" aria-label="能力入口">
-          <button class="btn-ghost" id="heroSkills">Skills <span>管理</span></button>
-          <button class="btn-ghost" id="heroMcp">MCP <span>连接</span></button>
-          <button class="btn-ghost" id="heroPlugins">插件 <span>扩展</span></button>
-          <button class="btn-ghost" id="heroCapabilities">能力清单 <span>核对</span></button>
-        </div>
-        <div class="hero-hint"><kbd>Enter</kbd> 开始 <span>·</span> <kbd>Ctrl K</kbd> 命令 <span>·</span> <kbd>Ctrl M</kbd> 对比</div>
       </div>
     `;
     syncModelUI();
@@ -85,7 +83,9 @@ function renderContent() {
     $('#heroCapabilities').onclick = () => openSettings('capabilities');
     $('#heroWorkspace').onclick = () => openSettings('workspace');
     $('#heroCompare').onclick = openCompare;
-    $('#quickCompare').onclick = openCompare;
+    document.querySelectorAll<HTMLButtonElement>('[data-open-home-conv]').forEach(button => {
+      button.onclick = () => openConversation(button.dataset.openHomeConv);
+    });
     document.querySelectorAll<HTMLButtonElement>('[data-quick-prompt]').forEach(button => {
       button.onclick = () => { hi.value = button.dataset.quickPrompt || ''; autoresize(hi); hi.focus(); };
     });
