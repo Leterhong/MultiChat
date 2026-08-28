@@ -19,7 +19,7 @@ function sourceOf(item) {
   return item.source?.kind || (item.managed ? 'managed' : 'builtin');
 }
 function gitState() {
-  const root = ctx.path.resolve(ctx.path.join(__dirname, '..', '..'));
+  const root = ctx.path.resolve(process.env.MULTICHAT_PROJECT_ROOT || ctx.path.join(ctx.BACKEND_ROOT, '..'));
   const run = args => {
     const result = spawnSync('git', args, { cwd: root, encoding: 'utf8', timeout: 3000, windowsHide: true });
     return result.status === 0 ? String(result.stdout || '').trim() : '';

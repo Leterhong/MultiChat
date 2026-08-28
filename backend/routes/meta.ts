@@ -33,6 +33,6 @@ module.exports = function registerMeta(app) {
   });
 
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', version: ctx.VERSION, uptime: process.uptime(), skills: extensions.listSkills().length, mcpServers: extensions.listMcpServers().length, agents: ctx.store.read(ctx.AGENT_FILE, []).length });
+    res.json({ status: 'ok', version: ctx.VERSION, uptime: process.uptime(), storage: ctx.store.kind || 'json', skills: extensions.listSkills().length, mcpServers: extensions.listMcpServers().length, agents: ctx.store.read(ctx.AGENT_FILE, []).length });
   });
 };

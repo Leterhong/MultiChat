@@ -1,6 +1,0 @@
-import{esc as e}from"./core-BWSzA0FL.js";function t(e){return e==null?`0`:e<1e3?String(e):e<1e6?String(e>=1e5?Math.round(e/1e3):Math.round(e/100)/10)+`K`:String(e>=1e8?Math.round(e/1e6):Math.round(e/1e5)/10)+`M`}function n(t){if(!t)return``;let n=e(t);return n=n.replace(/```([\w-]*)\n([\s\S]*?)```/g,(e,t,n)=>`<div class="code-block"><button class="code-copy" type="button">复制</button><pre><code class="lang-${t}">${n}</code></pre></div>`),n=n.replace(/`([^`\n]+)`/g,`<code>$1</code>`),n=n.replace(/^### (.+)$/gm,`<h3>$1</h3>`),n=n.replace(/^## (.+)$/gm,`<h2>$1</h2>`),n=n.replace(/^# (.+)$/gm,`<h1>$1</h1>`),n=n.replace(/\*\*([^*]+)\*\*/g,`<strong>$1</strong>`),n=n.replace(/(^|[^*])\*([^*]+)\*/g,`$1<em>$2</em>`),n=n.replace(/^&gt; (.+)$/gm,`<blockquote>$1</blockquote>`),n=n.replace(/(?:^|\n)((?:- .+(?:\n|$))+)/g,(e,t)=>`
-<ul>`+t.trim().split(`
-`).map(e=>`<li>${e.replace(/^- /,``)}</li>`).join(``)+`</ul>`),n=n.replace(/(?:^|\n)((?:\d+\. .+(?:\n|$))+)/g,(e,t)=>`
-<ol>`+t.trim().split(`
-`).map(e=>`<li>${e.replace(/^\d+\. /,``)}</li>`).join(``)+`</ol>`),n.split(/\n{2,}/).map(e=>(e=e.trim(),e?/^<(h\d|ul|ol|pre|blockquote)/.test(e)?e:`<p>`+e.replace(/\n/g,`<br/>`)+`</p>`:``)).join(`
-`)}export{t as fmtTok,n as renderMarkdown};

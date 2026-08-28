@@ -1,7 +1,7 @@
 {
   "name": "multichat-frontend",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.5.0",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"
@@ -10,23 +10,40 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:a11y": "vitest run src/components/__tests__/WorkspaceContent.a11y.test.tsx",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 99999",
+    "lint:css": "stylelint \"src/**/*.css\" --max-warnings 99999",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,html}\""
   },
   "dependencies": {
+    "dompurify": "^3.2.7",
     "lucide-react": "^0.542.0",
+    "marked": "^16.3.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-markdown": "^10.1.0",
+    "react-virtuoso": "^4.14.1",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
     "@types/react": "^19.1.11",
     "@types/react-dom": "^19.1.7",
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
+    "cssnano": "^7.1.1",
     "eslint": "^8.57.1",
+    "jsdom": "^27.0.0",
     "prettier": "^3.3.0",
+    "stylelint": "^16.23.1",
     "typescript": "^5.6.3",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "vitest": "^3.2.4",
+    "vitest-axe": "^0.1.0"
   }
 }

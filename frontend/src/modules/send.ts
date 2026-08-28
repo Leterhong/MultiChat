@@ -1,14 +1,10 @@
-import { $, $$, api, toast, state } from '../core/index';
+import { $, api, serverAuthHeaders, toast, state } from '../core/index';
 
 /* --------------------------- Send (streaming) --------------------------- */
-$('#input').addEventListener('input', (e) => autoresize(e.target));
-$('#input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
-$('#sendBtn').onclick = send;
-
-async function send() {
+async function send(textOverride?: string) {
   if (state.streaming) { stopStream(); return; }
   const input = state.messages.length ? $('#input') : $('#heroInput');
-  const text = (input?.value || '').trim();
+  const text = (textOverride ?? input?.value ?? '').trim();
   if (!text) return;
   if (!state.selectedProvider || !state.selectedModel) {
     toast('请先在右上角选择模型', 'error'); openSettings('providers'); return;
@@ -25,10 +21,7 @@ async function send() {
 }
 
 function updateSendBtn() {
-  const btn = state.messages.length ? $('#sendBtn') : $('#heroSendBtn');
-  if (!btn) return;
-  if (state.streaming) { btn.classList.add('stop'); btn.textContent = '■'; btn.title = '停止'; }
-  else { btn.classList.remove('stop'); btn.textContent = '↑'; btn.title = '发送'; }
+  renderContent();
 }
 function stopStream() {
   if (state.abortCtrl) { state.abortCtrl.abort(); state.abortCtrl = null; }
@@ -48,9 +41,14 @@ async function ensureConversation() {
 }
 async function saveCurrentMessages() {
   if (!state.currentConvId) return;
-  try { await api('/api/conversations/' + state.currentConvId, { method: 'PUT', body: JSON.stringify({ messages: state.messages.filter(m => !m.streaming) }) }); } catch {}
+  try {
+    await api('/api/conversations/' + state.currentConvId + '/messages', {
+      method: 'POST',
+      body: JSON.stringify(state.messages.filter(m => !m.streaming)),
+    });
+  } catch {}
 }
-async function streamReply() {
+async function streamReply(resumeFromRunId?: string) {
   const provider = state.selectedProvider;
   const model = state.selectedModel;
 
@@ -79,6 +77,7 @@ async function streamReply() {
 
   const body: any = {
     model: provider.id + ':' + model,
+    providerId: provider.id,
     messages: state.messages.filter(m => !m.streaming || m.role === 'user').map(m => ({ role: m.role, content: m.content })),
     stream: true,
     temperature: state.params.temperature,
@@ -90,6 +89,7 @@ async function streamReply() {
     interactionId: `${state.currentConvId || 'chat'}_${Date.now().toString(36)}`,
     assetIds: [...state.selectedAssetIds]  // D1：只把用户勾选的文件作为上下文注入
   };
+  if (resumeFromRunId) body.resumeFromRunId = resumeFromRunId;
   // Provider credentials stay on the backend. The browser only names the
   // configured provider through the model prefix and never echoes API keys.
 
@@ -98,7 +98,7 @@ async function streamReply() {
   try {
     res = await fetch(state.apiBase + endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...serverAuthHeaders() },
       body: JSON.stringify(body),
       signal: state.abortCtrl.signal
     });
@@ -106,7 +106,7 @@ async function streamReply() {
     // 用户点击「停止」会触发 AbortError：同时通知后端真正中断上游与 MCP 子进程
     if (e.name === 'AbortError') {
       if (useAgent && state.currentRunId) {
-        fetch(state.apiBase + '/api/runs/' + state.currentRunId + '/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(() => {});
+        fetch(state.apiBase + '/api/runs/' + state.currentRunId + '/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json', ...serverAuthHeaders() } }).catch(() => {});
       }
       const last = state.messages[state.messages.length - 1];
       if (last) { last.streaming = false; last.cancelled = true; if (!last.content) last.content = '（已停止）'; }
@@ -179,6 +179,11 @@ async function streamReply() {
           if (!last.trace) last.trace = [];
           const ev = j.agentEvent;
           if (ev.type === 'cancelled') { last.cancelled = true; }
+          else if (ev.type === 'paused') {
+            last.resumeRunId = ev.runId;
+            last.pauseReason = ev.reason || '已达到本轮执行上限';
+            last.streaming = false;
+          }
           else if (ev.type === 'approval_required') {
             if (!last.pendingApprovals) last.pendingApprovals = {};
             last.pendingApprovals[ev.approval.id] = ev.approval;
@@ -245,72 +250,75 @@ async function streamReply() {
   renderContent();
   saveCurrentMessages();
   if (useAgent) loadRuns().then(() => renderInspector());
-  $$('[data-copy]').forEach(b => b.onclick = () => {
-    const i = +b.dataset.copy; navigator.clipboard.writeText(state.messages[i]?.content || ''); toast('已复制');
-  });
-  $$('[data-edit]').forEach(b => b.onclick = () => {
-    const i = +b.dataset.edit;
-    const newText = prompt('编辑消息', state.messages[i].content);
-    if (newText != null) { state.messages[i].content = newText; state.messages = state.messages.slice(0, i+1); renderContent(); }
-  });
-  $$('[data-regen]').forEach(b => b.onclick = () => {
-    if (state.streaming) return;
-    const i = +b.dataset.regen;
-    state.messages = state.messages.slice(0, i); // 丢弃该助手消息及其后内容，基于前文重答
-    renderContent();
-    streamReply();
-  });
 }
 
-/* code-block copy + 折叠状态持久化（事件委托， survives re-render） */
-document.addEventListener('click', (e) => {
-  const btn = (e.target as HTMLElement).closest('.code-copy');
-  if (!btn) return;
-  const code = btn.parentElement.querySelector('pre code');
-  if (!code) return;
-  navigator.clipboard.writeText(code.textContent).then(() => {
-    btn.textContent = '已复制';
-    setTimeout(() => { btn.textContent = '复制'; }, 1500);
-  }).catch(() => toast('复制失败', 'error'));
-});
+async function copyMessage(index: number) {
+  await navigator.clipboard.writeText(state.messages[index]?.content || '');
+  toast('已复制');
+}
 
-/* Approval 审批卡片：批准 / 拒绝（事件委托，survives re-render） */
-document.addEventListener('click', (e) => {
-  const apBtn = (e.target as HTMLElement).closest('[data-approve],[data-reject]') as HTMLButtonElement;
-  if (!apBtn) return;
-  const approvalId = apBtn.getAttribute('data-approve') || apBtn.getAttribute('data-reject');
-  if (!approvalId) return;
-  const action = apBtn.hasAttribute('data-approve') ? 'approve' : 'reject';
+function editMessage(index: number) {
+  const message = state.messages[index];
+  if (!message) return;
+  const newText = prompt('编辑消息', message.content);
+  if (newText == null) return;
+  message.content = newText;
+  state.messages = state.messages.slice(0, index + 1);
+  renderContent();
+  void saveCurrentMessages();
+}
+
+async function regenerateMessage(index: number) {
+  if (state.streaming) return;
+  state.messages = state.messages.slice(0, index);
+  state.messages.push({ role: 'assistant', content: '', streaming: true, model: state.selectedModel, providerName: state.selectedProvider?.name || state.selectedProvider?.id, startTime: performance.now() });
+  state.streaming = true;
+  renderContent();
+  await streamReply();
+  state.streaming = false;
+  renderContent();
+}
+
+async function resumeMessage(index: number) {
+  if (state.streaming) return;
+  const source = state.messages[index];
+  if (!source?.resumeRunId) return;
+  state.messages.push({ role: 'assistant', content: '', streaming: true, model: state.selectedModel, providerName: state.selectedProvider?.name || state.selectedProvider?.id, startTime: performance.now() });
+  state.streaming = true;
+  renderContent();
+  await streamReply(source.resumeRunId);
+  state.streaming = false;
+  renderContent();
+  await saveCurrentMessages();
+}
+
+async function resolveApproval(approvalId: string, action: 'approve' | 'reject') {
   const runId = state.currentRunId;
   if (!runId) { toast('无法定位运行任务', 'error'); return; }
-  apBtn.disabled = true;
-  apBtn.textContent = action === 'approve' ? '批准中…' : '拒绝中…';
-  fetch(state.apiBase + '/api/runs/' + runId + '/approval/' + approvalId, {
+  const response = await fetch(state.apiBase + '/api/runs/' + runId + '/approval/' + approvalId, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...serverAuthHeaders() },
     body: JSON.stringify({ action })
-  }).then(r => r.json().then(j => ({ ok: r.ok, j }))).then(({ ok, j }) => {
-    if (!ok) { toast('审批失败：' + (j?.error?.message || j?.error || '未知错误'), 'error'); apBtn.disabled = false; apBtn.textContent = action === 'approve' ? '批准执行' : '拒绝'; return; }
-    // 本地即时反馈：更新该消息的 pendingApprovals 状态，卡片将变为已批准/已拒绝（后端也会回推 approval_resolved 事件）
-    const last = state.messages.find(m => m.pendingApprovals && m.pendingApprovals[approvalId]);
-    if (last) {
-      const status = action === 'approve' ? 'approved' : 'rejected';
-      last.pendingApprovals[approvalId] = Object.assign({}, last.pendingApprovals[approvalId], { status, resolvedAt: new Date().toISOString() });
-      renderContent();
-    }
-    toast(action === 'approve' ? '已批准，Agent 继续执行' : '已拒绝');
-  }).catch(() => { toast('网络错误', 'error'); apBtn.disabled = false; apBtn.textContent = action === 'approve' ? '批准执行' : '拒绝'; });
-});
-
-/* 折叠披露（思考 / 工具卡）的 open 状态写回消息对象，避免重渲染后丢失用户的展开/收起选择 */
-document.addEventListener('toggle', (e) => {
-  const d = e.target as HTMLDetailsElement;
-  if (!d || !d.getAttribute) return;
-  const ti = d.getAttribute('data-think');
-  if (ti != null) { const m = state.messages[+ti]; if (m) m.thinkOpen = d.open; return; }
-  const tt = d.getAttribute('data-tool');
-  if (tt != null) { const [ci, ki] = tt.split('-').map(Number); const m = state.messages[ci]; if (m && m.toolCalls && m.toolCalls[ki]) m.toolCalls[ki]._open = d.open; }
-}, true);
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    toast('审批失败：' + (payload?.error?.message || payload?.error || '未知错误'), 'error');
+    throw new Error(payload?.error?.message || payload?.error || '审批失败');
+  }
+  const message = state.messages.find(m => m.pendingApprovals && m.pendingApprovals[approvalId]);
+  const messageIndex = message ? state.messages.indexOf(message) : -1;
+  if (message) {
+    const status = action === 'approve' ? 'approved' : 'rejected';
+    message.pendingApprovals[approvalId] = { ...message.pendingApprovals[approvalId], status, resolvedAt: new Date().toISOString() };
+    renderContent();
+  }
+  toast(action === 'approve' ? '已批准，Agent 继续执行' : '已拒绝');
+  if (payload.resumable && message && messageIndex >= 0) {
+    message.resumeRunId = runId;
+    message.pauseReason = action === 'approve' ? '授权已记录，正在从检查点继续。' : '拒绝已记录，正在让 Agent 收束本轮。';
+    await resumeMessage(messageIndex);
+  }
+}
 
 
-export { send,updateSendBtn,stopStream,ensureConversation,saveCurrentMessages,streamReply };
+export { copyMessage, editMessage, ensureConversation, regenerateMessage, resolveApproval, resumeMessage, saveCurrentMessages, send, stopStream, streamReply, updateSendBtn };

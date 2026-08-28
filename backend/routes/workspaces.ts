@@ -116,7 +116,7 @@ module.exports = function registerWorkspaces(app) {
 
   // ── Prompt Templates ──
   app.get('/api/prompts', (req, res) => {
-    const file = ctx.path.join(__dirname, '..', 'prompts.json');
+    const file = ctx.path.join(ctx.BACKEND_ROOT, 'prompts.json');
     if (!ctx.fs.existsSync(file)) return res.json([]);
     try { res.json(JSON.parse(ctx.fs.readFileSync(file, 'utf-8'))); }
     catch { res.json([]); }

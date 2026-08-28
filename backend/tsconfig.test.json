@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "outDir": ".test-dist",
+    "sourceMap": false
+  },
+  "include": [
+    "server.ts",
+    "types.ts",
+    "adapters/**/*.ts",
+    "extensions/**/*.ts",
+    "extensions/demo-mcp-server.js",
+    "lib/**/*.ts",
+    "mcp.ts",
+    "routes/**/*.ts",
+    "runtime/**/*.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": ["node_modules", "data", "dist", ".test-dist"]
+}

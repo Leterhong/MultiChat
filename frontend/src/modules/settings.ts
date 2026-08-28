@@ -17,6 +17,8 @@ function openSettings(tab = 'general') {
 
   // Focus is now inside the dialog, so the application can safely become inert.
   $('#app').inert = true;
+  const route = `#/settings/${encodeURIComponent(tab)}`;
+  if (location.hash !== route) history.pushState(null, '', route);
 }
 function closeSettings() {
   const panel = $('#settings');
@@ -37,18 +39,35 @@ function closeSettings() {
   panel.setAttribute('aria-hidden', 'true');
   $('#scrim').classList.remove('open');
   settingsReturnFocus = null;
+  if (location.hash.startsWith('#/settings/')) {
+    const route = state.currentConvId ? `#/chat/${encodeURIComponent(state.currentConvId)}` : '#/new';
+    history.replaceState(null, '', route);
+  }
 }
 $('#scrim').onclick = closeSettings;
 $('#closeSettings').onclick = closeSettings;
 $('#closeSettingsTop').onclick = closeSettings;
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && $('#settings').classList.contains('open') && !$('#modal').classList.contains('open')) closeSettings();
+  const panel = $('#settings') as HTMLElement;
+  if (!panel.classList.contains('open') || $('#modal').classList.contains('open')) return;
+  if (event.key === 'Escape') { closeSettings(); return; }
+  if (event.key !== 'Tab') return;
+  const focusable = Array.from(panel.querySelectorAll<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [href], [tabindex="0"]'))
+    .filter(element => element.offsetParent !== null);
+  if (!focusable.length) { event.preventDefault(); $('#settingsBody')?.focus(); return; }
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 });
 $$('.settings-tab[data-tab]').forEach(b => b.onclick = () => switchSettingsTab(b.dataset.tab));
 function switchSettingsTab(tab) {
   state.currentTab = tab;
   $$('.settings-tab[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   renderSettings(tab);
+  if ($('#settings').classList.contains('open')) {
+    const route = `#/settings/${encodeURIComponent(tab)}`;
+    if (location.hash !== route) history.replaceState(null, '', route);
+  }
   if (tab === 'usage') {
     loadUsage(state.usageRange).then(() => { if (state.currentTab === 'usage') renderSettings('usage'); });
   } else if (tab === 'capabilities') {
@@ -93,6 +112,12 @@ function renderSettings(tab = 'general', keepScroll = false) {
         </div>
       </div>
       <div class="provider-card">
+        <h4>本地服务访问保护</h4>
+        <div class="pmeta">仅当启动服务时设置了 MULTICHAT_API_TOKEN 才需要填写。令牌只保存在当前浏览器。</div>
+        <div class="field"><label for="serverToken">访问令牌</label><input type="password" id="serverToken" value="${esc(localStorage.getItem('multichat_server_token') || '')}" autocomplete="off" placeholder="未启用则留空" /></div>
+        <div class="provider-row"><button class="btn-ghost" id="clearServerToken">清除</button><button class="btn-primary" id="saveServerToken">保存令牌</button></div>
+      </div>
+      <div class="provider-card">
         <h4>关于</h4>
         <div class="pmeta">MultiChat · 本地优先的多模型工作台<br/>模型、Skills、MCP 与插件按运行配置组合。<br/>支持 OpenAI / Anthropic / Ollama / LM Studio 等兼容接口。</div>
       </div>
@@ -115,6 +140,17 @@ function renderSettings(tab = 'general', keepScroll = false) {
     $('#themeSel').onchange = (event) => {
       setTheme(event.target.value);
       toast('主题已切换');
+    };
+    $('#saveServerToken').onclick = () => {
+      const value = String($('#serverToken').value || '').trim();
+      if (value) localStorage.setItem('multichat_server_token', value);
+      else localStorage.removeItem('multichat_server_token');
+      toast('访问令牌已保存');
+    };
+    $('#clearServerToken').onclick = () => {
+      localStorage.removeItem('multichat_server_token');
+      $('#serverToken').value = '';
+      toast('访问令牌已清除');
     };
   } else if (tab === 'workspace') {
     const workspace = state.selectedWorkspace;

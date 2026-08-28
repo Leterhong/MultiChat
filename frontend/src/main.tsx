@@ -2,21 +2,22 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { AppShell } from './app/AppShell';
-import { applyDesignTokens } from './design/tokens';
+import * as Core from './core/index';
+import { installRuntimeActions, markAppReady } from './store/appStore';
+import './design/tokens.css';
 import './styles.css';
-import './workbench-v2.css';
+import './workbench.css';
 
 const mount = document.getElementById('root');
 if (!mount) throw new Error('MultiChat root mount is missing');
 
-applyDesignTokens();
 const root = createRoot(mount);
 flushSync(() => root.render(<StrictMode><AppShell /></StrictMode>));
 
 async function start() {
-  const [Core, Shell, Init, Data, Conversations, ModelPicker, AgentPicker, Settings,
+  const [Shell, Init, Data, Conversations, ModelPicker, AgentPicker, Settings,
     PluginsUI, ImportExport, ExtensionImport, Modal, Render, Markdown, Send, Workbench, Compare] = await Promise.all([
-    import('./core/index'), import('./modules/shell'), import('./modules/init'), import('./modules/data'),
+    import('./modules/shell'), import('./modules/init'), import('./modules/data'),
     import('./modules/conversations'), import('./modules/modelPicker'), import('./modules/agentPicker'),
     import('./modules/settings'), import('./modules/pluginsUI'), import('./modules/importExport'),
     import('./modules/extensionImport'), import('./modules/modal'), import('./modules/render'),
@@ -31,7 +32,26 @@ async function start() {
   Shell.setupShell();
   Workbench.setupWorkbench();
   Compare.setupCompare();
+  installRuntimeActions({
+    send: Send.send,
+    stop: Send.stopStream,
+    openSettings: Settings.openSettings,
+    openCompare: Compare.openCompare,
+    openConversation: Conversations.openConversation,
+    openInspector: Workbench.openInspector,
+    copyMessage: Send.copyMessage,
+    editMessage: Send.editMessage,
+    regenerateMessage: Send.regenerateMessage,
+    resumeMessage: Send.resumeMessage,
+    resolveApproval: Send.resolveApproval,
+    refreshFileContext: () => {
+      Render.renderContent();
+      Workbench.renderInspector();
+    },
+  });
   await Init.bootstrap();
+  markAppReady();
+  Render.renderContent();
 
   window.MC = {
     state: Core.state,

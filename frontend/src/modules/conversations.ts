@@ -45,6 +45,7 @@ async function newConversation() {
   renderConvList();
   renderInspector();
   $('#heroInput')?.focus();
+  if (location.hash !== '#/new') history.pushState(null, '', '#/new');
 }
 $('#newChatBtn').onclick = newConversation;
 async function openConversation(id) {
@@ -67,6 +68,8 @@ async function openConversation(id) {
     renderContent();
     renderConvList();
     renderFileContext();
+    const route = `#/chat/${encodeURIComponent(c.id)}`;
+    if (location.hash !== route) history.pushState(null, '', route);
   } catch (e) { toast('打开对话失败：' + e.message, 'error'); }
 }
 
@@ -80,36 +83,7 @@ function fmtSize(n) {
 
 // D1：文件上下文面板——列出当前项目资产，可勾选要注入到对话的文件
 function renderFileContext() {
-  const wrap = $('#fileCtx'); if (!wrap) return;
-  const body = $('#fileCtxBody'); if (!body) return;
-  const count = $('#fcCount');
-  const fileLabel = $('#composerFileLabel');
-  const selectedCount = state.selectedAssetIds.size;
-  wrap.hidden = state.assets.length === 0;
-  if (count) count.textContent = selectedCount + ' / ' + state.assets.length + ' 已选择';
-  if (fileLabel) fileLabel.textContent = selectedCount ? `文件 ${selectedCount}` : '文件';
-  if (!state.assets.length) {
-    body.innerHTML = '';
-    return;
-  }
-  body.innerHTML = state.assets.map(a => `
-    <label class="fc-item">
-      <input type="checkbox" class="fc-check" data-id="${esc(a.id)}" ${state.selectedAssetIds.has(a.id) ? 'checked' : ''}/>
-      <span class="fc-name" title="${esc(a.name)}">${esc(a.name)}</span>
-      <span class="fc-meta">${esc((a.mimeType || '').split('/').pop())}${a.size ? ' · ' + fmtSize(a.size) : ''}</span>
-    </label>
-  `).join('') + '<div class="fc-actions"><button class="btn-ghost" id="fcAll">全选</button><button class="btn-ghost" id="fcNone">清空</button></div>';
-  body.querySelectorAll('.fc-check').forEach(cb => {
-    cb.onchange = () => {
-      const id = cb.dataset.id;
-      if (cb.checked) state.selectedAssetIds.add(id); else state.selectedAssetIds.delete(id);
-      if (count) count.textContent = state.selectedAssetIds.size + ' / ' + state.assets.length + ' 已选择';
-      if (fileLabel) fileLabel.textContent = state.selectedAssetIds.size ? `文件 ${state.selectedAssetIds.size}` : '文件';
-      renderInspector();
-    };
-  });
-  const bAll = $('#fcAll'); if (bAll) bAll.onclick = () => { state.assets.forEach(a => state.selectedAssetIds.add(a.id)); renderFileContext(); };
-  const bNone = $('#fcNone'); if (bNone) bNone.onclick = () => { state.selectedAssetIds.clear(); renderFileContext(); };
+  renderContent();
   renderInspector();
 }
 

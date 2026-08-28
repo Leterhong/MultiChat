@@ -4,6 +4,7 @@ import {
   FileText, FolderKanban, GitFork, Layers3, Menu, MessageSquarePlus, PanelRight,
   PlugZap, Search, Settings, SlidersHorizontal, SquareStack, X, Zap,
 } from 'lucide-react';
+import { ConversationComposer, WorkspaceContent } from '../components/WorkspaceContent';
 
 type Icon = ComponentType<{ size?: number; strokeWidth?: number; className?: string; 'aria-hidden'?: boolean }>;
 type SettingsItem = { tab: string; label: string; icon: Icon };
@@ -80,23 +81,8 @@ export function AppShell() {
           <IconButton id="settingsBtn" label="设置" icon={Settings} />
         </header>
 
-        <div className="content" id="content" />
-        <div className="composer-wrap" id="composerWrap">
-          <div className="composer">
-            <div className="file-ctx" id="fileCtx">
-              <div className="file-ctx-head" id="fileCtxHead"><span className="fc-title">上下文</span><span className="fc-count" id="fcCount">0 个文件</span><span className="spacer" /><button className="fc-min" id="fcMin" aria-label="折叠或展开上下文"><ChevronDown size={15} aria-hidden /></button></div>
-              <div className="file-ctx-body" id="fileCtxBody" />
-            </div>
-            <textarea className="composer-input" id="input" rows={1} placeholder="描述下一步工作…" autoComplete="off" />
-            <div className="composer-actions">
-              <button className="composer-tool" id="composerFileBtn" type="button" title="管理上下文文件"><FileText size={15} aria-hidden /><span className="composer-tool-label" id="composerFileLabel">文件</span></button>
-              <button className="hero-tag" id="composerModelTag" title="选择模型">选择模型</button>
-              <span className="ctx-hint" id="ctxHint">Shift+Enter 换行</span><div className="spacer" />
-              <button className="send-btn" id="sendBtn" title="发送" aria-label="发送消息"><span aria-hidden>↑</span></button>
-            </div>
-          </div>
-          <div className="composer-hint">Enter 发送 · 配置和数据保存在当前设备</div>
-        </div>
+        <div className="content" id="content"><WorkspaceContent /></div>
+        <ConversationComposer />
 
         <aside className="session-inspector" id="sessionInspector" aria-label="会话检查器" aria-hidden="true" inert>
           <div className="inspector-head"><div><strong>上下文检查</strong><span>核对模型真正收到的内容</span></div><IconButton id="inspectorClose" className="inspector-close" label="关闭上下文检查" icon={X} /></div>

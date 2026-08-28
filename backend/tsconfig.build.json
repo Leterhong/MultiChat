@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": ".",
+    "sourceMap": true,
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "server.ts",
+    "types.ts",
+    "adapters/**/*.ts",
+    "extensions/**/*.ts",
+    "extensions/demo-mcp-server.js",
+    "lib/**/*.ts",
+    "mcp.ts",
+    "routes/**/*.ts",
+    "runtime/**/*.ts"
+  ],
+  "exclude": ["node_modules", "data", "dist", "tests"]
+}

@@ -1,5 +1,5 @@
-import crypto from 'crypto';
-import fs from 'fs';
+const crypto = require('crypto');
+const fs = require('fs');
 import type { JsonRecord, JsonStore } from '../types';
 
 const PROVIDER_FILE = 'providers.json';
@@ -39,7 +39,7 @@ function decrypt(store: JsonStore, value: string): string {
   return Buffer.concat([decipher.update(Buffer.from(payloadText, 'base64url')), decipher.final()]).toString('utf8');
 }
 
-export function createProviderStore(store: JsonStore) {
+function createProviderStore(store: JsonStore) {
   function stored(): JsonRecord[] {
     const rows = store.read<JsonRecord[]>(PROVIDER_FILE, []);
     let migrated = false;
@@ -54,9 +54,13 @@ export function createProviderStore(store: JsonStore) {
       store.write(PROVIDER_FILE, protectedRows);
       // The generic store created its recovery copy from the legacy plaintext
       // file. Replace that copy immediately so no API key remains in a .bak.
-      fs.writeFileSync(`${store.resolve(PROVIDER_FILE)}.bak`, JSON.stringify(protectedRows, null, 2), { mode: 0o600 });
-      protectFile(store.resolve(PROVIDER_FILE));
-      protectFile(`${store.resolve(PROVIDER_FILE)}.bak`);
+      const legacyFile = store.resolve(PROVIDER_FILE);
+      if (store.kind === 'json' || fs.existsSync(legacyFile)) {
+        fs.writeFileSync(legacyFile, JSON.stringify(protectedRows, null, 2), { mode: 0o600 });
+        fs.writeFileSync(`${legacyFile}.bak`, JSON.stringify(protectedRows, null, 2), { mode: 0o600 });
+        protectFile(legacyFile);
+        protectFile(`${legacyFile}.bak`);
+      }
     }
     return protectedRows;
   }
@@ -74,7 +78,7 @@ export function createProviderStore(store: JsonStore) {
       apiKey: row.apiKey ? encrypt(store, String(row.apiKey)) : '',
     }));
     store.write(PROVIDER_FILE, protectedRows);
-    protectFile(store.resolve(PROVIDER_FILE));
+    if (store.kind === 'json') protectFile(store.resolve(PROVIDER_FILE));
     const backup = `${store.resolve(PROVIDER_FILE)}.bak`;
     if (fs.existsSync(backup)) protectFile(backup);
   }
@@ -93,7 +97,7 @@ export function createProviderStore(store: JsonStore) {
   return { list, save, publicRecord, publicList };
 }
 
-export function providerCapabilities(provider: JsonRecord) {
+function providerCapabilities(provider: JsonRecord) {
   const type = String(provider.apiType || 'openai').toLowerCase();
   const models = Array.isArray(provider.models) ? provider.models.map(String) : [];
   const modelText = models.join(' ').toLowerCase();
@@ -109,4 +113,4 @@ export function providerCapabilities(provider: JsonRecord) {
   };
 }
 
-export { PROVIDER_FILE };
+module.exports = { PROVIDER_FILE, createProviderStore, providerCapabilities };

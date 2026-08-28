@@ -25,7 +25,7 @@ interface ExtensionState {
   mcp: Record<string, JsonRecord>;
 }
 
-const PROJECT_ROOT = path.resolve(process.env.MULTICHAT_PROJECT_ROOT || path.join(__dirname, '..', '..'));
+const PROJECT_ROOT = path.resolve(process.env.MULTICHAT_PROJECT_ROOT || path.join(ctx.BACKEND_ROOT, '..'));
 const MANAGED_ROOT = path.join(ctx.DATA_DIR, 'extensions');
 const MANAGED_SKILLS_ROOT = path.join(MANAGED_ROOT, 'skills');
 const MANAGED_PLUGINS_ROOT = path.join(MANAGED_ROOT, 'plugins');

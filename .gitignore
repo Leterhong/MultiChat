@@ -5,8 +5,9 @@ node_modules/
 # Data
 data/
 backend/data/
+backend/.test-dist/
 
-# WorkBuddy / Claude 本地工具目录
+# Local agent tool directories
 .workbuddy/
 .claude/
 

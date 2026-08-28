@@ -12,6 +12,7 @@ const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'multichat-import-project
 const tempData = fs.mkdtempSync(path.join(os.tmpdir(), 'multichat-import-data-'));
 process.env.DATA_DIR = tempData;
 process.env.MULTICHAT_PROJECT_ROOT = tempRoot;
+process.env.MULTICHAT_STORE = 'json';
 
 const importer = require('../extensions/importer');
 const extensions = require('../extensions/manager');

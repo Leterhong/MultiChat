@@ -10,6 +10,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const crypto = require('crypto');
 
 const ctx = require('./lib/context');
 const { requestIdMiddleware, errorHandler } = require('./lib/errors');
@@ -26,6 +27,22 @@ if (corsOrigins.length) app.use(cors({ origin: corsOrigins, credentials: false }
 // behind the same reverse proxies as the rest of MultiChat.  The importer
 // applies a stricter 20 MB compressed / 80 MB unpacked limit of its own.
 app.use(express.json({ limit: '32mb' }));
+const apiToken = String(process.env.MULTICHAT_API_TOKEN || '');
+const basicAuth = String(process.env.MULTICHAT_BASIC_AUTH || '');
+function equalSecret(actual, expected) {
+  const left = Buffer.from(String(actual || ''));
+  const right = Buffer.from(String(expected || ''));
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+app.use((req, res, next) => {
+  if ((!apiToken && !basicAuth) || (!req.path.startsWith('/api/') && !req.path.startsWith('/v1/')) || req.path === '/api/health') return next();
+  const authorization = String(req.headers.authorization || '');
+  const bearerOk = apiToken && authorization.startsWith('Bearer ') && equalSecret(authorization.slice(7), apiToken);
+  const basicOk = basicAuth && authorization.startsWith('Basic ') && equalSecret(Buffer.from(authorization.slice(6), 'base64').toString('utf8'), basicAuth);
+  if (bearerOk || basicOk) return next();
+  res.setHeader('WWW-Authenticate', 'Bearer realm="MultiChat"');
+  return res.status(401).json({ error: { message: 'MultiChat access token required' }, code: 'AUTH_REQUIRED' });
+});
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -60,7 +77,7 @@ require('./routes/meta')(app);
 
 // ── 前端静态资源（生产构建件） ──
 // 默认按源码布局取 ../frontend/dist；CLI 或打包运行时可通过 FRONTEND_DIST 覆盖。
-const frontendDist = process.env.FRONTEND_DIST || path.join(__dirname, '..', 'frontend', 'dist');
+const frontendDist = process.env.FRONTEND_DIST || path.join(ctx.BACKEND_ROOT, '..', 'frontend', 'dist');
 app.use(express.static(frontendDist));
 
 // ── 全局错误处理（兜底未捕获异常，统一输出 { error, code, requestId }）──
@@ -79,7 +96,10 @@ const server = app.listen(PORT, HOST, () => {
 function shutdown(signal) {
   console.log(`${signal}: closing MCP clients and HTTP server`);
   ctx.closeAllMcpClients();
-  server.close(() => process.exit(0));
+  server.close(() => {
+    ctx.store.close?.();
+    process.exit(0);
+  });
   setTimeout(() => process.exit(1), 5000).unref();
 }
 process.once('SIGINT', () => shutdown('SIGINT'));

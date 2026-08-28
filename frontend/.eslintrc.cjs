@@ -5,6 +5,7 @@ module.exports = {
     es2022: true,
   },
   parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint'],
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
@@ -16,7 +17,8 @@ module.exports = {
     // 模块间调用走全局而非显式 import（彻底消除拆分遗漏 ReferenceError 的风险）。
     // 因此关闭 no-undef —— 这是既定设计，不是未定义变量遗漏。
     'no-undef': 'off',
-    'no-unused-vars': 'error',
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     'no-console': 'warn',
     // `value == null` 是刻意同时覆盖 null/undefined 的紧凑写法。
     'eqeqeq': ['error', 'always', { null: 'ignore' }],
@@ -29,7 +31,7 @@ module.exports = {
   overrides: [
     {
       files: ['*.d.ts'],
-      rules: { 'no-unused-vars': 'off' },
+      rules: { '@typescript-eslint/no-unused-vars': 'off' },
     },
   ],
 };

@@ -17,6 +17,7 @@ module.exports = function registerConversations(app) {
     const convs = ctx.store.read('conversations.json', []);
     const defaultWorkspace = ctx.workspaceStore.workspaces()[0];
     const defaultProject = ctx.workspaceStore.projects().find(x => x.workspaceId === defaultWorkspace?.id);
+    const { messages: _messages, id: _id, createdAt: _createdAt, ...input } = req.body || {};
     const conv = {
       id: Date.now().toString(36),
       createdAt: new Date().toISOString(),
@@ -25,9 +26,9 @@ module.exports = function registerConversations(app) {
       modelB: '',
       systemPrompt: '',
       inputPlaceholder: '',
-      workspaceId: req.body?.workspaceId || defaultWorkspace?.id || null,
-      projectId: req.body?.projectId || defaultProject?.id || null,
-      ...req.body,
+      workspaceId: input.workspaceId || defaultWorkspace?.id || null,
+      projectId: input.projectId || defaultProject?.id || null,
+      ...input,
     };
     convs.unshift(conv);
     ctx.store.write('conversations.json', convs);
@@ -38,7 +39,8 @@ module.exports = function registerConversations(app) {
     const convs = ctx.store.read('conversations.json', []);
     const idx = convs.findIndex(c => c.id === req.params.id);
     if (idx < 0) return res.status(404).json({ error: 'not found' });
-    convs[idx] = { ...convs[idx], ...req.body, id: req.params.id };
+    const { messages: _messages, createdAt: _createdAt, ...changes } = req.body || {};
+    convs[idx] = { ...convs[idx], ...changes, id: req.params.id };
     ctx.store.write('conversations.json', convs);
     res.json(convs[idx]);
   });
@@ -47,7 +49,7 @@ module.exports = function registerConversations(app) {
     convs = convs.filter(c => c.id !== req.params.id);
     ctx.store.write('conversations.json', convs);
     const messageFile = `messages_${req.params.id}.json`;
-    if (ctx.fs.existsSync(ctx.store.resolve(messageFile))) ctx.store.remove(messageFile);
+    ctx.store.remove(messageFile);
     res.json({ ok: true });
   });
   // Save messages for a conversation

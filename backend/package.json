@@ -1,13 +1,15 @@
 {
   "name": "multichat-backend",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
+  "type": "commonjs",
   "description": "MultiChat backend — Express-based multi-model Agent platform",
-  "main": "server.ts",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node -r ./lib/tsx-windows-shim.cjs --import tsx server.ts",
-    "dev": "node --watch -r ./lib/tsx-windows-shim.cjs --import tsx server.ts",
-    "test": "node -r ./lib/tsx-windows-shim.cjs --import tsx --test tests/*.test.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "dev": "tsx watch server.ts",
+    "test": "tsc -p tsconfig.test.json && node --test .test-dist/tests/*.test.js",
     "lint": "eslint . --ext .ts,.cjs --max-warnings 99999",
     "typecheck": "tsc --noEmit"
   },
@@ -17,8 +19,7 @@
   "dependencies": {
     "adm-zip": "^0.6.0",
     "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "tsx": "^4.19.2"
+    "express": "^4.19.2"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
@@ -26,6 +27,7 @@
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
     "eslint": "^8.57.1",
+    "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }
 }

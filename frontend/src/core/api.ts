@@ -2,8 +2,13 @@
 // 依赖 state（读取 apiBase），单向依赖，无循环。
 import { state } from './state';
 
+export function serverAuthHeaders() {
+  const token = localStorage.getItem('multichat_server_token') || '';
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function api(path: any, opts: any = {}) {
-  const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, serverAuthHeaders(), opts.headers || {});
   const res = await fetch(state.apiBase + path, { ...opts, headers });
   const ct = res.headers.get('content-type') || '';
   if (!res.ok) {

@@ -73,11 +73,21 @@ export interface RequestOptions {
 }
 
 export interface JsonStore {
+  kind?: 'json' | 'sqlite';
   read<T>(name: string, fallback: T): T;
   write(name: string, value: unknown): void;
   remove(name: string): void;
   resolve(name: string): string;
   mutate<T>(name: string, update: (current: T) => T | undefined | Promise<T | undefined>, fallback: T): Promise<T | undefined>;
+  searchDocuments?(query: string, options?: { projectId?: string; limit?: number }): Array<{
+    entityId: string;
+    projectId: string;
+    title: string;
+    snippet: string;
+    rank: number;
+    source: string;
+  }>;
+  close?(): void;
 }
 
 export interface WorkspaceRecord {

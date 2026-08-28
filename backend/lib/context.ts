@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { getMcpClient, closeMcpClient, closeAllMcpClients } = require('../mcp');
 const { createJsonStore } = require('./store');
+const { createSqliteStore } = require('./sqlite-store');
 const { createWorkspaceStore } = require('./workspace-store');
 const { createProviderStore } = require('./provider-store');
 const { safeFetch } = require('./ssrf');
@@ -13,8 +14,11 @@ const { createAdapter, ADAPTER_MAP } = require('../adapters');
 const { readPackageVersion, safeId } = require('./catalog');
 
 const PORT = process.env.PORT || 3000;
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
-const store = createJsonStore(DATA_DIR);
+const BACKEND_ROOT = path.basename(__dirname) === 'lib' && path.basename(path.dirname(__dirname)) === 'dist'
+  ? path.dirname(path.dirname(__dirname))
+  : path.dirname(__dirname);
+const DATA_DIR = process.env.DATA_DIR || path.join(BACKEND_ROOT, 'data');
+const store = process.env.MULTICHAT_STORE === 'json' ? createJsonStore(DATA_DIR) : createSqliteStore(DATA_DIR);
 const workspaceStore = createWorkspaceStore(store);
 const providerStore = createProviderStore(store);
 const VERSION = readPackageVersion();
@@ -29,16 +33,13 @@ const MAX_RUNS = 200;
 // 用于「Cancellation」：前端停止时，后端能真正中断上游 fetch 与 MCP 子进程。
 const runAborts = new Map();
 
-// 审批挂起句柄：approvalId → { resolve, reject, status, timeoutTimer }。
-// 用于「Approval」：危险工具 / 低信任 MCP 在执行前暂停，等待前端批准/拒绝后 resume。
-const runApprovals = new Map();
-
 module.exports = {
   fs,
   path,
   getMcpClient,
   closeMcpClient,
   closeAllMcpClients,
+  BACKEND_ROOT,
   store,
   workspaceStore,
   providerStore,
@@ -55,5 +56,4 @@ module.exports = {
   RUN_FILE,
   MAX_RUNS,
   runAborts,
-  runApprovals,
 };

@@ -9,11 +9,12 @@ const http = require('http');
 
 const tempData = fs.mkdtempSync(path.join(os.tmpdir(), 'multichat-extensions-'));
 process.env.DATA_DIR = tempData;
-process.env.MULTICHAT_PROJECT_ROOT = path.resolve(__dirname, '..', '..');
+process.env.MULTICHAT_PROJECT_ROOT = path.resolve(process.cwd(), '..');
+process.env.MULTICHAT_STORE = 'json';
 
 const extensions = require('../extensions/manager');
-const { McpStdioClient, McpHttpClient } = require('../mcp');
-const { safeFetch } = require('../lib/ssrf.ts');
+const { McpStdioClient, McpHttpClient, childEnvironment } = require('../mcp');
+const { safeFetch } = require('../lib/ssrf');
 
 test.after(() => {
   fs.rmSync(tempData, { recursive: true, force: true });
@@ -51,6 +52,14 @@ test('accepts direct-map and wrapped plugin MCP configurations', () => {
   assert.deepEqual(extensions.mcpServerMap({ demo: server }), { demo: server });
   assert.deepEqual(extensions.mcpServerMap({ mcpServers: { demo: server } }), { demo: server });
   assert.deepEqual(extensions.mcpServerMap({ mcp_servers: { demo: server } }), { demo: server });
+});
+
+test('MCP child processes inherit only the minimum system environment', () => {
+  const environment = childEnvironment({ MULTICHAT_EXPLICIT_TEST: 'yes' });
+  assert.equal(environment.MULTICHAT_EXPLICIT_TEST, 'yes');
+  for (const sensitive of ['HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'NODE_PATH', 'AWS_SECRET_ACCESS_KEY', 'OPENAI_API_KEY']) {
+    assert.equal(Object.hasOwn(environment, sensitive), false, `${sensitive} must not be inherited implicitly`);
+  }
 });
 
 test('standard MCP stdio transport discovers and invokes live tools', async () => {

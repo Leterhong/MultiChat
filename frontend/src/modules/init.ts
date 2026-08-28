@@ -3,6 +3,22 @@ import { $, api, toast, state, loadSelectedAgent } from '../core/index';
 /* --------------------------- Init --------------------------- */
 async function bootstrap() {
   await initApp();
+  await applyLocationRoute();
+  window.addEventListener('popstate', () => { void applyLocationRoute(); });
+}
+
+async function applyLocationRoute() {
+  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+  if (parts[0] === 'settings') {
+    openSettings(parts[1] || 'general');
+    return;
+  }
+  if ($('#settings')?.classList.contains('open')) closeSettings();
+  if (parts[0] === 'chat' && parts[1] && parts[1] !== state.currentConvId) {
+    await openConversation(parts[1]);
+  } else if (parts[0] === 'new' && (state.currentConvId || state.messages.length)) {
+    await newConversation();
+  }
 }
 
 async function initApp() {
@@ -86,4 +102,4 @@ async function forkConversation() {
   } catch (e) { toast('分支失败：' + e.message, 'error'); }
 }
 
-export { bootstrap,initApp,setupDrop,forkConversation };
+export { applyLocationRoute,bootstrap,initApp,setupDrop,forkConversation };

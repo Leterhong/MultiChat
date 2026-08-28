@@ -3,7 +3,7 @@ import { api, state } from '../core/index';
 /* --------------------------- Providers --------------------------- */
 async function loadProviders() {
   try { state.providers = await api('/api/providers'); }
-  catch (e) { state.providers = []; }
+  catch { state.providers = []; }
 }
 
 async function loadRuntime() {
@@ -71,7 +71,7 @@ async function loadProjects() {
 /* --------------------------- Skills --------------------------- */
 async function loadSkills() {
   try { state.skills = await api('/api/skills'); }
-  catch (e) { state.skills = []; }
+  catch { state.skills = []; }
 }
 
 async function loadTools() {
@@ -91,13 +91,13 @@ async function loadAgents() {
     state.agents = await api('/api/agents');
     if (selectedId) state.selectedAgent = state.agents.find(agent => agent.id === selectedId) || null;
   }
-  catch (e) { state.agents = []; if (selectedId) state.selectedAgent = null; }
+  catch { state.agents = []; if (selectedId) state.selectedAgent = null; }
 }
 
 /* --------------------------- Plugins --------------------------- */
 async function loadPlugins() {
   try { state.plugins = await api('/api/plugins'); }
-  catch (e) { state.plugins = []; }
+  catch { state.plugins = []; }
 }
 
 export { loadProviders,loadRuntime,loadRuns,loadUsage,loadCapabilities,loadProjectControlData,loadWorkspaces,loadProjects,loadSkills,loadTools,loadMcpServers,loadAgents,loadPlugins };

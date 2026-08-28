@@ -1,4 +1,4 @@
-import { $, $$, esc, state, toast } from '../core/index';
+import { $, $$, esc, serverAuthHeaders, state, toast } from '../core/index';
 
 type CompareTarget = { id: string; providerId: string; providerName: string; model: string };
 type CompareResult = CompareTarget & {
@@ -157,7 +157,7 @@ async function executeTarget(target: CompareTarget, prompt: string): Promise<Com
   try {
     const response = await fetch(state.apiBase + '/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...serverAuthHeaders() },
       body: JSON.stringify({
         model: target.id,
         messages: [{ role: 'user', content: prompt }],

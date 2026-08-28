@@ -120,10 +120,10 @@ export function parseCliArgs(argv, cwd = process.cwd()) {
 
 function helpText(command) {
   if (command === 'init') {
-    return `MultiChat init\n\n用法：\n  multichat init [目录]\n\n克隆官方源码仓库，安装根目录、后端和前端依赖，并构建前端。\n默认目录：./MultiChat`;
+    return `MultiChat init\n\n用法：\n  multichat init [目录]\n\n克隆源码仓库，安装根目录、后端和前端依赖，并生成完整生产构建。\n默认目录：./MultiChat`;
   }
   if (command === 'pull') {
-    return `MultiChat pull\n\n用法：\n  multichat pull [目录]\n\n在现有 MultiChat 源码仓库中执行 git pull --ff-only，然后重新安装依赖并构建前端。\n默认目录：当前目录`;
+    return `MultiChat pull\n\n用法：\n  multichat pull [目录]\n\n在现有 MultiChat 源码仓库中执行 git pull --ff-only，然后重新安装依赖并生成完整生产构建。\n默认目录：当前目录`;
   }
   if (command === 'web' || command === 'deploy') {
     return `MultiChat ${command}\n\n用法：\n  multichat ${command} [参数]\n\n参数：\n  --host <地址>       监听地址（默认 127.0.0.1）\n  --port <端口>       监听端口（默认 3000）\n  --no-open           启动后不自动打开浏览器\n  --workspace <目录>  Agent 工作区（默认当前目录）\n  --data-dir <目录>   运行数据目录（默认 ~/.multichat/data）\n  -h, --help          显示帮助\n\n${command === 'deploy' ? 'deploy 是本地部署入口，不会向远程服务器发布。' : '默认仅本机可访问；显式修改 --host 才会改变监听范围。'}`;
@@ -164,34 +164,36 @@ function assertDistinctDirectories(workspace, dataDir) {
 }
 
 function resolveRuntime() {
+  const compiledEntry = path.join(PACKAGE_ROOT, 'backend', 'dist', 'server.js');
   const TypeScriptEntry = path.join(PACKAGE_ROOT, 'backend', 'server.ts');
   const legacyEntry = path.join(PACKAGE_ROOT, 'backend', 'server.js');
-  const backendEntry = existsSync(TypeScriptEntry) ? TypeScriptEntry : legacyEntry;
+  const backendEntry = existsSync(compiledEntry) ? compiledEntry : (existsSync(TypeScriptEntry) ? TypeScriptEntry : legacyEntry);
   const frontendDist = path.join(PACKAGE_ROOT, 'frontend', 'dist');
   const frontendIndex = path.join(frontendDist, 'index.html');
-  const shim = path.join(PACKAGE_ROOT, 'backend', 'lib', 'tsx-windows-shim.cjs');
   let tsxEntry = null;
-  const resolutionBases = [import.meta.url, pathToFileURL(path.join(PACKAGE_ROOT, 'backend', 'package.json')).href];
-  for (const resolutionBase of resolutionBases) {
-    try {
-      tsxEntry = createRequire(resolutionBase).resolve('tsx');
-      break;
-    } catch {
-      // Try the source checkout's backend dependencies before reporting failure.
+  if (backendEntry === TypeScriptEntry) {
+    const resolutionBases = [import.meta.url, pathToFileURL(path.join(PACKAGE_ROOT, 'backend', 'package.json')).href];
+    for (const resolutionBase of resolutionBases) {
+      try {
+        tsxEntry = createRequire(resolutionBase).resolve('tsx');
+        break;
+      } catch {
+        // Source-only development checkout: try the backend dependency tree.
+      }
     }
   }
-  return { backendEntry, TypeScriptEntry, frontendDist, frontendIndex, shim, tsxEntry };
+  return { backendEntry, compiledEntry, TypeScriptEntry, frontendDist, frontendIndex, tsxEntry };
 }
 
 function assertRuntime(runtime) {
-  if (!existsSync(runtime.TypeScriptEntry)) {
-    throw new CliError(`找不到 TypeScript 服务入口：${runtime.TypeScriptEntry}`);
+  if (!existsSync(runtime.backendEntry)) {
+    throw new CliError(`找不到服务入口：${runtime.backendEntry}`);
   }
   if (!existsSync(runtime.frontendIndex)) {
     throw new CliError('找不到 frontend/dist/index.html；源码运行请先执行 npm run build');
   }
-  if (!runtime.tsxEntry) {
-    throw new CliError('找不到 tsx 运行时；请先在项目根目录执行 npm install');
+  if (runtime.backendEntry === runtime.TypeScriptEntry && !runtime.tsxEntry) {
+    throw new CliError('当前只有 TypeScript 源码；请先执行 npm run build');
   }
 }
 
@@ -281,9 +283,9 @@ async function runWeb(options, deployAlias = false) {
     console.warn(`  提醒：当前监听 ${options.host}，请自行确认网络访问边界。`);
   }
 
-  const nodeArgs = [];
-  if (existsSync(runtime.shim)) nodeArgs.push('-r', runtime.shim);
-  nodeArgs.push('--import', pathToFileURL(runtime.tsxEntry).href, runtime.TypeScriptEntry);
+  const nodeArgs = runtime.backendEntry === runtime.TypeScriptEntry
+    ? ['--import', pathToFileURL(runtime.tsxEntry).href, runtime.TypeScriptEntry]
+    : [runtime.backendEntry];
 
   const child = spawn(process.execPath, nodeArgs, {
     cwd: options.workspace,
@@ -340,9 +342,9 @@ async function runDoctor(options) {
   const add = (status, label, detail) => results.push({ status, label, detail });
 
   add(nodeMajor() >= 22 ? 'PASS' : 'FAIL', 'Node.js', `${process.version}（需要 >=22）`);
-  add(existsSync(runtime.TypeScriptEntry) ? 'PASS' : 'FAIL', '后端入口', runtime.TypeScriptEntry);
+  add(existsSync(runtime.backendEntry) ? 'PASS' : 'FAIL', '后端构建', runtime.backendEntry);
   add(existsSync(runtime.frontendIndex) ? 'PASS' : 'FAIL', '前端构建', runtime.frontendIndex);
-  add(runtime.tsxEntry ? 'PASS' : 'FAIL', 'TypeScript 运行时', runtime.tsxEntry || '未安装 tsx');
+  if (runtime.backendEntry === runtime.TypeScriptEntry) add(runtime.tsxEntry ? 'PASS' : 'FAIL', '开发运行时', runtime.tsxEntry || '未安装 tsx');
 
   if (!isDirectory(options.workspace)) {
     add('FAIL', '工作区', `${options.workspace} 不存在或不是目录`);
@@ -408,7 +410,7 @@ async function installAndBuild(sourceRoot) {
   await runExternal(npm, ['install'], sourceRoot);
   await runExternal(npm, ['install'], backendRoot);
   await runExternal(npm, ['install'], frontendRoot);
-  await runExternal(npm, ['run', 'build'], frontendRoot);
+  await runExternal(npm, ['run', 'build'], sourceRoot);
 }
 
 async function runInit(positionals) {

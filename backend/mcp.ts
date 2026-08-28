@@ -6,6 +6,7 @@
 // server configuration so tools/list and tools/call share one session.
 const { spawn } = require('child_process');
 const { redactSecrets } = require('./lib/redact');
+const { readPackageVersion } = require('./lib/catalog');
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import type { JsonRecord, RequestOptions } from './types';
 
@@ -35,7 +36,10 @@ const MAX_HTTP_BODY = 8 * 1024 * 1024;
 function timeoutError(label: string) { return new Error(`${label} timed out`); }
 
 function childEnvironment(extra?: Record<string, string>): NodeJS.ProcessEnv {
-  const keep = ['PATH', 'Path', 'PATHEXT', 'SystemRoot', 'WINDIR', 'ComSpec', 'HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'TEMP', 'TMP', 'NODE_PATH'];
+  // Arbitrary MCP packages do not inherit user profiles, credential helpers or
+  // NODE_PATH. A server that truly needs a value must declare it explicitly in
+  // its own MCP configuration.
+  const keep = ['PATH', 'Path', 'PATHEXT', 'SystemRoot', 'WINDIR', 'ComSpec', 'TEMP', 'TMP'];
   const base: NodeJS.ProcessEnv = {};
   for (const key of keep) if (process.env[key] !== undefined) base[key] = process.env[key];
   return { ...base, ...(extra || {}) };
@@ -120,7 +124,7 @@ class McpStdioClient {
       const initialized = await this._request('initialize', {
         protocolVersion: PROTOCOL_VERSION,
         capabilities: {},
-        clientInfo: { name: 'MultiChat', version: '1.0.0' },
+        clientInfo: { name: 'MultiChat', version: readPackageVersion() },
       }, options);
       this.protocolVersion = initialized?.protocolVersion || PROTOCOL_VERSION;
       this.serverInfo = initialized?.serverInfo || null;
@@ -271,7 +275,7 @@ class McpHttpClient {
       const initialized = await this._request('initialize', {
         protocolVersion: PROTOCOL_VERSION,
         capabilities: {},
-        clientInfo: { name: 'MultiChat', version: '1.0.0' },
+        clientInfo: { name: 'MultiChat', version: readPackageVersion() },
       }, options);
       const negotiated = initialized?.protocolVersion;
       if (negotiated !== undefined && (typeof negotiated !== 'string' || !negotiated.trim())) {
@@ -352,7 +356,20 @@ class McpHttpClient {
   close() { this.ready = false; this.sessionId = null; }
 }
 
-const clientCache = new Map<string, McpStdioClient | McpHttpClient>();
+const MCP_IDLE_TIMEOUT_MS = Math.max(30_000, Number(process.env.MCP_IDLE_TIMEOUT_MS || 5 * 60_000));
+type CachedClient = { client: McpStdioClient | McpHttpClient; timer: NodeJS.Timeout };
+const clientCache = new Map<string, CachedClient>();
+
+function touchClient(key: string, cached: CachedClient) {
+  clearTimeout(cached.timer);
+  cached.timer = setTimeout(() => {
+    const current = clientCache.get(key);
+    if (current !== cached) return;
+    current.client.close();
+    clientCache.delete(key);
+  }, MCP_IDLE_TIMEOUT_MS);
+  cached.timer.unref?.();
+}
 
 function getMcpClient(config: McpClientConfig) {
   if (!config || (!config.command && !config.url)) return null;
@@ -361,21 +378,31 @@ function getMcpClient(config: McpClientConfig) {
     const client = config.url
       ? new McpHttpClient(config.url, config.headers, config.fetchImpl)
       : new McpStdioClient(config.command, config.args, config.cwd, config.env);
-    clientCache.set(key, client);
+    const cached = { client, timer: setTimeout(() => {}, MCP_IDLE_TIMEOUT_MS) };
+    clientCache.set(key, cached);
+    touchClient(key, cached);
   }
-  return clientCache.get(key);
+  const cached = clientCache.get(key);
+  touchClient(key, cached);
+  return cached.client;
 }
 
 function closeMcpClient(config: McpClientConfig) {
   if (!config) return;
   const key = JSON.stringify({ ...config, fetchImpl: undefined });
-  const client = clientCache.get(key);
-  if (client) client.close();
+  const cached = clientCache.get(key);
+  if (cached) {
+    clearTimeout(cached.timer);
+    cached.client.close();
+  }
   clientCache.delete(key);
 }
 
 function closeAllMcpClients() {
-  for (const client of clientCache.values()) client.close();
+  for (const cached of clientCache.values()) {
+    clearTimeout(cached.timer);
+    cached.client.close();
+  }
   clientCache.clear();
 }
 
@@ -386,4 +413,5 @@ module.exports = {
   getMcpClient,
   closeMcpClient,
   closeAllMcpClients,
+  childEnvironment,
 };

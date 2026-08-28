@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+const crypto = require('crypto');
 import type { JsonRecord, JsonStore } from '../types';
 
 const USAGE_FILE = 'usage.json';
@@ -28,7 +28,7 @@ function estimateText(value: unknown): number {
   return Math.max(0, Math.ceil(text.length / 4));
 }
 
-export function mergeUsage(base: JsonRecord = {}, next: JsonRecord = {}) {
+function mergeUsage(base: JsonRecord = {}, next: JsonRecord = {}) {
   const left = tokenFields(base);
   const right = tokenFields(next);
   return {
@@ -40,7 +40,7 @@ export function mergeUsage(base: JsonRecord = {}, next: JsonRecord = {}) {
   };
 }
 
-export function normalizeUsage(raw: JsonRecord | null | undefined, messages: JsonRecord[] = [], output = '') {
+function normalizeUsage(raw: JsonRecord | null | undefined, messages: JsonRecord[] = [], output = '') {
   const exact = tokenFields(raw || {});
   if (exact.total > 0) return { ...exact, source: 'reported' };
   const input = messages.reduce((sum, message) => sum + estimateText(message.content) + 4, 0);
@@ -56,7 +56,7 @@ function ledger(store: JsonStore): UsageLedger {
   return { version: SCHEMA_VERSION, records: Array.isArray(value.records) ? value.records : [] };
 }
 
-export async function recordUsage(store: JsonStore, input: JsonRecord) {
+async function recordUsage(store: JsonStore, input: JsonRecord) {
   const now = new Date().toISOString();
   const normalized = input.usage || normalizeUsage(input.rawUsage, input.messages, input.output);
   const record = {
@@ -181,7 +181,7 @@ function summarizeRows(rows: JsonRecord[], days: number, offsetMinutes: number) 
   };
 }
 
-export function usageSummary(store: JsonStore, options: JsonRecord = {}) {
+function usageSummary(store: JsonStore, options: JsonRecord = {}) {
   const all = ledger(store).records;
   const offsetMinutes = Math.max(-840, Math.min(840, Number(options.offsetMinutes) || 0));
   const requestedRange = String(options.range || '30');
@@ -209,4 +209,4 @@ export function usageSummary(store: JsonStore, options: JsonRecord = {}) {
   };
 }
 
-export { USAGE_FILE };
+module.exports = { USAGE_FILE, mergeUsage, normalizeUsage, recordUsage, usageSummary };

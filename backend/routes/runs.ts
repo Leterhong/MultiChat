@@ -27,28 +27,29 @@ module.exports = function registerRuns(app) {
     res.json({ ok: true, id: req.params.id });
   });
 
-  // 审批决策：危险工具 / 低信任 MCP 执行前，前端批准或拒绝。Agent 运行时挂起等待此响应。
-  app.post('/api/runs/:id/approval/:approvalId', (req, res) => {
+  // 审批决策：写入持久化检查点，不占用原 Agent 响应连接。
+  app.post('/api/runs/:id/approval/:approvalId', (req, res, next) => {
+    void (async () => {
     const run = ctx.store.read(ctx.RUN_FILE, []).find(x => x.id === req.params.id);
     if (!run) return res.status(404).json({ error: { message: 'run not found' }, code: 'RUN_NOT_FOUND' });
-    const pending = ctx.runApprovals.get(req.params.approvalId);
-    if (!pending || pending.status !== 'pending') {
-      const rec = (run.approvals || []).find(a => a.id === req.params.approvalId);
+    const rec = (run.approvals || []).find(a => a.id === req.params.approvalId);
+    if (!rec || rec.status !== 'pending') {
       return res.status(409).json({
         error: { message: '审批请求不存在或已处理' + (rec ? '（当前状态：' + rec.status + '）' : '') },
         code: 'APPROVAL_NOT_PENDING',
       });
     }
-    if (pending.runId !== req.params.id) {
-      return res.status(409).json({ error: { message: '审批请求不属于当前 run' }, code: 'APPROVAL_RUN_MISMATCH' });
-    }
     const action = req.body && req.body.action;
     if (action !== 'approve' && action !== 'reject') {
       return res.status(400).json({ error: { message: 'action 必须是 approve 或 reject' }, code: 'BAD_REQUEST' });
     }
-    pending.status = 'resolved';
-    pending.resolve({ action });
-    ctx.runApprovals.delete(req.params.approvalId);
-    res.json({ ok: true, approvalId: req.params.approvalId, action, runId: req.params.id });
+    rec.status = action === 'approve' ? 'approved' : 'rejected';
+    rec.resolvedAt = new Date().toISOString();
+    run.status = 'paused';
+    run.pauseReason = action === 'approve' ? 'approval granted; ready to resume' : 'approval rejected; ready to resume';
+    if (run.checkpoint) run.checkpoint.approvalDecision = action;
+    await ctx.store.mutate(ctx.RUN_FILE, (runs) => runs.map(item => item.id === run.id ? run : item), []);
+    res.json({ ok: true, approvalId: req.params.approvalId, action, runId: req.params.id, resumable: true });
+    })().catch(next);
   });
 };

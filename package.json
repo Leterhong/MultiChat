@@ -1,6 +1,6 @@
 {
   "name": "@leterhong/multichat",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Local-first multi-model agent workspace with Skills, MCP servers, and plugins",
   "license": "MIT",
   "type": "module",
@@ -11,6 +11,7 @@
     ".agents",
     "bin",
     "backend/*.ts",
+    "backend/dist",
     "backend/adapters",
     "backend/extensions",
     "backend/lib",
@@ -24,7 +25,7 @@
   "scripts": {
     "start": "node ./bin/multichat.mjs web",
     "doctor": "node ./bin/multichat.mjs doctor",
-    "build": "npm run build --prefix frontend",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
     "test": "node --test test/*.test.mjs",
     "test:cli": "node --test test/cli.test.mjs"
   },
@@ -52,7 +53,6 @@
   "dependencies": {
     "adm-zip": "^0.6.0",
     "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "tsx": "^4.19.2"
+    "express": "^4.19.2"
   }
 }

@@ -63,6 +63,7 @@ function showAgentModal(id) {
       <div class="field"><label>名称</label><input name="name" value="${a ? esc(a.name) : ''}" placeholder="中英翻译" required /></div>
       <div class="field"><label>描述</label><input name="description" value="${a ? esc(a.description || '') : ''}" placeholder="一句话说明这套配置适合什么任务" /></div>
       <div class="field"><label>系统提示词</label><textarea name="systemPrompt" rows="4" placeholder="你是一个...">${a ? esc(a.systemPrompt || '') : ''}</textarea></div>
+      <div class="field"><label>单次最大执行轮数</label><input name="maxIterations" type="number" min="1" max="30" step="1" value="${esc(a?.maxIterations || 12)}" /><div class="pmeta">达到上限后保存检查点，可在对话中继续运行。</div></div>
       <div class="field"><label>Agent Skills（先提供描述，匹配任务时再加载完整工作流）</label>
         <div class="extension-checks">
           ${state.skills.map(s => {
@@ -105,6 +106,7 @@ function showAgentModal(id) {
         const body: Record<string, any> = Object.fromEntries(fd.entries());
         if (body.name) body.name = body.name.trim();
         if (body.description) body.description = body.description.trim();
+        body.maxIterations = Math.max(1, Math.min(30, Number.parseInt(body.maxIterations || '12', 10) || 12));
         const knownSkillRefs = new Set(state.skills.flatMap(s => [s.key || s.id, s.id]));
         const knownToolIds = new Set((state.tools || []).map(t => t.id));
         const visibleMcpIds = new Set((state.mcpServers || []).filter(m => (m.targets || ['multichat']).includes('multichat')).map(m => m.id));

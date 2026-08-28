@@ -7,6 +7,7 @@ const extensions = require('../extensions/manager');
 const usageLedger = require('../lib/usage');
 const { readResponseText, readResponseJson } = require('../lib/util');
 const { redactSecrets } = require('../lib/redact');
+const { SSEDecoder } = require('../lib/sse');
 import type { ChatMessage, ChatRequestOptions, JsonRecord, ToolCall } from '../types';
 
 function configuredProvider(providerId: string | null, modelName: string) {
@@ -38,37 +39,6 @@ function usageContext(body, provider, modelName, extra: JsonRecord = {}) {
   };
 }
 
-// 挂起等待用户对某个工具调用的审批决策。
-// 超时（默认 5 分钟）自动拒绝；signal 触发（前端停止）则取消。
-function waitForApproval(approvalId: string, runId: string, timeoutMs: number, signal?: AbortSignal): Promise<JsonRecord> {
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      if (ctx.runApprovals.has(approvalId)) ctx.runApprovals.delete(approvalId);
-      reject(new Error('approval timed out'));
-    }, timeoutMs);
-    const onAbort = () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      if (ctx.runApprovals.has(approvalId)) ctx.runApprovals.delete(approvalId);
-      reject(new Error('cancelled by user'));
-    };
-    if (signal) {
-      if (signal.aborted) { clearTimeout(timer); reject(new Error('cancelled by user')); return; }
-      signal.addEventListener('abort', onAbort, { once: true });
-    }
-    ctx.runApprovals.set(approvalId, {
-      runId,
-      status: 'pending',
-      resolve: (decision) => { if (settled) return; settled = true; clearTimeout(timer); if (signal) signal.removeEventListener('abort', onAbort); resolve(decision); },
-      reject: (err) => { if (settled) return; settled = true; clearTimeout(timer); if (signal) signal.removeEventListener('abort', onAbort); reject(err); },
-    });
-  });
-}
-
 module.exports = function registerChat(app) {
   // ── OpenAI 兼容统一端点（透传上游，做 SSE 适配） ──
   app.post('/v1/chat/completions', async (req, res) => {
@@ -79,9 +49,15 @@ module.exports = function registerChat(app) {
 
     // model format: "providerId:modelName" or plain "modelName"
     // modelName may contain colons (e.g. Ollama: "llama3:latest")
+    const explicitProviderId = String(body.providerId || body.provider || '').trim();
     const colonIdx = requestedModel.indexOf(':');
     let providerId, modelName;
-    if (colonIdx > 0) {
+    if (explicitProviderId) {
+      providerId = explicitProviderId;
+      modelName = colonIdx > 0 && requestedModel.substring(0, colonIdx) === explicitProviderId
+        ? requestedModel.substring(colonIdx + 1)
+        : requestedModel;
+    } else if (colonIdx > 0) {
       providerId = requestedModel.substring(0, colonIdx);
       modelName = requestedModel.substring(colonIdx + 1);
     } else {
@@ -159,7 +135,7 @@ module.exports = function registerChat(app) {
 
         const reader = upstream.body.getReader();
         const decoder = new TextDecoder();
-        let buffer = '';
+        const sse = new SSEDecoder();
         let observedUsage: JsonRecord = {};
         let output = '';
 
@@ -170,13 +146,7 @@ module.exports = function registerChat(app) {
               const { done, value } = await reader.read();
               if (done) break;
 
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split('\n');
-              buffer = lines.pop() || '';
-
-              for (const line of lines) {
-                if (!line.trim()) continue;
-
+              for (const line of sse.push(decoder.decode(value, { stream: true }))) {
                 const transformed = adapter.transformSSEChunk(line);
                 if (transformed) {
                   if (transformed.usage) observedUsage = usageLedger.mergeUsage(observedUsage, transformed.usage);
@@ -186,6 +156,13 @@ module.exports = function registerChat(app) {
                   res.write(`data: ${JSON.stringify(transformed)}\n\n`);
                 }
               }
+            }
+            for (const line of sse.flush()) {
+              const transformed = adapter.transformSSEChunk(line);
+              if (!transformed) continue;
+              if (transformed.usage) observedUsage = usageLedger.mergeUsage(observedUsage, transformed.usage);
+              for (const choice of transformed.choices || []) output += choice?.delta?.content || choice?.message?.content || '';
+              res.write(`data: ${JSON.stringify(transformed)}\n\n`);
             }
           } catch (e) {
             status = upstreamAbort.signal.aborted ? 'cancelled' : 'error';
@@ -236,9 +213,15 @@ module.exports = function registerChat(app) {
 
     const body = req.body || {};
     const requestedModel = body.model || '';
+    const explicitProviderId = String(body.providerId || body.provider || '').trim();
     const colonIdx = requestedModel.indexOf(':');
     let providerId, modelName;
-    if (colonIdx > 0) {
+    if (explicitProviderId) {
+      providerId = explicitProviderId;
+      modelName = colonIdx > 0 && requestedModel.substring(0, colonIdx) === explicitProviderId
+        ? requestedModel.substring(colonIdx + 1)
+        : requestedModel;
+    } else if (colonIdx > 0) {
       providerId = requestedModel.substring(0, colonIdx);
       modelName = requestedModel.substring(colonIdx + 1);
     } else {
@@ -258,10 +241,21 @@ module.exports = function registerChat(app) {
     const workflowRuntime = agent.buildWorkflowTools(selectedWorkflowSkills);
     const stream = body.stream !== false; // 默认 true
     if (!stream) return res.status(400).json({ error: { message: 'Only streaming mode is supported for agent chat' } });
-    const run = await agent.createRun(found, body);
+    const resumeSource = body.resumeFromRunId
+      ? ctx.store.read(ctx.RUN_FILE, []).find(item => item.id === body.resumeFromRunId && item.agentId === found.id)
+      : null;
+    if (body.resumeFromRunId && (!resumeSource || resumeSource.status !== 'paused' || !resumeSource.checkpoint?.messages)) {
+      return res.status(409).json({ error: { message: 'run cannot be resumed from its current state' }, code: 'RUN_NOT_RESUMABLE' });
+    }
+    const run = resumeSource
+      ? { ...resumeSource, status: 'running', finishedAt: null, error: null, pauseReason: null, resumedAt: new Date().toISOString() }
+      : await agent.createRun(found, body);
     run.model = modelName;
     run.provider = { id: provider.id, name: provider.name || provider.id, apiType: provider.apiType || 'openai' };
-    run.usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0, cachedTokens: 0, reasoningTokens: 0, reportedTokens: 0, estimatedTokens: 0 };
+    run.usage ||= { inputTokens: 0, outputTokens: 0, totalTokens: 0, cachedTokens: 0, reasoningTokens: 0, reportedTokens: 0, estimatedTokens: 0 };
+    const maxIterations = Math.max(1, Math.min(30, Number(body.maxIterations ?? found.maxIterations ?? process.env.AGENT_MAX_ITERATIONS ?? 12) || 12));
+    run.maxIterations = maxIterations;
+    if (resumeSource) await agent.persistRun(run);
     // 注册取消句柄：前端停止时可真正中断上游 fetch 与 MCP 子进程
     const runAbort = new AbortController();
     ctx.runAborts.set(run.id, runAbort);
@@ -270,8 +264,8 @@ module.exports = function registerChat(app) {
     const emit = (type, step) => res.write('data: ' + JSON.stringify({ agentEvent: { type, step } }) + '\n\n');
 
     // 结构化轨迹：一次用户请求 = 一个 Turn；Turn 内含若干 Step
-    const turn = { turn: 1, startedAt: nowIso(), finishedAt: null, steps: [] };
-    run.turns = [turn];
+    const turn = { turn: (run.turns?.length || 0) + 1, startedAt: nowIso(), finishedAt: null, steps: [] };
+    run.turns = [...(run.turns || []), turn];
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -334,8 +328,10 @@ module.exports = function registerChat(app) {
 
     const toolPolicy = body.toolPolicy === 'safe' ? 'safe' : 'auto';
 
-    let messages: ChatMessage[] = Array.isArray(body.messages) ? body.messages.map(m => ({ role: m.role, content: m.content })) : [];
-    if (systemText) messages = [{ role: 'system', content: systemText }, ...messages];
+    let messages: ChatMessage[] = resumeSource
+      ? resumeSource.checkpoint.messages.map(message => ({ ...message }))
+      : (Array.isArray(body.messages) ? body.messages.map(m => ({ role: m.role, content: m.content })) : []);
+    if (!resumeSource && systemText) messages = [{ role: 'system', content: systemText }, ...messages];
 
     // 透传 OpenAI 字段
     const PASS_THROUGH = ['temperature', 'max_tokens', 'top_p', 'stream_options', 'response_format', 'logprobs', 'stop', 'frequency_penalty', 'presence_penalty', 'seed', 'n', 'user', 'parallel_tool_calls'];
@@ -343,6 +339,7 @@ module.exports = function registerChat(app) {
     for (const k of PASS_THROUGH) if (body[k] !== undefined) extra[k] = body[k];
     // 始终要求上游在流式末尾返回 usage 块
     extra.stream_options = Object.assign({ include_usage: true }, extra.stream_options || {});
+    extra.parallel_tool_calls = false;
 
     try {
       const adapter = ctx.createAdapter(provider);
@@ -350,12 +347,37 @@ module.exports = function registerChat(app) {
       const upstreamUrl = adapter.getEndpoint();
       const adapterHeaders = adapter.getHeaders();
 
+      if (resumeSource?.checkpoint?.pendingApproval) {
+        const pending = resumeSource.checkpoint.pendingApproval;
+        const approval = (run.approvals || []).find(item => item.id === pending.approvalId);
+        const skill = workflowRuntime.calls.get(pending.toolName) || mcpRuntime.calls.get(pending.toolName)?.skill || agent.findSkillForTool(pending.toolName, enabledTools);
+        let result;
+        if (approval?.status === 'approved' && skill) result = await agent.executeSkill(skill, pending.args || {}, runAbort.signal);
+        else result = { ok: false, error: approval?.status === 'rejected' ? 'rejected by user' : 'approval was not granted', approvalId: pending.approvalId };
+        const resultText = typeof result === 'string' ? result : JSON.stringify(result);
+        messages.push({ role: 'tool', tool_call_id: pending.toolCallId, content: resultText });
+        for (const deferred of pending.deferredToolCalls || []) {
+          messages.push({ role: 'tool', tool_call_id: deferred.id, content: JSON.stringify({ ok: false, error: 'deferred across approval boundary; request this tool again if still needed' }) });
+        }
+        const previousStep = (run.turns || []).flatMap(item => item.steps || []).find(item => item.approvalId === pending.approvalId);
+        if (previousStep) {
+          previousStep.status = result?.ok ? 'success' : 'rejected';
+          previousStep.approvalStatus = approval?.status || 'cancelled';
+          previousStep.finishedAt = nowIso();
+          previousStep.result = resultText.slice(0, 500);
+        }
+        run.checkpoint = { messages, savedAt: nowIso(), iteration: resumeSource.checkpoint.iteration || 0 };
+        await agent.persistRun(run);
+        res.write('data: ' + JSON.stringify({ agentEvent: { type: 'approval_resolved', approval } }) + '\n\n');
+        res.write('data: ' + JSON.stringify({ choices: [{ delta: { tool_result: { id: pending.toolCallId, name: pending.toolName, content: resultText } } }] }) + '\n\n');
+      }
+
       let iter = 0;
-      while (iter++ < 5) {
+      while (iter++ < maxIterations) {
         run.steps = iter;
         // ── Step: 模型请求（结构化轨迹 + 实时事件）──
         const modelStep: JsonRecord = {
-          sid: 't1-s' + iter + '-model',
+          sid: 't' + turn.turn + '-s' + iter + '-model',
           kind: 'model_request',
           index: iter,
           status: 'running',
@@ -438,20 +460,15 @@ module.exports = function registerChat(app) {
 
         const reader = upstream.body.getReader();
         const decoder = new TextDecoder();
-        let buffer = '';
+        const sse = new SSEDecoder();
         let accContent = '';
         const toolCalls: Record<number, ToolCall> = {}; // by index
-        let finishReason = '';
         let observedUsage: JsonRecord = {};
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-          for (const line of lines) {
-            if (!line.trim()) continue;
+          for (const line of sse.push(decoder.decode(value, { stream: true }))) {
             const transformed = adapter.transformSSEChunk(line);
             if (!transformed) continue;
             if (transformed.usage) observedUsage = usageLedger.mergeUsage(observedUsage, transformed.usage);
@@ -470,7 +487,26 @@ module.exports = function registerChat(app) {
                     if (tc.function && tc.function.arguments) toolCalls[i].function.arguments += tc.function.arguments;
                   }
                 }
-                if (ch.finish_reason) finishReason = ch.finish_reason;
+              }
+            }
+          }
+        }
+        for (const line of sse.flush()) {
+          const transformed = adapter.transformSSEChunk(line);
+          if (!transformed) continue;
+          if (transformed.usage) observedUsage = usageLedger.mergeUsage(observedUsage, transformed.usage);
+          res.write('data: ' + JSON.stringify(transformed) + '\n\n');
+          for (const choice of transformed.choices || []) {
+            const delta = choice.delta || {};
+            if (delta.content) accContent += delta.content;
+            if (Array.isArray(delta.tool_calls)) {
+              for (const tc of delta.tool_calls) {
+                const i = tc.index || 0;
+                if (!toolCalls[i]) toolCalls[i] = { id: '', type: 'function', function: { name: '', arguments: '' } };
+                if (tc.id) toolCalls[i].id = tc.id;
+                if (tc.type) toolCalls[i].type = tc.type;
+                if (tc.function?.name) toolCalls[i].function.name += tc.function.name;
+                if (tc.function?.arguments) toolCalls[i].function.arguments += tc.function.arguments;
               }
             }
           }
@@ -499,7 +535,7 @@ module.exports = function registerChat(app) {
         await agent.persistRun(run);
 
         const toolCallsArr = Object.values(toolCalls).filter(tc => tc.function && tc.function.name);
-        if (toolCallsArr.length === 0 || finishReason !== 'tool_calls') {
+        if (toolCallsArr.length === 0) {
           run.status = 'completed';
           turn.finishedAt = nowIso();
           await agent.finishRun(run, { status: 'completed', steps: iter, toolCalls: run.toolCalls, turns: run.turns });
@@ -521,7 +557,7 @@ module.exports = function registerChat(app) {
           const skill = workflowRuntime.calls.get(tc.function.name) || mcpRuntime.calls.get(tc.function.name)?.skill || agent.findSkillForTool(tc.function.name, enabledTools);
           // ── Step: 工具调用（结构化轨迹 + 实时事件）──
           const tstep: JsonRecord = {
-            sid: 't1-s' + iter + '-tool-' + tc.id,
+            sid: 't' + turn.turn + '-s' + iter + '-tool-' + tc.id,
             kind: 'tool_call',
             index: iter,
             tool: tc.function.name,
@@ -540,7 +576,9 @@ module.exports = function registerChat(app) {
           } else if (!agent.isSkillAllowed(skill, toolPolicy)) {
             result = { ok: false, error: 'permission denied by safe policy', policy: toolPolicy, permissions: agent.skillPermissions(skill) };
           } else if (agent.requiresApproval(skill, toolPolicy)) {
-            // ── Approval 审批流：危险工具 / 低信任 MCP 执行前暂停，等待用户批准 ──
+            // Approval is a durable pause boundary. The HTTP stream is closed
+            // after persisting the checkpoint; a later resume request can
+            // continue even when the process restarted in between.
             const approvalId = 'ap_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
             const perms = agent.skillPermissions(skill);
             const approval: JsonRecord = {
@@ -563,33 +601,25 @@ module.exports = function registerChat(app) {
             res.write('data: ' + JSON.stringify({ agentEvent: { type: 'approval_required', approval } }) + '\n\n');
             // 记录审批历史（持久化，便于恢复/重放）
             run.approvals.push(approval);
+            run.status = 'waiting_approval';
+            run.pauseReason = 'approval required';
+            run.checkpoint = {
+              messages,
+              iteration: iter,
+              savedAt: nowIso(),
+              pendingApproval: {
+                approvalId,
+                toolName: tc.function.name,
+                toolCallId: tc.id,
+                args,
+                deferredToolCalls: toolCallsArr.filter(item => item.id !== tc.id).map(item => ({ id: item.id, name: item.function?.name || '' })),
+              },
+            };
             await agent.persistRun(run);
-
-            // 挂起等待用户决策（带超时 + 可被取消信号中断）
-            let decision;
-            try {
-              decision = await waitForApproval(approvalId, run.id, 300000, runAbort.signal);
-            } catch (err) {
-              decision = { action: (err && err.message === 'approval timed out') ? 'timeout' : 'cancel' };
-            }
-            // 更新审批状态
-            approval.status = decision.action === 'approve' ? 'approved'
-              : decision.action === 'reject' ? 'rejected'
-              : decision.action === 'timeout' ? 'timed_out' : 'cancelled';
-            approval.resolvedAt = nowIso();
-            run.approvals = run.approvals.map(a => a.id === approvalId ? approval : a);
-            tstep.approvalStatus = approval.status;
-            // 通知前端审批已解决（卡片状态更新）
-            res.write('data: ' + JSON.stringify({ agentEvent: { type: 'approval_resolved', approval } }) + '\n\n');
-
-            if (decision.action === 'approve') {
-              result = await agent.executeSkill(skill, args, runAbort.signal);
-            } else {
-              const reason = decision.action === 'reject' ? 'rejected by user'
-                : decision.action === 'timeout' ? 'approval timed out (auto-rejected)'
-                : 'cancelled by user';
-              result = { ok: false, error: reason, approvalId, status: approval.status };
-            }
+            res.write('data: [DONE]\n\n');
+            res.end();
+            clearAbort();
+            return;
           } else {
             result = await agent.executeSkill(skill, args, runAbort.signal);
           }
@@ -607,11 +637,14 @@ module.exports = function registerChat(app) {
           messages.push(toolMsg);
           res.write('data: ' + JSON.stringify({ choices: [{ delta: { tool_result: { id: tc.id, name: tc.function.name, content: resultText } } }] }) + '\n\n');
         }
+        run.checkpoint = { messages, iteration: iter, savedAt: nowIso() };
+        await agent.persistRun(run);
       }
-      run.status = 'error';
-      run.error = 'agent tool-call loop exceeded 5 iterations';
-      await agent.finishRun(run, { status: 'error', error: run.error, steps: 5, toolCalls: run.toolCalls, turns: run.turns });
-      res.write('data: ' + JSON.stringify({ error: { message: 'agent tool-call loop exceeded 5 iterations' } }) + '\n\n');
+      run.status = 'paused';
+      run.pauseReason = `iteration limit reached (${maxIterations})`;
+      turn.finishedAt = nowIso();
+      await agent.persistRun(run);
+      res.write('data: ' + JSON.stringify({ agentEvent: { type: 'paused', runId: run.id, reason: run.pauseReason } }) + '\n\n');
       res.write('data: [DONE]\n\n'); res.end(); clearAbort(); return;
     } catch (err) {
       const cancelled = err.name === 'AbortError';

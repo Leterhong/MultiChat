@@ -887,19 +887,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .toast { border: 1px solid rgba(255,255,255,.12); background: #171a2b; box-shadow: 0 14px 40px rgba(15,18,38,.28); }
 .mobile-scrim { display: none; }
 
-/* Legacy dark-theme tokens kept for settings-page compatibility. */
-:root[data-theme='dark'] {
-  --bg-base: #0f1322; --bg-elevated: #171c2e; --bg-sunken: #111627;
-  --bg-hover: rgba(132,122,255,.09); --bg-active: rgba(132,122,255,.15);
-  --border-l1: rgba(230,233,255,.035); --border-l2: rgba(230,233,255,.08);
-  --border-l3: rgba(230,233,255,.13); --border-l4: rgba(133,123,255,.34);
-  --label-primary: #f0f2ff; --label-secondary: #bcc2dc; --label-tertiary: #8f97b5;
-  --label-caption: #707895; --label-dimmed: #505873; --label-primary-bluish: #a49cff;
-  --bubble-user: #25244a; --bubble-user-border: rgba(148,137,255,.18);
-  --state-error-bg: rgba(214,75,98,.12); --state-success-bg: rgba(29,154,114,.12);
-  --shadow-xs: 0 1px 2px rgba(0,0,0,.16); --shadow-sm: 0 10px 28px rgba(0,0,0,.18);
-  --shadow-md: 0 18px 50px rgba(0,0,0,.28); --shadow-pop: 0 32px 100px rgba(0,0,0,.48);
-}
 :root[data-theme='dark'] .main { background: radial-gradient(circle at 88% 4%, rgba(103,92,239,.11), transparent 28%), radial-gradient(circle at 8% 96%, rgba(18,175,196,.07), transparent 27%), var(--bg-base); }
 :root[data-theme='dark'] .topbar { background: rgba(15,19,34,.86); }
 :root[data-theme='dark'] .hero-greeting span { background-image: linear-gradient(110deg, #9e97ff, #766cff 48%, #35c2d3); }
@@ -1268,29 +1255,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .picker-option.active { border-color: var(--border-l4); background: var(--accent-soft); }
 .picker-option.active .picker-option-state { border-radius: 4px; background: var(--accent); }
 
-:root[data-theme='dark'] {
-  --bg-base: #171b18;
-  --bg-elevated: #1e2420;
-  --bg-sunken: #131714;
-  --bg-hover: rgba(217, 230, 222, .06);
-  --bg-active: rgba(94, 164, 139, .14);
-  --border-l1: rgba(230, 238, 233, .045);
-  --border-l2: rgba(230, 238, 233, .09);
-  --border-l3: rgba(230, 238, 233, .16);
-  --border-l4: rgba(109, 180, 154, .38);
-  --label-primary: #eef2ee;
-  --label-secondary: #bdc7c0;
-  --label-tertiary: #919d95;
-  --label-caption: #707b74;
-  --label-dimmed: #515a54;
-  --label-primary-bluish: #7fc3aa;
-  --accent: #5b9e86;
-  --accent-strong: #70ae98;
-  --accent-soft: rgba(91,158,134,.13);
-  --bubble-user: #29322d;
-  --bubble-user-border: rgba(143,181,160,.12);
-  --shadow-pop: 0 24px 70px rgba(0,0,0,.4);
-}
 :root[data-theme='dark'] .topbar { background: var(--bg-elevated); }
 :root[data-theme='dark'] .home-composer, :root[data-theme='dark'] .home-panel { box-shadow: none; }
 :root[data-theme='dark'] .field input, :root[data-theme='dark'] .field select, :root[data-theme='dark'] .field textarea { color-scheme: dark; }

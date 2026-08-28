@@ -290,6 +290,20 @@ function queryTerms(query) {
 function projectSearch(projectId, query, assetIds, limit = 12) {
   if (!projectId) return [];
   const requested = Array.isArray(assetIds) ? new Set(assetIds) : null;
+  if (ctx.store.searchDocuments) {
+    const indexed = ctx.store.searchDocuments(query, { projectId, limit: Math.max(limit * 4, 24) })
+      .filter(item => item.source === 'assets.json' && (!requested || requested.has(item.entityId)))
+      .slice(0, Math.max(1, Math.min(30, limit)))
+      .map(item => ({
+        assetId: item.entityId,
+        name: item.title,
+        lineStart: 1,
+        lineEnd: String(item.snippet || '').split(/\r?\n/).length,
+        score: Math.max(0, -Number(item.rank || 0)),
+        snippet: item.snippet,
+      }));
+    return indexed;
+  }
   const terms = queryTerms(query);
   const results = [];
   let scanned = 0;
@@ -382,8 +396,8 @@ function defaultAgents() {
 
 function ensureSeed() {
   let seeded = false;
-  if (!ctx.fs.existsSync(ctx.path.join(ctx.DATA_DIR, ctx.SKILL_FILE))) { ctx.store.write(ctx.SKILL_FILE, defaultSkills()); seeded = true; }
-  if (!ctx.fs.existsSync(ctx.path.join(ctx.DATA_DIR, ctx.AGENT_FILE))) { ctx.store.write(ctx.AGENT_FILE, defaultAgents()); seeded = true; }
+  if (ctx.store.read(ctx.SKILL_FILE, null) === null) { ctx.store.write(ctx.SKILL_FILE, defaultSkills()); seeded = true; }
+  if (ctx.store.read(ctx.AGENT_FILE, null) === null) { ctx.store.write(ctx.AGENT_FILE, defaultAgents()); seeded = true; }
   ctx.workspaceStore.ensureSeed();
   return seeded;
 }

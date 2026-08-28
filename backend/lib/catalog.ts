@@ -2,12 +2,19 @@ const fs = require('fs');
 const path = require('path');
 
 function readPackageVersion() {
-  try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
-    return pkg.version || '0.0.0';
-  } catch {
-    return '0.0.0';
+  const candidates = [
+    path.join(__dirname, '..', 'package.json'),
+    path.join(__dirname, '..', '..', 'package.json'),
+  ];
+  for (const file of candidates) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (pkg.version) return pkg.version;
+    } catch {
+      // Source and compiled builds have different __dirname depths.
+    }
   }
+  return '0.0.0';
 }
 
 function safeId(value, label = 'id') {

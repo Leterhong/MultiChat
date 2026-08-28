@@ -1,7 +1,7 @@
 // SSRF 防护：拦截指向私有/内网地址的导入与远程资产请求。
 // 注意：本地模型发现（/api/fetch-local-models）故意不在此拦截，因为它本就需要访问用户自己的 localhost 服务。
-import { promises as dns } from 'dns';
-import net from 'net';
+const { promises: dns } = require('dns');
+const net = require('net');
 
 function ipv4ToInt(ip: string): number {
   const parts = ip.split('.').map(Number);
@@ -26,13 +26,13 @@ const PRIVATE_V4: Array<[number, number]> = [
   [ipv4ToInt('198.18.0.0'), 15],
 ];
 
-export function isPrivateV4(ip: string): boolean {
+function isPrivateV4(ip: string): boolean {
   const n = ipv4ToInt(ip);
   if (n === 0) return true;
   return PRIVATE_V4.some(([base, bits]) => inCidr(n, base, bits));
 }
 
-export function isPrivateV6(ip: string): boolean {
+function isPrivateV6(ip: string): boolean {
   const a = ip.toLowerCase();
   if (a === '::1' || a === '::') return true;
   if (a.startsWith('fe80:')) return true; // link-local
@@ -60,7 +60,7 @@ function isMetadataAddress(ip: string): boolean {
   ) || value === '::' || value === 'fd00:ec2::254' || value.startsWith('fe80:');
 }
 
-export async function assertSafeUrl(input: string, { allowPrivate = false }: { allowPrivate?: boolean } = {}): Promise<URL> {
+async function assertSafeUrl(input: string, { allowPrivate = false }: { allowPrivate?: boolean } = {}): Promise<URL> {
   let url: URL;
   try {
     url = new URL(input);
@@ -92,7 +92,7 @@ export async function assertSafeUrl(input: string, { allowPrivate = false }: { a
 }
 
 // 带 SSRF 校验的 fetch：手动处理重定向，每次跳转都重新校验目标地址。
-export async function safeFetch(input: string, options: RequestInit = {}, allowPrivate = false, depth = 0): Promise<Response> {
+async function safeFetch(input: string, options: RequestInit = {}, allowPrivate = false, depth = 0): Promise<Response> {
   const url = await assertSafeUrl(input, { allowPrivate });
   const resp = await fetch(url, { ...options, redirect: 'manual' });
   if ([301, 302, 307, 308].includes(resp.status) && depth < 3) {
@@ -116,3 +116,5 @@ export async function safeFetch(input: string, options: RequestInit = {}, allowP
   }
   return resp;
 }
+
+module.exports = { isPrivateV4, isPrivateV6, assertSafeUrl, safeFetch };

@@ -73,7 +73,7 @@ function createJsonStore(rootDir: string): JsonStore {
     return run;
   }
 
-  return { read, write, remove, resolve, mutate };
+  return { kind: 'json', read, write, remove, resolve, mutate };
 }
 
 module.exports = { createJsonStore };
