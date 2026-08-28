@@ -43,7 +43,8 @@ async function newConversation() {
   $('#topbarTitle').textContent = '新对话';
   renderContent();
   renderConvList();
-  $('#input').focus();
+  renderInspector();
+  $('#heroInput')?.focus();
 }
 $('#newChatBtn').onclick = newConversation;
 async function openConversation(id) {
@@ -104,10 +105,12 @@ function renderFileContext() {
       if (cb.checked) state.selectedAssetIds.add(id); else state.selectedAssetIds.delete(id);
       if (count) count.textContent = state.selectedAssetIds.size + ' / ' + state.assets.length + ' 已选择';
       if (fileLabel) fileLabel.textContent = state.selectedAssetIds.size ? `文件 ${state.selectedAssetIds.size}` : '文件';
+      renderInspector();
     };
   });
   const bAll = $('#fcAll'); if (bAll) bAll.onclick = () => { state.assets.forEach(a => state.selectedAssetIds.add(a.id)); renderFileContext(); };
   const bNone = $('#fcNone'); if (bNone) bNone.onclick = () => { state.selectedAssetIds.clear(); renderFileContext(); };
+  renderInspector();
 }
 
 // D1：切换项目时，回填项目级默认智能体/模型（若项目已设置）

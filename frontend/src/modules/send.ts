@@ -136,7 +136,7 @@ async function streamReply() {
     if (last) {
       last.content = `**请求失败 (HTTP ${res.status})**${hint ? '：' + hint : ''}` +
         (upstreamMsg ? `\n\n> ${upstreamMsg}` : '') +
-        (useAgent ? '\n\n排查建议：① 设置 → 智能体 确认 system prompt 与 skill 关联正确；② 设置 → 模型 确认 API Key 正确；③ 切换其他模型试一下。'
+        (useAgent ? '\n\n排查建议：① 设置 → 运行配置确认提示词与 Skill 关联正确；② 设置 → 模型连接确认 API Key 正确；③ 切换其他模型试一下。'
                    : '\n\n排查建议：① 设置 → 模型 中确认 API Key 正确；② baseUrl 可在浏览器直接访问；③ 切换其他模型试一下。');
       last.streaming = false;
     }
@@ -244,7 +244,7 @@ async function streamReply() {
   }
   renderContent();
   saveCurrentMessages();
-  if (useAgent) loadRuns();
+  if (useAgent) loadRuns().then(() => renderInspector());
   $$('[data-copy]').forEach(b => b.onclick = () => {
     const i = +b.dataset.copy; navigator.clipboard.writeText(state.messages[i]?.content || ''); toast('已复制');
   });

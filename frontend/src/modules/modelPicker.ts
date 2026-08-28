@@ -64,6 +64,7 @@ function openModelPicker() {
           state.selectedProvider = p; state.selectedModel = model;
           localStorage.setItem('multichat_lastModel', pid + ':' + model);
           renderTopbar(); closeModal();
+          if (!state.messages.length) renderContent();
         };
       });
     }
@@ -72,8 +73,11 @@ function openModelPicker() {
 function renderTopbar() {
   syncModelUI();
   const a = state.selectedAgent;
-  $('#agentPickerName').textContent = a ? a.name : '无智能体';
+  $('#agentPickerName').textContent = a ? a.name : '直接对话';
   $('#workspacePickerName').textContent = state.selectedWorkspace ? state.selectedWorkspace.name : '工作区';
+  const path = $('#topbarPath');
+  if (path) path.textContent = `${state.selectedWorkspace?.name || '工作区'} / ${state.selectedProject?.name || '未选择项目'}`;
+  renderInspector();
 }
 // 同步两个「底部」模型切换入口：首页 hero 标签 + 对话输入框旁标签。同一份文案、同一份点击行为（均打开 openModelPicker）。
 function syncModelUI() {

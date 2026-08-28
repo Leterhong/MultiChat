@@ -7,33 +7,55 @@ function renderContent() {
   const composerWrap = $('#composerWrap');
   if (composerWrap) composerWrap.style.display = state.messages.length ? '' : 'none';
   if (!state.messages.length) {
-    const noModel = !state.selectedProvider;
+    const noModel = !state.selectedProvider || !state.selectedModel;
     const counts = state.runtime?.counts || { agents: state.agents.length, skills: state.skills.length, mcpServers: state.mcpServers.length, plugins: state.plugins.length };
+    const selectedFiles = state.selectedAssetIds?.size || 0;
+    const enabledMemories = (state.memories || []).filter(item => item.enabled !== false).length;
+    const agent = state.selectedAgent;
     c.innerHTML = `
-      <div class="hero">
-        <div class="hero-eyebrow"><span class="signal-dot"></span>LOCAL AGENT WORKSPACE</div>
-        <div class="hero-greeting"><span>模型、工具与知识</span><br/>在一个工作台协作</div>
-        <div class="hero-sub">${noModel ? '添加模型提供方，开始组装你的本地 Agent 工作流' : '选择模型或智能体，把复杂任务交给可组合的能力系统'}</div>
-        <div class="hero-card" id="heroCard">
-          <textarea class="hero-input" id="heroInput" placeholder="描述一个目标，或直接开始对话…" rows="1"></textarea>
+      <div class="home-workbench">
+        <header class="home-intro">
+          <div class="home-location">${esc(state.selectedWorkspace?.name || '工作区')} / ${esc(state.selectedProject?.name || '未选择项目')}</div>
+          <h1>开始一项工作</h1>
+          <p>${noModel ? '先连接一个模型，然后在这里描述目标。' : '当前模型与项目上下文已经就位，可以直接描述目标或提出问题。'}</p>
+        </header>
+        <div class="home-composer" id="heroCard">
+          <textarea class="hero-input" id="heroInput" placeholder="描述目标、粘贴内容，或输入一个问题…" rows="1"></textarea>
           <div class="hero-actions">
             <button class="hero-tag" id="heroModelTag">选择模型</button>
-            <span class="hero-mode-hint">Agent-ready</span>
+            <span class="hero-mode-hint">${esc(agent?.name || '直接对话')}</span>
             <div class="spacer"></div>
-            <button class="send-btn" id="heroSendBtn" title="发送" aria-label="发送消息">↗</button>
+            <button class="send-btn" id="heroSendBtn" title="发送" aria-label="发送消息">↑</button>
           </div>
         </div>
-        <div class="workspace-summary">
-          <div class="workspace-summary-head"><div class="workspace-orbit"><span></span></div><div><div class="workspace-summary-title">Capability Orbit</div><div class="workspace-summary-sub">Agent、Skills、MCP 与插件保持独立来源，在运行时组合</div></div><span class="workspace-health"><i></i>LOCAL</span></div>
-          <div class="workspace-stats">
-            <div class="workspace-stat agent"><div class="workspace-stat-value">${esc(counts.agents || 0)}</div><div class="workspace-stat-label">Agents</div></div>
-            <div class="workspace-stat skill"><div class="workspace-stat-value">${esc(counts.skills || 0)}</div><div class="workspace-stat-label">Skills</div></div>
-            <div class="workspace-stat mcp"><div class="workspace-stat-value">${esc(counts.mcpServers || 0)}</div><div class="workspace-stat-label">MCP servers</div></div>
-            <div class="workspace-stat plugin"><div class="workspace-stat-value">${esc(counts.plugins || 0)}</div><div class="workspace-stat-label">Plugins</div></div>
-          </div>
-          <div class="workspace-actions"><button class="btn-ghost" id="heroAgents">配置 Agent <span>↗</span></button><button class="btn-ghost" id="heroSkills">浏览 Skills <span>↗</span></button><button class="btn-ghost" id="heroMcp">管理 MCP <span>↗</span></button><button class="btn-ghost" id="heroPlugins">查看插件 <span>↗</span></button></div>
+        <div class="home-grid">
+          <section class="home-panel">
+            <div class="home-panel-head"><div><span>当前配置</span><strong>${esc(agent?.name || '直接对话')}</strong></div><button type="button" id="heroAgents">编辑</button></div>
+            <dl class="home-facts">
+              <div><dt>模型</dt><dd>${esc(state.selectedModel || '未选择')}</dd></div>
+              <div><dt>项目</dt><dd>${esc(state.selectedProject?.name || '未选择')}</dd></div>
+              <div><dt>上下文</dt><dd>${selectedFiles} 文件 · ${enabledMemories} 记忆</dd></div>
+              <div><dt>运行方式</dt><dd>${agent ? '工具增强' : '直接对话'}</dd></div>
+            </dl>
+          </section>
+          <section class="home-panel">
+            <div class="home-panel-head"><div><span>工作区状态</span><strong>${noModel ? '等待配置' : '可以运行'}</strong></div><button type="button" id="heroInspector">检查</button></div>
+            <div class="home-metrics">
+              <div><strong>${esc(counts.agents || 0)}</strong><span>运行配置</span></div>
+              <div><strong>${esc(counts.skills || 0)}</strong><span>Skills</span></div>
+              <div><strong>${esc(counts.mcpServers || 0)}</strong><span>MCP</span></div>
+              <div><strong>${esc(counts.plugins || 0)}</strong><span>插件</span></div>
+            </div>
+            <p class="home-panel-note">能力按运行配置组合；未被选中的工具不会进入本轮上下文。</p>
+          </section>
         </div>
-        <div class="hero-hint"><kbd>Enter</kbd> 发送 <span>·</span> <kbd>Shift + Enter</kbd> 换行 <span>·</span> 本地优先</div>
+        <div class="home-links" aria-label="常用入口">
+          <button class="btn-ghost" id="heroSkills">Skills <span>›</span></button>
+          <button class="btn-ghost" id="heroMcp">MCP 服务 <span>›</span></button>
+          <button class="btn-ghost" id="heroPlugins">插件 <span>›</span></button>
+          <button class="btn-ghost" id="heroRuns">运行日志 <span>›</span></button>
+        </div>
+        <div class="hero-hint"><kbd>Enter</kbd> 发送 <span>·</span> <kbd>Shift + Enter</kbd> 换行 <span>·</span> <kbd>Ctrl K</kbd> 命令</div>
       </div>
     `;
     syncModelUI();
@@ -42,11 +64,13 @@ function renderContent() {
     hi.addEventListener('input', () => autoresize(hi));
     hi.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
     hb.onclick = send;
-    hi.focus();
+    if (!$('#settings')?.classList.contains('open') && !$('#modal')?.classList.contains('open')) hi.focus();
     $('#heroAgents').onclick = () => openSettings('agents');
     $('#heroSkills').onclick = () => openSettings('skills');
     $('#heroMcp').onclick = () => openSettings('mcp');
     $('#heroPlugins').onclick = () => openSettings('plugins');
+    $('#heroRuns').onclick = () => openSettings('runs');
+    $('#heroInspector').onclick = openInspector;
   } else {
     c.innerHTML = `<div class="transcript" id="transcript">${state.messages.map(renderMessage).join('')}</div>`;
     if (state.streaming) c.scrollTop = c.scrollHeight; // 仅流式追加时自动贴底；手动重渲染（编辑/重新生成）保留当前滚动位置
@@ -196,9 +220,9 @@ function renderMessage(m, i) {
   }
   return `
     <div class="msg ${m.role}" data-idx="${i}" aria-label="${m.role === 'user' ? '你的消息' : 'MultiChat 回复'}">
-      ${m.role === 'assistant' ? '<div class="msg-avatar" aria-hidden="true">M</div>' : ''}
+      <div class="msg-avatar" aria-hidden="true">${m.role === 'assistant' ? 'M' : '你'}</div>
       <div class="msg-body">
-        ${m.role === 'assistant' ? `<div class="msg-role">MultiChat${agentTag}${modelTag}${m.streaming ? '<span class="busy-label">生成中</span>' : ''}</div>` : ''}
+        <div class="msg-role">${m.role === 'assistant' ? 'MultiChat' : '你'}${m.role === 'assistant' ? agentTag + modelTag : ''}${m.streaming ? '<span class="busy-label">处理中</span>' : ''}</div>
         ${thinkBlock}
         <div class="msg-content">${warningBlock}${md}${toolBlock}${approvalBlock}${traceBlock}</div>
         ${statsBlock}

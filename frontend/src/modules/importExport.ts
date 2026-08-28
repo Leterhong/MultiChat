@@ -4,8 +4,8 @@ import { $, esc, api, toast, state } from '../core/index';
 function importBarHTML() {
   return `
     <div class="import-bar">
-      <span class="import-bar-label">智能体备份</span>
-      <button class="mini-btn" id="importFile">导入 Agent JSON</button>
+      <span class="import-bar-label">运行配置备份</span>
+      <button class="mini-btn" id="importFile">导入配置 JSON</button>
       <input type="file" id="importFileInput" accept=".json,application/json" style="display:none" />
     </div>`;
 }
@@ -15,7 +15,7 @@ async function doImport(spec, sourceLabel) {
     await loadAgents();
     renderSettings(state.currentTab || 'agents', true);
     renderTopbar();
-    toast(`已导入 ${r.agents} 个智能体（来源：${sourceLabel}）`);
+    toast(`已导入 ${r.agents} 个运行配置（来源：${sourceLabel}）`);
     return r;
   } catch (e) { toast(e.message, 'error'); throw e; }
 }
@@ -58,10 +58,10 @@ function showAgentModal(id) {
   const editing = !!id;
   const a = editing ? state.agents.find(x => x.id === id) : null;
   showModal({
-    title: editing ? '编辑智能体' : '新建智能体',
+    title: editing ? '编辑运行配置' : '新建运行配置',
     body: `<form id="agentForm">
       <div class="field"><label>名称</label><input name="name" value="${a ? esc(a.name) : ''}" placeholder="中英翻译" required /></div>
-      <div class="field"><label>描述</label><input name="description" value="${a ? esc(a.description || '') : ''}" placeholder="一句话描述这个智能体做什么" /></div>
+      <div class="field"><label>描述</label><input name="description" value="${a ? esc(a.description || '') : ''}" placeholder="一句话说明这套配置适合什么任务" /></div>
       <div class="field"><label>系统提示词</label><textarea name="systemPrompt" rows="4" placeholder="你是一个...">${a ? esc(a.systemPrompt || '') : ''}</textarea></div>
       <div class="field"><label>Agent Skills（先提供描述，匹配任务时再加载完整工作流）</label>
         <div class="extension-checks">

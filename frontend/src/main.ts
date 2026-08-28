@@ -21,14 +21,15 @@ import * as Modal from './modules/modal';
 import * as Render from './modules/render';
 import * as Markdown from './modules/markdown';
 import * as Send from './modules/send';
+import * as Workbench from './modules/workbench';
 
 // 装配层：把所有模块导出挂到 globalThis，使业务函数之间保持原全局调用关系。
 const namespaces = [
   Core, Shell, Init, Data, Conversations, ModelPicker, AgentPicker,
-  Settings, PluginsUI, ImportExport, ExtensionImport, Modal, Render, Markdown, Send,
+  Settings, PluginsUI, ImportExport, ExtensionImport, Modal, Render, Markdown, Send, Workbench,
 ];
 for (const ns of namespaces) Object.assign(globalThis, ns);
 
 applyTheme();
-window.addEventListener('DOMContentLoaded', () => { Shell.setupShell(); bootstrap(); });
+window.addEventListener('DOMContentLoaded', () => { Shell.setupShell(); Workbench.setupWorkbench(); bootstrap(); });
 window.MC = { state, send, newConversation, openSettings };

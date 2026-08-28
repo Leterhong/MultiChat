@@ -70,6 +70,15 @@ declare global {
   const renderMessage: any;
   const autoresize: any;
 
+  // ── workbench ──
+  const setupWorkbench: any;
+  const renderInspector: any;
+  const openInspector: any;
+  const closeInspector: any;
+  const toggleInspector: any;
+  const openCommandPalette: any;
+  const closeCommandPalette: any;
+
   // ── markdown ──
   const fmtTok: any;
   const renderMarkdown: any;

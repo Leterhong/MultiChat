@@ -1,14 +1,14 @@
 # MultiChat
 
 [![CI](https://github.com/Leterhong/MultiChat/actions/workflows/ci.yml/badge.svg)](https://github.com/Leterhong/MultiChat/actions/workflows/ci.yml)
-[![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Node.js 22.12+](https://img.shields.io/badge/Node.js-22.12%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-5b52df.svg)](./LICENSE)
 
-> 把模型、Agent 与工具，放进同一个本地工作区。
+> 把模型、运行配置、工具与项目上下文，放进同一个本地工作台。
 
-MultiChat 是一个开源、本地优先的多模型 Agent 工作台。你可以在浏览器中连接不同模型、创建 Agent，并按任务组合 Skill、内置工具、MCP 与 Plugin。
+MultiChat 是一个开源、本地优先的多模型工作台。你可以在浏览器中连接不同模型，保存可复用的运行配置，并按任务组合 Skill、内置工具、MCP 与 Plugin。
 
-每类能力保留自己的格式、来源和安全边界，再由 Agent 在运行时按需组合；对话、项目文件、扩展状态与运行记录都集中在一个工作区中。
+每类能力保留自己的格式、来源和安全边界，再由运行配置按需组合；对话、项目文件、扩展状态与运行记录都集中在一个工作区中。
 
 ## 当前阶段
 
@@ -19,7 +19,7 @@ MultiChat 是一个开源、本地优先的多模型 Agent 工作台。你可以
 
 ## 快速开始
 
-安装 [Node.js](https://nodejs.org/) 22 或更高版本，然后运行：
+安装 [Node.js](https://nodejs.org/) 22.12 或更高版本，然后运行：
 
 ```bash
 npx --yes github:Leterhong/MultiChat web
@@ -49,7 +49,9 @@ npx --yes github:Leterhong/MultiChat doctor
 ## 核心体验
 
 - **统一管理**：在一个界面中组织模型、对话、工作区和项目文件；
-- **组合 Agent**：自由搭配模型、系统指令、Skill、内置工具与 MCP server；
+- **运行配置**：自由搭配模型、系统指令、Skill、内置工具与 MCP server，并只向本轮注入实际选中的能力；
+- **会话检查器**：开始运行前核对模型连接、项目上下文与能力组合，运行后直接查看最近一次步骤、工具调用与 Token；
+- **快速命令**：通过 `Ctrl+K` 搜索常用操作和设置，通过 `Ctrl+I` 随时打开会话检查器；
 - **安全扩展**：导入 Skill、MCP 配置和 Plugin，启用前检查冲突、风险与变更；
 - **每日用量中心**：按 7 天、30 天或全部时间查看输入/输出 Token、趋势、模型占比、活跃热力图与提供方健康；
 - **运行黑匣子**：保留模型步骤、工具调用、审批、错误与 Token 构成，通过 Context Lens 复查每次请求实际携带的上下文；
@@ -57,7 +59,21 @@ npx --yes github:Leterhong/MultiChat doctor
 - **能力护照**：集中展示 Skill、MCP、Plugin 与内置工具的来源、版本、权限、信任状态、风险和结构问题；
 - **项目快照**：保存项目设置、文件、记忆和关联 Agent，恢复前自动备份，便于安全试验和回滚；
 - **本地安全账本**：Provider 密钥加密落盘且不会返回浏览器，用量记录只保存统计元数据，不保存提示词正文；
-- **适配不同设备**：Orbit 是面向桌面与移动屏幕的响应式 Web UI，并支持深色主题和键盘操作。
+- **适配不同设备**：工作台面向桌面与移动屏幕响应式设计，并支持深色主题、键盘操作和无障碍焦点管理。
+
+## 工程结构
+
+MultiChat 把宿主运行时、Web 客户端和扩展边界分开维护：
+
+```text
+backend/            API、运行时、事件记录与扩展管理
+frontend/src/core/  客户端状态、API、主题与基础工具
+frontend/src/modules/  工作台、对话、设置、导入与观察界面
+bin/                multichat 命令入口
+.agents/            项目 Skills 与插件资源
+```
+
+一次请求会被记录为 Run；Run 包含一个或多个 Turn，Turn 再由模型请求、工具调用和审批 Step 组成。运行日志是复查、继续、分支和诊断的统一事实来源。模型连接、Skills、MCP、插件与运行配置分别管理，避免把不同扩展格式混成一套不透明接口。
 
 ## 扩展方式
 

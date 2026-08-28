@@ -62,7 +62,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
     const p = state.params;
     const theme = getTheme();
     body.innerHTML = `
-      <h3>通用设置</h3>
+      <h3>偏好设置</h3>
       <p class="lead">模型参数与外观</p>
       <div class="provider-card">
         <h4>模型参数</h4>
@@ -89,12 +89,12 @@ function renderSettings(tab = 'general', keepScroll = false) {
         <div class="pmeta">界面主题</div>
         <div class="field">
           <label for="themeSel">主题</label>
-          <select id="themeSel"><option value="light" ${theme === 'light' ? 'selected' : ''}>晨光</option><option value="dark" ${theme === 'dark' ? 'selected' : ''}>深空</option><option value="system" ${theme === 'system' ? 'selected' : ''}>跟随系统</option></select>
+          <select id="themeSel"><option value="light" ${theme === 'light' ? 'selected' : ''}>浅色</option><option value="dark" ${theme === 'dark' ? 'selected' : ''}>深色</option><option value="system" ${theme === 'system' ? 'selected' : ''}>跟随系统</option></select>
         </div>
       </div>
       <div class="provider-card">
         <h4>关于</h4>
-        <div class="pmeta">MultiChat · Local Agent Orbit<br/>模型、Skills、MCP 与插件在本地工作区内组合运行。<br/>支持 OpenAI / Anthropic / Ollama / LM Studio 等兼容接口。</div>
+        <div class="pmeta">MultiChat · 本地优先的多模型工作台<br/>模型、Skills、MCP 与插件按运行配置组合。<br/>支持 OpenAI / Anthropic / Ollama / LM Studio 等兼容接口。</div>
       </div>
     `;
     const tEl = $('#pTemp'), tVal = $('#tVal'), topEl = $('#pTop'), topVal = $('#pTopVal');
@@ -121,12 +121,12 @@ function renderSettings(tab = 'general', keepScroll = false) {
     const project = state.selectedProject;
     body.innerHTML = `
       <h3>工作区</h3>
-      <p class="lead">按工作区和项目组织会话、文件和 Agent 上下文。文件内容只保存在本地数据目录。</p>
+      <p class="lead">按工作区和项目组织会话、文件与运行上下文。文件内容只保存在本地数据目录。</p>
       <div class="provider-card">
         <h4>当前空间</h4>
         <div class="field"><label>工作区</label><select id="workspaceSelect">${state.workspaces.map(w => `<option value="${esc(w.id)}" ${w.id === workspace?.id ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select></div>
         <div class="field"><label>项目</label><select id="projectSelect">${state.projects.map(p => `<option value="${esc(p.id)}" ${p.id === project?.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
-        <div class="field"><label>项目默认智能体</label><select id="projAgentSelect"><option value="">（继承全局）</option>${state.agents.map(a => `<option value="${esc(a.id)}" ${project?.defaultAgentId === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select></div>
+        <div class="field"><label>项目默认运行配置</label><select id="projAgentSelect"><option value="">（继承全局）</option>${state.agents.map(a => `<option value="${esc(a.id)}" ${project?.defaultAgentId === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select></div>
         <div class="field"><label>项目默认模型</label><select id="projModelSelect"><option value="">（继承全局）</option>${state.providers.flatMap(p => (p.models || []).map(m => ({ pid: p.id, m, label: (p.name || p.id) + ' · ' + m }))).map(o => `<option value="${esc(o.pid + ':' + o.m)}" ${project?.defaultProviderId === o.pid && project?.defaultModel === o.m ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select></div>
         <div class="provider-row"><button class="btn-primary" id="saveProjDefaults" style="width:auto;padding:8px 18px;">保存项目默认</button></div>
         <div class="provider-row"><button class="btn-ghost" id="newWorkspace">新建工作区</button><button class="btn-ghost" id="newProject">新建项目</button></div>
@@ -143,12 +143,12 @@ function renderSettings(tab = 'general', keepScroll = false) {
         <div class="memory-list">${(state.memories || []).map(item => `<article class="memory-item ${item.enabled === false ? 'disabled' : ''}"><button class="memory-toggle" data-toggle-memory="${esc(item.id)}" aria-pressed="${item.enabled !== false}"><i></i>${item.enabled !== false ? '已启用' : '已停用'}</button><div><strong>${esc(item.title)}</strong><p>${esc(item.content)}</p></div><div class="memory-actions"><button class="mc-act" data-edit-memory="${esc(item.id)}">编辑</button><button class="mc-act danger" data-del-memory="${esc(item.id)}">删除</button></div></article>`).join('') || '<div class="control-empty">还没有项目记忆。只保存值得长期复用的事实和偏好。</div>'}</div>
       </div>
       <div class="provider-card">
-        <div class="control-card-head"><div><h4>项目时光机</h4><div class="pmeta">保存项目设置、知识文件、记忆、默认 Agent 和当前 Git 状态；恢复前会自动再备份一次。</div></div><button class="btn-primary" id="createSnapshot">创建快照</button></div>
+        <div class="control-card-head"><div><h4>项目时光机</h4><div class="pmeta">保存项目设置、知识文件、记忆、默认运行配置和当前 Git 状态；恢复前会自动再备份一次。</div></div><button class="btn-primary" id="createSnapshot">创建快照</button></div>
         <div class="snapshot-list">${(state.snapshots || []).map(item => `<article class="snapshot-item"><span class="snapshot-mark">${item.git?.commit ? esc(item.git.commit) : 'LOCAL'}</span><div><strong>${esc(item.title)}</strong><p>${new Date(item.createdAt).toLocaleString('zh-CN')} · ${item.assets} 文件 · ${item.memories} 记忆 · ${compactNumber(item.size)}B${item.git?.branch ? ` · ${esc(item.git.branch)}${item.git.dirty ? '（有改动）' : ''}` : ''}</p></div><div class="memory-actions"><button class="mc-act" data-restore-snapshot="${esc(item.id)}">恢复</button><button class="mc-act danger" data-del-snapshot="${esc(item.id)}">删除</button></div></article>`).join('') || '<div class="control-empty">尚未创建项目快照。</div>'}</div>
       </div>
     `;
-    $('#workspaceSelect').onchange = async (event) => { state.selectedWorkspace = state.workspaces.find(x => x.id === event.target.value) || null; await loadProjects(); renderTopbar(); renderSettings('workspace', true); renderFileContext(); };
-    $('#projectSelect').onchange = async (event) => { state.selectedProject = state.projects.find(x => x.id === event.target.value) || null; if (state.selectedProject) localStorage.setItem('multichat_project', state.selectedProject.id); await loadProjects(); renderTopbar(); renderSettings('workspace', true); renderFileContext(); };
+    $('#workspaceSelect').onchange = async (event) => { state.selectedWorkspace = state.workspaces.find(x => x.id === event.target.value) || null; await loadProjects(); renderTopbar(); renderContent(); renderSettings('workspace', true); renderFileContext(); };
+    $('#projectSelect').onchange = async (event) => { state.selectedProject = state.projects.find(x => x.id === event.target.value) || null; if (state.selectedProject) localStorage.setItem('multichat_project', state.selectedProject.id); await loadProjects(); renderTopbar(); renderContent(); renderSettings('workspace', true); renderFileContext(); };
     $('#saveProjDefaults').onclick = async () => {
       if (!state.selectedProject) { toast('请先选择项目', 'error'); return; }
       const aid = $('#projAgentSelect').value || null;
@@ -195,7 +195,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
       <section class="provider-settings">
         <div class="settings-page-heading">
           <div>
-            <h3>模型</h3>
+            <h3>模型连接</h3>
             <p class="lead">管理提供方凭证和可选模型；所有配置仅保存在本地。</p>
           </div>
           <div class="provider-summary" aria-label="模型配置概览">
@@ -268,8 +268,8 @@ function renderSettings(tab = 'general', keepScroll = false) {
   } else if (tab === 'agents') {
     const agents = state.agents;
     body.innerHTML = `
-      <h3>智能体</h3>
-      <p class="lead">智能体可以组合系统提示词、Agent Skills、内置工具和 MCP 服务器。点击卡片即可配置每一类能力。</p>
+      <h3>运行配置</h3>
+      <p class="lead">把系统提示词、Skills、内置工具和 MCP 服务保存为可复用配置。只有当前配置选中的能力才会进入一次运行。</p>
       ${importBarHTML()}
       <div class="card-grid">
         ${agents.map(a => {
@@ -302,7 +302,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
             </div>
           </div>`;
         }).join('')}
-        <button type="button" class="mc-add" id="addAgent"><span class="plus">＋</span><span class="plus-t">新建智能体</span></button>
+        <button type="button" class="mc-add" id="addAgent"><span class="plus">＋</span><span class="plus-t">新建运行配置</span></button>
       </div>
     `;
     body.querySelectorAll('.mc-card[data-aid]').forEach(c => c.onclick = () => showAgentModal(c.dataset.aid));
@@ -311,7 +311,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
     body.querySelectorAll('[data-del-a]').forEach(b => b.onclick = async (e) => {
       e.stopPropagation();
       const aid = b.dataset.delA;
-      if (!confirm('删除该智能体？')) return;
+      if (!confirm('删除该运行配置？')) return;
       try { await api('/api/agents/' + aid, { method: 'DELETE' }); } catch (err) { toast(err.message, 'error'); return; }
       if (state.selectedAgent && state.selectedAgent.id === aid) state.selectedAgent = null;
       saveSelectedAgent();
