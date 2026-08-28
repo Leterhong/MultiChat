@@ -1,6 +1,7 @@
-// 全局应用状态单例 + 本地持久化（params / 上次选择 agent）。
-// 这是整个前端的共享中枢：业务模块通过 `import { state }` 读写同一实例。
-// 注意：state 是 const 绑定，业务代码只能修改其属性，不能整体重新赋值。
+import { createStore } from 'zustand/vanilla';
+
+// Zustand 是业务状态的唯一数据源。`state` Proxy 只作为旧模块迁移期间的
+// 兼容门面：任何顶层赋值都会进入 store 并触发精确订阅，不再维护第二份数据。
 
 const DEFAULT_PARAMS = { temperature: 0.7, max_tokens: 2000, top_p: 1 };
 
@@ -28,7 +29,7 @@ export function saveSelectedAgent() {
   else localStorage.removeItem('multichat_lastAgent');
 }
 
-export const state = {
+const initialBusinessState = {
   providers: [],
   selectedProvider: null,
   selectedModel: null,
@@ -63,6 +64,31 @@ export const state = {
   currentTab: 'providers', // 设置面板当前激活 tab
   currentRunId: null, // 当前进行中的 run id（用于停止/继续流式）
 };
+
+export type BusinessState = typeof initialBusinessState;
+export const businessStore = createStore<BusinessState>(() => initialBusinessState);
+
+export const state = new Proxy(initialBusinessState, {
+  get(_target, property) {
+    return businessStore.getState()[property as keyof BusinessState];
+  },
+  set(_target, property, value) {
+    businessStore.setState({ [property]: value } as Partial<BusinessState>);
+    return true;
+  },
+  ownKeys() {
+    return Reflect.ownKeys(businessStore.getState());
+  },
+  getOwnPropertyDescriptor(_target, property) {
+    if (!(property in businessStore.getState())) return undefined;
+    return { configurable: true, enumerable: true, writable: true, value: businessStore.getState()[property as keyof BusinessState] };
+  },
+});
+
+/** Notify React after a legacy module mutates an item inside messages in place. */
+export function notifyMessagesChanged() {
+  businessStore.setState((current) => ({ ...current, messages: [...current.messages] }));
+}
 
 // Optional cross-origin override (?api=…)
 try {

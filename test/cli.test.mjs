@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import path from 'node:path';
 
-import { parseCliArgs } from '../bin/multichat.mjs';
+import { parseCliArgs, probeSqlite, supportsRequiredNode } from '../bin/multichat.mjs';
 
 test('web is the default command and stays on loopback', () => {
   const parsed = parseCliArgs([], path.resolve('example-workspace'));
@@ -40,4 +40,16 @@ test('init accepts one target directory', () => {
 test('invalid ports and unknown options are rejected', () => {
   assert.throws(() => parseCliArgs(['web', '--port', '0']), /1 到 65535/);
   assert.throws(() => parseCliArgs(['web', '--unknown']), /未知参数/);
+});
+
+test('Node version guard matches the unflagged node:sqlite baseline', () => {
+  assert.equal(supportsRequiredNode('22.12.0'), false);
+  assert.equal(supportsRequiredNode('22.13.0'), true);
+  assert.equal(supportsRequiredNode('23.0.0'), true);
+});
+
+test('doctor SQLite probe opens an in-memory DatabaseSync database', () => {
+  const result = probeSqlite();
+  assert.equal(result.ok, true, result.detail);
+  assert.match(result.detail, /DatabaseSync/);
 });

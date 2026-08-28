@@ -26,7 +26,7 @@ if (corsOrigins.length)
 // behind the same reverse proxies as the rest of MultiChat.  The importer
 // applies a stricter 20 MB compressed / 80 MB unpacked limit of its own.
 app.use(express.json({ limit: '32mb' }));
-const apiToken = String(process.env.MULTICHAT_API_TOKEN || '');
+const apiToken = String(process.env.MULTICHAT_API_TOKEN || process.env.MC_API_TOKEN || '');
 const basicAuth = String(process.env.MULTICHAT_BASIC_AUTH || '');
 function equalSecret(actual, expected) {
     const left = Buffer.from(String(actual || ''));

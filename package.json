@@ -1,6 +1,6 @@
 {
   "name": "@leterhong/multichat",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Local-first multi-model agent workspace with Skills, MCP servers, and plugins",
   "license": "MIT",
   "type": "module",
@@ -30,7 +30,7 @@
     "test:cli": "node --test test/cli.test.mjs"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.13.0"
   },
   "repository": {
     "type": "git",

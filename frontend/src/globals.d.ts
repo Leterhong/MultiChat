@@ -102,7 +102,6 @@ declare global {
   const streamReply: any;
 
   // ── pluginsUI ──
-  const PLUGIN_ICON: any;
   const EXPORT_ICON: any;
   const sourceLabel: any;
   const renderPlugins: any;

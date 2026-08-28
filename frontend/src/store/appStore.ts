@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { useStore } from 'zustand';
+import { businessStore, type BusinessState } from '../core/state';
 
 export type RuntimeActions = {
   send: (text?: string) => Promise<void>;
@@ -16,23 +18,19 @@ export type RuntimeActions = {
 };
 
 type AppViewState = {
-  revision: number;
   ready: boolean;
   actions: Partial<RuntimeActions>;
-  refresh: () => void;
   setReady: (ready: boolean) => void;
   installActions: (actions: Partial<RuntimeActions>) => void;
 };
 
 export const useAppStore = create<AppViewState>((set) => ({
-  revision: 0,
   ready: false,
   actions: {},
-  refresh: () => set((current) => ({ revision: current.revision + 1 })),
   setReady: (ready) => set({ ready }),
   installActions: (actions) => set((current) => ({ actions: { ...current.actions, ...actions } })),
 }));
 
-export const refreshAppView = () => useAppStore.getState().refresh();
+export const useBusinessStore = <T,>(selector: (current: BusinessState) => T) => useStore(businessStore, selector);
 export const installRuntimeActions = (actions: Partial<RuntimeActions>) => useAppStore.getState().installActions(actions);
 export const markAppReady = () => useAppStore.getState().setReady(true);

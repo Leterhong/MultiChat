@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Brain, ChevronDown, FileText, ListTree, Wrench } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 import { state } from '../core';
-import { refreshAppView, useAppStore } from '../store/appStore';
+import { useAppStore, useBusinessStore } from '../store/appStore';
 import { fmtTok } from '../utils/format';
 import { SafeMarkdown } from './SafeMarkdown';
 
@@ -24,6 +24,7 @@ function useAutosize(value: string) {
 }
 
 function HomeWorkspace() {
+  useBusinessStore((current) => current);
   const [prompt, setPrompt] = useState('');
   const ready = useAppStore((current) => current.ready);
   const actions = useAppStore((current) => current.actions);
@@ -228,22 +229,22 @@ function MessageView({ message, index }: { message: any; index: number }) {
 }
 
 function ConversationWorkspace() {
-  const revision = useAppStore((current) => current.revision);
-  const messages = useMemo(() => [...state.messages], [revision]);
+  const messages = useBusinessStore((current) => current.messages);
+  const streaming = useBusinessStore((current) => current.streaming);
   const [announcement, setAnnouncement] = useState('');
   useEffect(() => {
-    if (!state.streaming) return;
+    if (!streaming) return;
     const timer = window.setTimeout(() => {
       const last = state.messages.at(-1);
       if (last?.role === 'assistant') setAnnouncement(String(last.content || '').slice(-240));
     }, 650);
     return () => window.clearTimeout(timer);
-  }, [revision]);
+  }, [messages, streaming]);
   return <>
     <Virtuoso
       className="transcript transcript-virtual"
       data={messages}
-      followOutput={state.streaming ? 'auto' : false}
+      followOutput={streaming ? 'auto' : false}
       increaseViewportBy={{ top: 500, bottom: 800 }}
       components={{ Footer: () => <div className="transcript-footer" aria-hidden="true" /> }}
       itemContent={(index, message) => <MessageView index={index} message={message} />}
@@ -253,12 +254,12 @@ function ConversationWorkspace() {
 }
 
 export function WorkspaceContent() {
-  useAppStore((current) => current.revision);
-  return state.messages.length ? <ConversationWorkspace /> : <HomeWorkspace />;
+  const hasMessages = useBusinessStore((current) => current.messages.length > 0);
+  return hasMessages ? <ConversationWorkspace /> : <HomeWorkspace />;
 }
 
 export function ConversationComposer() {
-  useAppStore((current) => current.revision);
+  useBusinessStore((current) => current);
   const ready = useAppStore((current) => current.ready);
   const actions = useAppStore((current) => current.actions);
   const [text, setText] = useState('');
@@ -289,8 +290,9 @@ export function ConversationComposer() {
     void actions.send(value).finally(() => inputRef.current?.focus());
   };
   const selectFile = (id: string, checked: boolean) => {
-    if (checked) state.selectedAssetIds.add(id); else state.selectedAssetIds.delete(id);
-    refreshAppView();
+    const selected = new Set(state.selectedAssetIds);
+    if (checked) selected.add(id); else selected.delete(id);
+    state.selectedAssetIds = selected;
     actions.refreshFileContext?.();
   };
   return <div className="composer-wrap" id="composerWrap">
@@ -300,7 +302,7 @@ export function ConversationComposer() {
         {filesOpen && <div className="file-ctx-body" id="fileCtxBody">{state.assets.map((asset: any) => <label className="fc-item" key={asset.id}>
           <input type="checkbox" className="fc-check" checked={state.selectedAssetIds.has(asset.id)} onChange={(event) => selectFile(asset.id, event.target.checked)} />
           <span className="fc-name" title={asset.name}>{asset.name}</span><span className="fc-meta">{String(asset.mimeType || '').split('/').pop()}</span>
-        </label>)}<div className="fc-actions"><button className="btn-ghost" type="button" onClick={() => { state.assets.forEach((asset: any) => state.selectedAssetIds.add(asset.id)); refreshAppView(); actions.refreshFileContext?.(); }}>全选</button><button className="btn-ghost" type="button" onClick={() => { state.selectedAssetIds.clear(); refreshAppView(); actions.refreshFileContext?.(); }}>清空</button></div></div>}
+        </label>)}<div className="fc-actions"><button className="btn-ghost" type="button" onClick={() => { state.selectedAssetIds = new Set(state.assets.map((asset: any) => asset.id)); actions.refreshFileContext?.(); }}>全选</button><button className="btn-ghost" type="button" onClick={() => { state.selectedAssetIds = new Set(); actions.refreshFileContext?.(); }}>清空</button></div></div>}
       </div>}
       <textarea ref={inputRef} className="composer-input" id="input" rows={1} placeholder="描述下一步工作…" autoComplete="off" value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => {
         if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit(); }

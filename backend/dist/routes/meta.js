@@ -31,7 +31,7 @@ module.exports = function registerMeta(app) {
         res.json({ providers: providers.map(ctx.providerStore.publicRecord), skills, tools, agents, plugins, mcpServers, workspaces: ctx.workspaceStore.workspaces(), projects: ctx.workspaceStore.projects(), assets: ctx.workspaceStore.assets().map(assetMeta) });
     });
     app.get('/api/health', (req, res) => {
-        res.json({ status: 'ok', version: ctx.VERSION, uptime: process.uptime(), storage: ctx.store.kind || 'json', skills: extensions.listSkills().length, mcpServers: extensions.listMcpServers().length, agents: ctx.store.read(ctx.AGENT_FILE, []).length });
+        res.json({ status: 'ok', version: ctx.VERSION, uptime: process.uptime(), storage: ctx.store.kind || 'json', storageFallback: ctx.STORAGE_FALLBACK, skills: extensions.listSkills().length, mcpServers: extensions.listMcpServers().length, agents: ctx.store.read(ctx.AGENT_FILE, []).length });
     });
 };
 //# sourceMappingURL=meta.js.map

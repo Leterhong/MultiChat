@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 const { createSqliteStore } = require('../lib/sqlite-store');
+const { createRuntimeStore } = require('../lib/runtime-store');
 
 test('SQLite store migrates legacy JSON and keeps transactional state', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'multichat-sqlite-'));
@@ -36,6 +37,25 @@ test('SQLite FTS index searches project assets without scanning JSON files', () 
     assert.match(rows[0].snippet, /项目知识/);
   } finally {
     store.close();
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('runtime store falls back to JSON when SQLite initialization fails', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'multichat-fallback-'));
+  const warnings: string[] = [];
+  try {
+    const result = createRuntimeStore(root, {
+      preferred: 'sqlite',
+      createSqliteStore: () => { throw new Error('sqlite unavailable'); },
+      warn: (message: string) => warnings.push(message),
+    });
+    assert.equal(result.store.kind, 'json');
+    assert.equal(result.fallbackReason, 'sqlite unavailable');
+    assert.match(warnings[0], /已降级为 JSON/);
+    result.store.write('fallback.json', { ok: true });
+    assert.deepEqual(result.store.read('fallback.json', null), { ok: true });
+  } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });

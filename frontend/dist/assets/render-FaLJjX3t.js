@@ -1,1 +1,0 @@
-import{n as e}from"./index-DprU_huf.js";function t(){e()}function n(e){e&&(e.style.height=`auto`,e.style.height=`${Math.min(240,e.scrollHeight)}px`)}export{n as autoresize,t as renderContent};

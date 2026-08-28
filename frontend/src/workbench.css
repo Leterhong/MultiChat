@@ -236,6 +236,12 @@ kbd { font: 500 10px/1.2 var(--font-mono); letter-spacing: 0; }
 /* Modal and command menu */
 .modal, .command-palette { background: rgba(15,23,42,.58); backdrop-filter: none; }
 .modal-card { width: 540px; padding: 22px; color: var(--label-primary); background: var(--bg-elevated); border: 1px solid var(--border-l2); border-radius: 14px; box-shadow: var(--shadow-pop); }
+.mc-title-wrap { min-width: 0; flex: 1; }
+.extension-card-actions { position: static !important; justify-content: space-between; opacity: 1 !important; }
+.extension-card-actions.left { justify-content: flex-start; align-items: center; gap: 8px; flex-wrap: wrap; }
+.compact-action { width: auto; padding: 8px 16px; }
+.mcp-security-note { margin-bottom: 12px; }
+.skill-card-actions { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 6px; }
 .modal-heading { padding-bottom: 14px; border-bottom: 1px solid var(--border-l2); }
 .modal-heading h3 { font-size: 19px; letter-spacing: -.02em; }
 .modal-close { width: 36px; height: 36px; color: var(--label-caption); border-radius: 8px; }

@@ -5,8 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { getMcpClient, closeMcpClient, closeAllMcpClients } = require('../mcp');
-const { createJsonStore } = require('./store');
-const { createSqliteStore } = require('./sqlite-store');
+const { createRuntimeStore } = require('./runtime-store');
 const { createWorkspaceStore } = require('./workspace-store');
 const { createProviderStore } = require('./provider-store');
 const { safeFetch } = require('./ssrf');
@@ -18,7 +17,9 @@ const BACKEND_ROOT = path.basename(__dirname) === 'lib' && path.basename(path.di
   ? path.dirname(path.dirname(__dirname))
   : path.dirname(__dirname);
 const DATA_DIR = process.env.DATA_DIR || path.join(BACKEND_ROOT, 'data');
-const store = process.env.MULTICHAT_STORE === 'json' ? createJsonStore(DATA_DIR) : createSqliteStore(DATA_DIR);
+const runtimeStore = createRuntimeStore(DATA_DIR);
+const store = runtimeStore.store;
+const STORAGE_FALLBACK = runtimeStore.fallbackReason ? 'json' : null;
 const workspaceStore = createWorkspaceStore(store);
 const providerStore = createProviderStore(store);
 const VERSION = readPackageVersion();
@@ -50,6 +51,7 @@ module.exports = {
   safeId,
   PORT,
   DATA_DIR,
+  STORAGE_FALLBACK,
   VERSION,
   SKILL_FILE,
   AGENT_FILE,

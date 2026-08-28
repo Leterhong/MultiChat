@@ -24,6 +24,7 @@ const REPOSITORY_URL = 'https://github.com/Leterhong/MultiChat.git';
 const COMMANDS = new Set(['web', 'doctor', 'init', 'pull', 'deploy', 'help']);
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 3000;
+const MINIMUM_NODE_VERSION = Object.freeze({ major: 22, minor: 13, patch: 0 });
 
 class CliError extends Error {
   constructor(message, exitCode = 1) {
@@ -134,13 +135,37 @@ function helpText(command) {
   return `MultiChat ${PACKAGE_JSON.version}\n\n本地优先的多模型 Agent 工作台。\n\n用法：\n  multichat [web] [参数]\n  multichat doctor [参数]\n  multichat init [目录]\n  multichat pull [目录]\n  multichat deploy [参数]\n\n命令：\n  web      启动本地网站（默认命令）\n  doctor   检查 Node、运行文件、目录和端口\n  init     克隆源码、安装依赖并构建\n  pull     快进更新现有源码、安装依赖并构建\n  deploy   web 的本地部署别名，不执行远程发布\n\n通用参数：\n  -h, --help       显示帮助\n  -v, --version    显示版本\n\n一条命令启动：\n  npx --yes github:Leterhong/MultiChat web\n\n查看子命令参数：\n  multichat web --help`;
 }
 
-function nodeMajor() {
-  return Number(process.versions.node.split('.')[0]);
+function nodeVersionParts(version = process.versions.node) {
+  const [major = 0, minor = 0, patch = 0] = String(version).split('.').map((value) => Number.parseInt(value, 10) || 0);
+  return { major, minor, patch };
+}
+
+export function supportsRequiredNode(version = process.versions.node) {
+  const current = nodeVersionParts(version);
+  const required = MINIMUM_NODE_VERSION;
+  return current.major > required.major
+    || (current.major === required.major && current.minor > required.minor)
+    || (current.major === required.major && current.minor === required.minor && current.patch >= required.patch);
 }
 
 function assertNodeVersion() {
-  if (nodeMajor() < 22) {
-    throw new CliError(`MultiChat 需要 Node.js 22 或更高版本；当前为 ${process.version}`);
+  if (!supportsRequiredNode()) {
+    throw new CliError(`MultiChat 需要 Node.js 22.13.0 或更高版本（SQLite 默认存储要求）；当前为 ${process.version}`);
+  }
+}
+
+export function probeSqlite() {
+  let database;
+  try {
+    const { DatabaseSync } = createRequire(import.meta.url)('node:sqlite');
+    if (typeof DatabaseSync !== 'function') throw new Error('DatabaseSync 不可用');
+    database = new DatabaseSync(':memory:');
+    database.exec('CREATE TABLE multichat_doctor (id INTEGER PRIMARY KEY) STRICT');
+    return { ok: true, detail: 'node:sqlite / DatabaseSync 可用' };
+  } catch (error) {
+    return { ok: false, detail: error instanceof Error ? error.message : String(error) };
+  } finally {
+    try { database?.close(); } catch {}
   }
 }
 
@@ -341,7 +366,9 @@ async function runDoctor(options) {
   const results = [];
   const add = (status, label, detail) => results.push({ status, label, detail });
 
-  add(nodeMajor() >= 22 ? 'PASS' : 'FAIL', 'Node.js', `${process.version}（需要 >=22）`);
+  add(supportsRequiredNode() ? 'PASS' : 'FAIL', 'Node.js', `${process.version}（需要 >=22.13.0）`);
+  const sqlite = probeSqlite();
+  add(sqlite.ok ? 'PASS' : 'FAIL', 'SQLite', sqlite.ok ? sqlite.detail : `${sqlite.detail}；可设置 MULTICHAT_STORE=json 临时降级`);
   add(existsSync(runtime.backendEntry) ? 'PASS' : 'FAIL', '后端构建', runtime.backendEntry);
   add(existsSync(runtime.frontendIndex) ? 'PASS' : 'FAIL', '前端构建', runtime.frontendIndex);
   if (runtime.backendEntry === runtime.TypeScriptEntry) add(runtime.tsxEntry ? 'PASS' : 'FAIL', '开发运行时', runtime.tsxEntry || '未安装 tsx');

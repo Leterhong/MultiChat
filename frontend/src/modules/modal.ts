@@ -3,6 +3,7 @@ import { $, esc } from '../core/index';
 /* --------------------------- Modal --------------------------- */
 let returnFocus: HTMLElement | null = null;
 let cleanupTimer: number | undefined;
+let closeCallback: (() => void) | null = null;
 
 const MODAL_FOCUSABLE = 'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [href], [tabindex="0"]';
 
@@ -12,7 +13,7 @@ function focusWithoutScroll(target: HTMLElement | null) {
   catch { target.focus(); }
 }
 
-function showModal({ title, body, onMount }) {
+function showModal({ title, body, onMount, onClose = null }) {
   const modal = $('#modal') as HTMLDivElement;
   const card = $('#modalCard') as HTMLDivElement;
   const app = $('#app') as HTMLDivElement;
@@ -23,6 +24,7 @@ function showModal({ title, body, onMount }) {
     cleanupTimer = undefined;
   }
   returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  closeCallback = typeof onClose === 'function' ? onClose : null;
   card.className = 'modal-card';
   card.innerHTML = `<div class="modal-heading"><h3 id="${headingId}">${esc(title || '')}</h3><button type="button" class="modal-close" aria-label="关闭弹窗" title="关闭">✕</button></div>${body || ''}`;
   modal.setAttribute('aria-labelledby', headingId);
@@ -66,6 +68,9 @@ function closeModal() {
   modal.inert = true;
   modal.setAttribute('aria-hidden', 'true');
   returnFocus = null;
+  const callback = closeCallback;
+  closeCallback = null;
+  callback?.();
   cleanupTimer = window.setTimeout(() => {
     if (!modal.classList.contains('open')) $('#modalCard').innerHTML = '';
     cleanupTimer = undefined;

@@ -11,4 +11,7 @@ export {
   loadSelectedAgent,
   saveSelectedAgent,
   DEFAULT_PARAMS,
+  businessStore,
+  notifyMessagesChanged,
 } from './state';
+export type { BusinessState } from './state';

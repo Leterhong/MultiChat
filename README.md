@@ -1,7 +1,7 @@
 # MultiChat
 
 [![CI](https://github.com/Leterhong/MultiChat/actions/workflows/ci.yml/badge.svg)](https://github.com/Leterhong/MultiChat/actions/workflows/ci.yml)
-[![Node.js 22.12+](https://img.shields.io/badge/Node.js-22.12%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Node.js 22.13+](https://img.shields.io/badge/Node.js-22.13%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-287254.svg)](./LICENSE)
 
 > 把模型、运行配置、工具与项目上下文，放进同一个本地工作台。
@@ -19,7 +19,7 @@ MultiChat 是一个开源、本地优先的多模型工作台。你可以在浏�
 
 ## 快速开始
 
-安装 [Node.js](https://nodejs.org/) 22.12 或更高版本，然后运行：
+安装 [Node.js](https://nodejs.org/) 22.13 或更高版本，然后运行：
 
 ```bash
 npx --yes github:Leterhong/MultiChat web
@@ -45,6 +45,8 @@ CLI 还提供 `doctor`、`init`、`pull` 与 `deploy`：
 npx --yes github:Leterhong/MultiChat --help
 npx --yes github:Leterhong/MultiChat doctor
 ```
+
+`doctor` 会实际探测 `node:sqlite` 与 `DatabaseSync`、生产构建、目录权限和监听端口。若 SQLite 在受限运行环境初始化失败，服务会明确告警并自动降级到 JSON 存储；也可以主动设置 `MULTICHAT_STORE=json`。
 
 ## 核心体验
 
@@ -108,7 +110,7 @@ npm run build
 npm start
 ```
 
-前端使用 React + TSX 数据驱动消息流和输入区，长对话由虚拟列表渲染；Markdown 经过白名单消毒后再显示。静态 HTML 只保留浏览器挂载节点，Zustand 管理可订阅界面状态，CSS 设计 Token 统一主题。后端 TypeScript 会先编译为 `backend/dist`，生产环境直接由 Node.js 运行，不依赖启动时转译。提交变更前可以运行：
+前端使用 React + TSX 数据驱动消息流、输入区、模型实验、Plugin 与 MCP 管理界面，长对话由虚拟列表渲染；Markdown 经过白名单消毒后再显示。静态 HTML 只保留浏览器挂载节点，Zustand 是业务数据与界面编排状态的统一来源，CSS 设计 Token 统一主题。后端 TypeScript 会先编译为 `backend/dist`，生产环境直接由 Node.js 运行，不依赖启动时转译。提交变更前可以运行：
 
 ```bash
 npm --prefix frontend run typecheck
@@ -128,7 +130,7 @@ npm test
 - HTTP MCP 默认限制 localhost、内网和 link-local 地址，只有显式允许后才会连接；
 - 凭据应通过环境变量引用，不要写进扩展包、配置、示例或 Git 提交；
 - 服务默认只监听 `127.0.0.1`，对外提供访问时需要可信网络或额外认证；
-- 可通过 `MULTICHAT_API_TOKEN` 为 `/api/*` 与 `/v1/*` 启用 Bearer Token，或通过 `MULTICHAT_BASIC_AUTH=user:password` 启用 Basic Auth；
+- 可通过 `MULTICHAT_API_TOKEN`（兼容 `MC_API_TOKEN`）为 `/api/*` 与 `/v1/*` 启用 Bearer Token，或通过 `MULTICHAT_BASIC_AUTH=user:password` 启用 Basic Auth；
 - STDIO MCP 子进程默认只继承启动所需的最小系统环境，额外变量必须在 MCP 配置中显式声明。
 
 ## 参与项目

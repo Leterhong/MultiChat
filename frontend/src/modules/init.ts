@@ -9,11 +9,17 @@ async function bootstrap() {
 
 async function applyLocationRoute() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+  const compareOpen = $('#modal')?.classList.contains('open') && $('#modalCard')?.classList.contains('compare-modal-card');
+  if (parts[0] !== 'compare' && compareOpen) closeModal();
   if (parts[0] === 'settings') {
     openSettings(parts[1] || 'general');
     return;
   }
   if ($('#settings')?.classList.contains('open')) closeSettings();
+  if (parts[0] === 'compare') {
+    openCompare();
+    return;
+  }
   if (parts[0] === 'chat' && parts[1] && parts[1] !== state.currentConvId) {
     await openConversation(parts[1]);
   } else if (parts[0] === 'new' && (state.currentConvId || state.messages.length)) {
@@ -73,8 +79,8 @@ function setupDrop() {
       try {
         const content = await file.text();
         const asset = await api('/api/assets', { method: 'POST', body: JSON.stringify({ projectId: state.selectedProject.id, name: file.name, mimeType: file.type || 'text/plain', content }) });
-        state.assets.unshift(asset);
-        state.selectedAssetIds.add(asset.id);
+        state.assets = [asset, ...state.assets];
+        state.selectedAssetIds = new Set([...state.selectedAssetIds, asset.id]);
         toast('已添加文件：' + file.name);
       } catch (err) { toast('文件添加失败：' + err.message, 'error'); }
     }

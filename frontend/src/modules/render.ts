@@ -1,4 +1,4 @@
-import { refreshAppView } from '../store/appStore';
+import { notifyMessagesChanged } from '../core/state';
 
 /**
  * Compatibility bridge for modules that still mutate the shared runtime
@@ -6,7 +6,7 @@ import { refreshAppView } from '../store/appStore';
  * refresh and never rebuild the conversation with innerHTML.
  */
 function renderContent() {
-  refreshAppView();
+  notifyMessagesChanged();
 }
 
 function autoresize(element: HTMLTextAreaElement | null) {
