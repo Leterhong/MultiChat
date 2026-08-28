@@ -8,54 +8,66 @@ function renderContent() {
   if (composerWrap) composerWrap.style.display = state.messages.length ? '' : 'none';
   if (!state.messages.length) {
     const noModel = !state.selectedProvider || !state.selectedModel;
-    const counts = state.runtime?.counts || { agents: state.agents.length, skills: state.skills.length, mcpServers: state.mcpServers.length, plugins: state.plugins.length };
     const selectedFiles = state.selectedAssetIds?.size || 0;
     const enabledMemories = (state.memories || []).filter(item => item.enabled !== false).length;
     const agent = state.selectedAgent;
+    const latestRun = state.runs?.[0];
+    const readyParts = [!noModel, Boolean(state.selectedProject), Boolean(state.selectedWorkspace), Boolean(agent || state.selectedModel)];
+    const readiness = Math.round((readyParts.filter(Boolean).length / readyParts.length) * 100);
+    const configuredTools = (agent?.toolIds?.length || 0) + (agent?.mcpServerIds?.length || 0);
     c.innerHTML = `
       <div class="home-workbench">
         <header class="home-intro">
-          <div class="home-location">${esc(state.selectedWorkspace?.name || '工作区')} / ${esc(state.selectedProject?.name || '未选择项目')}</div>
-          <h1>开始一项工作</h1>
-          <p>${noModel ? '先连接一个模型，然后在这里描述目标。' : '当前模型与项目上下文已经就位，可以直接描述目标或提出问题。'}</p>
+          <div class="home-eyebrow"><span class="status-pulse ${noModel ? 'warn' : ''}"></span>${noModel ? '需要配置模型' : '工作台已就绪'}<span class="home-location">${esc(state.selectedWorkspace?.name || '工作区')} / ${esc(state.selectedProject?.name || '未选择项目')}</span></div>
+          <h1>把一次工作组织清楚</h1>
+          <p>选择模型、装配能力、核对上下文，然后保留可追溯的运行记录。</p>
         </header>
-        <div class="home-composer" id="heroCard">
-          <textarea class="hero-input" id="heroInput" placeholder="描述目标、粘贴内容，或输入一个问题…" rows="1"></textarea>
-          <div class="hero-actions">
-            <button class="hero-tag" id="heroModelTag">选择模型</button>
-            <span class="hero-mode-hint">${esc(agent?.name || '直接对话')}</span>
-            <div class="spacer"></div>
-            <button class="send-btn" id="heroSendBtn" title="发送" aria-label="发送消息">↑</button>
+        <section class="home-launcher" aria-label="发起工作">
+          <div class="home-composer" id="heroCard">
+            <label for="heroInput">本次目标</label>
+            <textarea class="hero-input" id="heroInput" placeholder="描述要完成的事情、验收标准和限制条件…" rows="2"></textarea>
+            <div class="hero-actions">
+              <button class="hero-tag" id="heroModelTag">选择模型</button>
+              <span class="hero-mode-hint">${esc(agent?.name || '直接对话')}</span>
+              <button class="hero-context-tag" id="heroWorkspace" type="button">${selectedFiles} 文件 · ${enabledMemories} 记忆</button>
+              <div class="spacer"></div>
+              <button class="btn-secondary home-compare" id="heroCompare" type="button">并行对比</button>
+              <button class="send-btn" id="heroSendBtn" title="开始" aria-label="开始运行">↑</button>
+            </div>
           </div>
-        </div>
+          <div class="home-shortcuts" aria-label="任务起点">
+            <button type="button" data-quick-prompt="请分析当前项目上下文，先列出关键事实、未知项和建议的下一步。"><span>01</span><strong>理解项目</strong><small>先梳理上下文与风险</small></button>
+            <button type="button" data-quick-prompt="请审查当前方案，指出优先级最高的缺陷、潜在漏洞和可以验证的改进项。"><span>02</span><strong>审查方案</strong><small>输出可执行检查清单</small></button>
+            <button type="button" id="quickCompare"><span>03</span><strong>比较模型</strong><small>同一任务并行得到结果</small></button>
+          </div>
+        </section>
         <div class="home-grid">
-          <section class="home-panel">
-            <div class="home-panel-head"><div><span>当前配置</span><strong>${esc(agent?.name || '直接对话')}</strong></div><button type="button" id="heroAgents">编辑</button></div>
+          <section class="home-panel assembly-panel">
+            <div class="home-panel-head"><div><span>RUN PROFILE</span><strong>${esc(agent?.name || '直接对话')}</strong></div><button type="button" id="heroAgents">编辑配置</button></div>
             <dl class="home-facts">
               <div><dt>模型</dt><dd>${esc(state.selectedModel || '未选择')}</dd></div>
               <div><dt>项目</dt><dd>${esc(state.selectedProject?.name || '未选择')}</dd></div>
+              <div><dt>能力</dt><dd>${agent ? `${agent.skillRefs?.length || 0} Skills · ${configuredTools} 工具` : '无能力注入'}</dd></div>
               <div><dt>上下文</dt><dd>${selectedFiles} 文件 · ${enabledMemories} 记忆</dd></div>
-              <div><dt>运行方式</dt><dd>${agent ? '工具增强' : '直接对话'}</dd></div>
             </dl>
           </section>
-          <section class="home-panel">
-            <div class="home-panel-head"><div><span>工作区状态</span><strong>${noModel ? '等待配置' : '可以运行'}</strong></div><button type="button" id="heroInspector">检查</button></div>
-            <div class="home-metrics">
-              <div><strong>${esc(counts.agents || 0)}</strong><span>运行配置</span></div>
-              <div><strong>${esc(counts.skills || 0)}</strong><span>Skills</span></div>
-              <div><strong>${esc(counts.mcpServers || 0)}</strong><span>MCP</span></div>
-              <div><strong>${esc(counts.plugins || 0)}</strong><span>插件</span></div>
-            </div>
-            <p class="home-panel-note">能力按运行配置组合；未被选中的工具不会进入本轮上下文。</p>
+          <section class="home-panel readiness-panel">
+            <div class="home-panel-head"><div><span>PREFLIGHT</span><strong>运行前检查</strong></div><button type="button" id="heroInspector">查看详情</button></div>
+            <div class="readiness-score"><strong>${readiness}</strong><span>%</span><div><b>${readiness === 100 ? '可以开始' : '仍有配置项待处理'}</b><small>模型、项目、上下文与能力组合</small></div></div>
+            <div class="readiness-track"><span style="width:${readiness}%"></span></div>
+          </section>
+          <section class="home-panel recent-panel">
+            <div class="home-panel-head"><div><span>LAST RUN</span><strong>最近运行</strong></div><button type="button" id="heroRuns">全部记录</button></div>
+            ${latestRun ? `<div class="home-run"><span class="run-state ${esc(latestRun.status || '')}">${esc(latestRun.status === 'completed' ? '已完成' : latestRun.status || '未知')}</span><div><strong>${esc(latestRun.agentName || latestRun.agentId || '直接对话')}</strong><small>${esc(latestRun.model || state.selectedModel || '')}</small></div><dl><div><dt>步骤</dt><dd>${esc(latestRun.steps || 0)}</dd></div><div><dt>工具</dt><dd>${esc(latestRun.toolCalls || 0)}</dd></div></dl></div>` : '<div class="home-empty-run"><strong>还没有运行记录</strong><span>完成第一项工作后会在这里汇总。</span></div>'}
           </section>
         </div>
-        <div class="home-links" aria-label="常用入口">
-          <button class="btn-ghost" id="heroSkills">Skills <span>›</span></button>
-          <button class="btn-ghost" id="heroMcp">MCP 服务 <span>›</span></button>
-          <button class="btn-ghost" id="heroPlugins">插件 <span>›</span></button>
-          <button class="btn-ghost" id="heroRuns">运行日志 <span>›</span></button>
+        <div class="home-links" aria-label="能力入口">
+          <button class="btn-ghost" id="heroSkills">Skills <span>管理</span></button>
+          <button class="btn-ghost" id="heroMcp">MCP <span>连接</span></button>
+          <button class="btn-ghost" id="heroPlugins">插件 <span>扩展</span></button>
+          <button class="btn-ghost" id="heroCapabilities">能力清单 <span>核对</span></button>
         </div>
-        <div class="hero-hint"><kbd>Enter</kbd> 发送 <span>·</span> <kbd>Shift + Enter</kbd> 换行 <span>·</span> <kbd>Ctrl K</kbd> 命令</div>
+        <div class="hero-hint"><kbd>Enter</kbd> 开始 <span>·</span> <kbd>Ctrl K</kbd> 命令 <span>·</span> <kbd>Ctrl M</kbd> 对比</div>
       </div>
     `;
     syncModelUI();
@@ -70,6 +82,13 @@ function renderContent() {
     $('#heroMcp').onclick = () => openSettings('mcp');
     $('#heroPlugins').onclick = () => openSettings('plugins');
     $('#heroRuns').onclick = () => openSettings('runs');
+    $('#heroCapabilities').onclick = () => openSettings('capabilities');
+    $('#heroWorkspace').onclick = () => openSettings('workspace');
+    $('#heroCompare').onclick = openCompare;
+    $('#quickCompare').onclick = openCompare;
+    document.querySelectorAll<HTMLButtonElement>('[data-quick-prompt]').forEach(button => {
+      button.onclick = () => { hi.value = button.dataset.quickPrompt || ''; autoresize(hi); hi.focus(); };
+    });
     $('#heroInspector').onclick = openInspector;
   } else {
     c.innerHTML = `<div class="transcript" id="transcript">${state.messages.map(renderMessage).join('')}</div>`;

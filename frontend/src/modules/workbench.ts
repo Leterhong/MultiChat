@@ -54,15 +54,20 @@ function renderInspector() {
   const checks = readinessChecks();
   const ready = checks.every(item => item.ok);
   const selectedFiles = state.selectedAssetIds?.size || 0;
+  const selectedBytes = (state.assets || [])
+    .filter((item: any) => state.selectedAssetIds?.has(item.id))
+    .reduce((sum: number, item: any) => sum + Number(item.size || item.bytes || 0), 0);
+  const estimatedContextTokens = Math.ceil(selectedBytes / 4);
   const enabledMemories = (state.memories || []).filter((item: any) => item.enabled !== false).length;
   const skills = capabilityCount(agent, 'skillRefs', 'skillIds');
   const tools = capabilityCount(agent, 'toolIds', 'toolIds');
   const mcp = capabilityCount(agent, 'mcpServerIds', 'mcpServerIds');
+  const readiness = Math.round((checks.filter(item => item.ok).length / checks.length) * 100);
 
   body.innerHTML = `
     <section class="inspector-status ${ready ? 'ready' : 'needs-attention'}">
-      <span class="inspector-status-dot" aria-hidden="true"></span>
-      <div><strong>${ready ? '可以开始运行' : '需要完成配置'}</strong><span>${ready ? '当前会话的必要条件已就绪' : '检查下面的项目并补齐缺失项'}</span></div>
+      <div class="inspector-score"><strong>${readiness}</strong><span>%</span></div>
+      <div><strong>${ready ? '可以开始运行' : '需要完成配置'}</strong><span>${ready ? '必要条件已经就绪' : '补齐下面的配置项后再运行'}</span></div>
     </section>
     <section class="inspector-section">
       <div class="inspector-section-head"><strong>会话配置</strong><button type="button" data-inspector-settings="agents">编辑</button></div>
@@ -74,13 +79,14 @@ function renderInspector() {
       </dl>
     </section>
     <section class="inspector-section">
-      <div class="inspector-section-head"><strong>注入内容</strong><button type="button" data-inspector-settings="workspace">管理</button></div>
+      <div class="inspector-section-head"><strong>上下文装配</strong><button type="button" data-inspector-settings="workspace">管理</button></div>
       <div class="inspector-metrics">
         <div><strong>${selectedFiles}</strong><span>文件</span></div>
         <div><strong>${enabledMemories}</strong><span>记忆</span></div>
         <div><strong>${skills}</strong><span>Skills</span></div>
         <div><strong>${tools + mcp}</strong><span>工具</span></div>
       </div>
+      <div class="context-budget"><div><span>文件上下文估算</span><strong>${estimatedContextTokens.toLocaleString('zh-CN')} Token</strong></div><div class="context-budget-track"><span style="width:${Math.min(100, estimatedContextTokens / 320)}%"></span></div><small>仅估算已选文件；模型系统提示和对话历史未计入。</small></div>
       ${agent ? `<p class="inspector-note">${skills} Skills · ${tools} 内置工具 · ${mcp} MCP 服务</p>` : '<p class="inspector-note">直接对话不会注入工具或运行配置提示词。</p>'}
     </section>
     <section class="inspector-section">
@@ -139,6 +145,7 @@ function commands(): Command[] {
   return [
     { id: 'new', label: '新建对话', description: '清空当前视图并开始一段新对话', group: '对话', shortcut: 'Ctrl N', run: () => newConversation() },
     { id: 'inspect', label: '打开会话检查器', description: '检查模型、上下文、能力和最近运行', group: '对话', shortcut: 'Ctrl I', run: toggleInspector },
+    { id: 'compare', label: '并行模型对比', description: '使用相同上下文并行比较 2–4 个模型', group: '对话', shortcut: 'Ctrl M', run: () => openCompare() },
     { id: 'providers', label: '模型连接', description: '添加模型提供方、地址和凭据', group: '设置', run: () => openSettings('providers') },
     { id: 'agents', label: '运行配置', description: '组合提示词、Skills、工具与 MCP', group: '设置', run: () => openSettings('agents') },
     { id: 'workspace', label: '工作区与项目', description: '管理文件、记忆、快照和项目默认值', group: '设置', run: () => openSettings('workspace') },
@@ -222,13 +229,16 @@ function setupWorkbench() {
     if (event.key === 'ArrowDown' && index >= 0) { event.preventDefault(); items[(index + 1) % items.length]?.focus(); }
     if (event.key === 'ArrowUp' && index >= 0) { event.preventDefault(); (index === 0 ? search : items[index - 1])?.focus(); }
   });
+  $$('[data-open-settings]').forEach((button: HTMLButtonElement) => {
+    button.onclick = () => openSettings(button.dataset.openSettings || 'general');
+  });
   $('#commandPalette').addEventListener('mousedown', (event: MouseEvent) => {
     if (event.target === $('#commandPalette')) closeCommandPalette();
   });
 
   document.addEventListener('keydown', (event: KeyboardEvent) => {
     const dialogOpen = $('#settings')?.classList.contains('open') || $('#modal')?.classList.contains('open');
-    if (dialogOpen && (event.ctrlKey || event.metaKey) && ['k', 'i', 'n'].includes(event.key.toLowerCase())) return;
+    if (dialogOpen && (event.ctrlKey || event.metaKey) && ['k', 'i', 'm', 'n'].includes(event.key.toLowerCase())) return;
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
       if ($('#commandPalette')?.classList.contains('open')) closeCommandPalette();
@@ -239,6 +249,12 @@ function setupWorkbench() {
       event.preventDefault();
       if ($('#commandPalette')?.classList.contains('open')) closeCommandPalette(false);
       toggleInspector();
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'm') {
+      event.preventDefault();
+      if ($('#commandPalette')?.classList.contains('open')) closeCommandPalette(false);
+      openCompare();
       return;
     }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {

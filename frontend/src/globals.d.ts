@@ -79,6 +79,10 @@ declare global {
   const openCommandPalette: any;
   const closeCommandPalette: any;
 
+  // ── compare ──
+  const openCompare: any;
+  const setupCompare: any;
+
   // ── markdown ──
   const fmtTok: any;
   const renderMarkdown: any;

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Leterhong/MultiChat/actions/workflows/ci.yml/badge.svg)](https://github.com/Leterhong/MultiChat/actions/workflows/ci.yml)
 [![Node.js 22.12+](https://img.shields.io/badge/Node.js-22.12%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-5b52df.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-287254.svg)](./LICENSE)
 
 > 把模型、运行配置、工具与项目上下文，放进同一个本地工作台。
 
@@ -49,9 +49,10 @@ npx --yes github:Leterhong/MultiChat doctor
 ## 核心体验
 
 - **统一管理**：在一个界面中组织模型、对话、工作区和项目文件；
+- **并行模型实验室**：让 2–4 个模型在相同参数、项目文件和记忆上下文下并行回答，并排比较结果、耗时、Token 与错误；
 - **运行配置**：自由搭配模型、系统指令、Skill、内置工具与 MCP server，并只向本轮注入实际选中的能力；
-- **会话检查器**：开始运行前核对模型连接、项目上下文与能力组合，运行后直接查看最近一次步骤、工具调用与 Token；
-- **快速命令**：通过 `Ctrl+K` 搜索常用操作和设置，通过 `Ctrl+I` 随时打开会话检查器；
+- **会话检查器**：开始运行前核对模型连接、项目上下文与能力组合，估算文件上下文 Token，运行后直接查看最近一次步骤、工具调用与 Token；
+- **快速命令**：`Ctrl+K` 搜索操作，`Ctrl+I` 打开检查器，`Ctrl+M` 发起模型对比；
 - **安全扩展**：导入 Skill、MCP 配置和 Plugin，启用前检查冲突、风险与变更；
 - **每日用量中心**：按 7 天、30 天或全部时间查看输入/输出 Token、趋势、模型占比、活跃热力图与提供方健康；
 - **运行黑匣子**：保留模型步骤、工具调用、审批、错误与 Token 构成，通过 Context Lens 复查每次请求实际携带的上下文；
@@ -68,6 +69,8 @@ MultiChat 把宿主运行时、Web 客户端和扩展边界分开维护：
 ```text
 backend/            API、运行时、事件记录与扩展管理
 frontend/src/core/  客户端状态、API、主题与基础工具
+frontend/src/app/   React / TSX 应用外壳与语义化导航
+frontend/src/design/ TypeScript 设计 Token
 frontend/src/modules/  工作台、对话、设置、导入与观察界面
 bin/                multichat 命令入口
 .agents/            项目 Skills 与插件资源
@@ -102,7 +105,7 @@ npm run build
 npm start
 ```
 
-前端、API、扩展管理和 Agent Runtime 均以 TypeScript 为主要开发语言。提交变更前可以运行：
+前端使用 React + TSX 构建应用外壳，静态 HTML 只保留浏览器挂载节点；设计 Token、交互状态、数据请求和业务模块都由 TypeScript 管理。CSS 继续承担浏览器最终布局与主题渲染，避免把样式塞进 JavaScript 字符串造成运行时开销和维护问题。API、扩展管理和 Agent Runtime 同样以 TypeScript 为主要开发语言。提交变更前可以运行：
 
 ```bash
 npm --prefix frontend run typecheck
