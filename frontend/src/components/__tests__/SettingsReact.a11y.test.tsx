@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { CompareLab } from '../CompareLab';
 import { ProviderSettings, SkillSettings } from '../CoreSettings';
 import { McpSettings, PluginSettings } from '../ExtensionSettings';
+import { AgentSettings, CapabilitySettings, RunsSettings, UsageSettings, WorkspaceSettings } from '../SettingsDashboards';
+import { businessStore } from '../../core/state';
 
 const noop = vi.fn();
 const noopAsync = vi.fn(async () => {});
@@ -62,5 +64,32 @@ describe('React settings surfaces', () => {
     providers.unmount();
     const skills = render(<SkillSettings initialSkills={[{ id: 'review', key: 'review', name: '代码审查', description: '检查代码风险', enabled: true, source: { kind: 'repo' }, resources: ['references'] }]} sourceLabel={sourceLabel} onToggle={noopAsync} onEdit={noop} onDiff={noopAsync} onDelete={noopAsync} onImport={noop} onAdd={noop} />);
     expect(await axe(skills.container)).toHaveNoViolations();
+  });
+
+  it('renders every remaining settings dashboard through accessible React views', async () => {
+    businessStore.setState({
+      workspaces: [{ id: 'ws', name: '产品研发' }],
+      selectedWorkspace: { id: 'ws', name: '产品研发' },
+      projects: [{ id: 'project', name: 'MultiChat' }],
+      selectedProject: { id: 'project', name: 'MultiChat' },
+      agents: [{ id: 'agent', name: '研究助手', description: '检索与总结', skillRefs: ['review'], toolIds: ['search'], mcpServerIds: [] }],
+      selectedAgent: null,
+      providers: [{ id: 'mock', name: '本地体验', models: ['echo'] }],
+      assets: [], memories: [], snapshots: [],
+      capabilities: { summary: { total: 1, enabled: 1, highRisk: 0, issues: 0 }, items: [{ type: 'skill', risk: 'low', name: '审查', id: 'review', source: '项目', scope: 'project', permissions: [], issues: [] }] },
+      usage: { totals: { totalTokens: 10, successRate: 1 }, daily: [{ date: '2026-08-28', totalTokens: 10, inputTokens: 6, outputTokens: 4, requests: 1, errors: 0 }], models: [], providers: [], heatmap: [] },
+      usageLoading: false, usageRange: '7',
+      runs: [{ id: 'run', status: 'completed', startedAt: '2026-08-28T00:00:00Z', finishedAt: '2026-08-28T00:00:01Z', usage: { totalTokens: 10 } }],
+    } as any);
+    const workspace = render(<WorkspaceSettings onWorkspaceChange={noopAsync} onProjectChange={noopAsync} onSaveDefaults={noopAsync} onNewWorkspace={noop} onNewProject={noop} onImportUrl={noop} onUploadFile={noopAsync} onDeleteAsset={noopAsync} onSearch={async () => []} onAddMemory={noop} onEditMemory={noop} onToggleMemory={noopAsync} onDeleteMemory={noopAsync} onCreateSnapshot={noopAsync} onRestoreSnapshot={noopAsync} onDeleteSnapshot={noopAsync} />);
+    expect(await axe(workspace.container)).toHaveNoViolations(); workspace.unmount();
+    const agent = render(<AgentSettings onEdit={noop} onExport={noop} onDelete={noopAsync} onImport={noopAsync} />);
+    expect(await axe(agent.container)).toHaveNoViolations(); agent.unmount();
+    const capabilities = render(<CapabilitySettings onRefresh={noopAsync} />);
+    expect(await axe(capabilities.container)).toHaveNoViolations(); capabilities.unmount();
+    const usage = render(<UsageSettings onRange={noopAsync} onExport={noop} />);
+    expect(await axe(usage.container)).toHaveNoViolations(); usage.unmount();
+    const runs = render(<RunsSettings onRefresh={noopAsync} onOpen={noop} />);
+    expect(await axe(runs.container)).toHaveNoViolations();
   });
 });

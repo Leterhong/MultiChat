@@ -848,10 +848,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .control-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .control-card-head h4 { margin-bottom: 3px; }.control-card-head .btn-primary, .control-card-head .btn-ghost { width: auto; flex: none; min-height: 34px; padding: 7px 12px; }
+.workspace-file-actions { margin-top: 12px; }
+.workspace-file-actions .btn-ghost, .settings-page-heading .btn-ghost, .settings-page-heading .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.workspace-resource-list { margin-top: 14px; }
 .knowledge-search { display: flex; gap: 8px; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--border-l1); }
 .knowledge-search input { min-width: 0; min-height: 38px; flex: 1; padding: 7px 10px; border: 1px solid var(--border-l2); border-radius: 10px; color: var(--label-primary); background: var(--bg-base); }
+.knowledge-search .resource-search { min-width: 0; padding: 0 12px; border: 1px solid var(--border-l2); }
+.knowledge-search .resource-search input { min-height: 38px; padding: 0; border: 0; border-radius: 0; background: transparent; }
 .knowledge-search .btn-ghost { flex: none; }
-#knowledgeResults { display: flex; flex-direction: column; gap: 7px; margin-top: 9px; }
+.knowledge-results { display: flex; flex-direction: column; gap: 7px; margin-top: 9px; }
 .knowledge-hit { padding: 10px 11px; border: 1px solid var(--border-l1); border-radius: 10px; background: var(--bg-sunken); }
 .knowledge-hit strong { color: var(--label-secondary); font-size: 10.5px; }.knowledge-hit strong span { color: var(--accent); font: 9px var(--font-mono); }
 .knowledge-hit p { max-height: 72px; margin: 4px 0 0; overflow: hidden; color: var(--label-tertiary); font: 9.5px/1.55 var(--font-mono); white-space: pre-wrap; }
