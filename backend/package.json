@@ -1,6 +1,6 @@
 {
   "name": "multichat-backend",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "private": true,
   "type": "commonjs",
   "description": "MultiChat backend — Express-based multi-model Agent platform",
@@ -17,6 +17,7 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
+    "@leterhong/multichat": "file:..",
     "adm-zip": "^0.6.0",
     "cors": "^2.8.5",
     "express": "^4.19.2"

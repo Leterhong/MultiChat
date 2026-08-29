@@ -1,6 +1,6 @@
 {
   "name": "@leterhong/multichat",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "Local-first multi-model agent workspace with Skills, MCP servers, and plugins",
   "license": "MIT",
   "type": "module",
