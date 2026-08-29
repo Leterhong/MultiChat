@@ -36,9 +36,21 @@ jobs:
       - name: CLI sanity (doctor)
         run: node ./bin/multichat.mjs doctor
       - name: Publish to npm
-        run: npm publish --access public
+        id: publish
+        run: |
+          set -o pipefail
+          npm publish --access public 2>&1 | tee npm-publish.log
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # 发布失败时把 npm 完整输出存为构件，便于匿名诊断（公共仓库构件可匿名下载）。
+      - name: Upload publish log on failure
+        if: failure() && steps.publish.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-publish-error
+          path: npm-publish.log
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
