@@ -2,11 +2,22 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 // ── Conversations CRUD ──────────────────────────────────────────────────
 const ctx = require('../lib/context');
+// 消息文件名由 id 拼接而成（messages_<id>.json）。id 必须先过白名单，
+// 否则带路径分隔符的 id 会落到 store 的 basename 校验上变成 500 + 内部报错泄漏。
+const SAFE_ID_RE = /^[A-Za-z0-9_-]{1,128}$/;
+function assertSafeId(res, id) {
+    if (typeof id === 'string' && SAFE_ID_RE.test(id))
+        return true;
+    res.status(400).json({ error: 'invalid conversation id', code: 'INVALID_ID' });
+    return false;
+}
 module.exports = function registerConversations(app) {
     app.get('/api/conversations', (req, res) => {
         res.json(ctx.store.read('conversations.json', []));
     });
     app.get('/api/conversations/:id', (req, res) => {
+        if (!assertSafeId(res, req.params.id))
+            return;
         const convs = ctx.store.read('conversations.json', []);
         const conv = convs.find(c => c.id === req.params.id);
         if (!conv)
@@ -47,6 +58,8 @@ module.exports = function registerConversations(app) {
         res.json(convs[idx]);
     });
     app.delete('/api/conversations/:id', (req, res) => {
+        if (!assertSafeId(res, req.params.id))
+            return;
         let convs = ctx.store.read('conversations.json', []);
         convs = convs.filter(c => c.id !== req.params.id);
         ctx.store.write('conversations.json', convs);
@@ -56,6 +69,8 @@ module.exports = function registerConversations(app) {
     });
     // Save messages for a conversation
     app.post('/api/conversations/:id/messages', (req, res) => {
+        if (!assertSafeId(res, req.params.id))
+            return;
         const convs = ctx.store.read('conversations.json', []);
         if (!convs.find(c => c.id === req.params.id))
             return res.status(404).json({ error: 'not found' });
