@@ -46,3 +46,4 @@ backend/clawtip-pay/.env
 # Docs (non-essential)
 开发者指南_/
 article-ai-chat-workbuddy.md
+.runtime-data*/
