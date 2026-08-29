@@ -31,6 +31,7 @@ jobs:
           fi
       - name: Token preflight
         run: |
+          set -o pipefail
           if ! npm whoami 2>&1 | tee npm-preflight.txt; then
             echo "::error::NPM_TOKEN 无效（E401）。请到 npmjs.com/settings/~/tokens 重新生成 Classic Token（类型 Automation），并更新仓库 Secret NPM_TOKEN"
             exit 1
