@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   publish:
@@ -28,6 +29,16 @@ jobs:
             echo "::error::tag 是 v$tag，但 package.json 版本是 $pkg；两者必须一致"
             exit 1
           fi
+      - name: Token preflight
+        run: |
+          {
+            echo "== npm whoami =="
+            npm whoami 2>&1 || true
+            echo "== org leterhong 成员/角色 =="
+            npm org ls leterhong --json 2>&1 || true
+            echo "== registry ping =="
+            npm ping 2>&1 || true
+          } | tee npm-preflight.txt
       - name: Install & build (发布物里的 dist 必须 freshly built)
         run: |
           npm ci --prefix backend --no-audit --no-fund
@@ -58,11 +69,25 @@ jobs:
           git config user.email "ci@multichat.local"
           git config user.name "multichat-ci"
           git checkout -b ci/npm-publish-debug
-          git add npm-publish.log
+          git add npm-publish.log npm-preflight.txt
           git commit -m "ci: npm publish failure log (${GITHUB_REF_NAME})"
           git push "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci/npm-publish-debug --force
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
+      # 公开 issue 携带完整报错与预检结果，匿名可读。
+      - name: Open debug issue on failure
+        if: failure() && steps.publish.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const read = (f) => { try { return fs.readFileSync(f, 'utf8').slice(-2500); } catch { return '(无)'; } };
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[debug] npm publish failure (${context.ref})`,
+              body: '发布预检与报错如下：\n\n```\n' + read('npm-preflight.txt') + '\n\n=== npm publish 输出 ===\n' + read('npm-publish.log') + '\n```',
+            });
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
