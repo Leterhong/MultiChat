@@ -31,13 +31,15 @@ jobs:
           fi
       - name: Token preflight
         run: |
+          if ! npm whoami 2>&1 | tee npm-preflight.txt; then
+            echo "::error::NPM_TOKEN 无效（E401）。请到 npmjs.com/settings/~/tokens 重新生成 Classic Token（类型 Automation），并更新仓库 Secret NPM_TOKEN"
+            exit 1
+          fi
           {
             echo "== npm whoami =="
-            npm whoami 2>&1 || true
+            npm whoami
             echo "== org leterhong 成员/角色 =="
             npm org ls leterhong --json 2>&1 || true
-            echo "== registry ping =="
-            npm ping 2>&1 || true
           } | tee npm-preflight.txt
       - name: Install & build (发布物里的 dist 必须 freshly built)
         run: |
