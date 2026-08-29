@@ -1,0 +1,45 @@
+name: Release
+
+# 推送 v* tag 触发：校验版本号 → 全量构建 → 发布 npm → 创建 GitHub Release。
+# 前置条件：仓库 Secrets 里配置 NPM_TOKEN（npm 账号的 Automation token）。
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish npm + GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org/
+      - name: Verify version matches tag
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag 是 v$tag，但 package.json 版本是 $pkg；两者必须一致"
+            exit 1
+          fi
+      - name: Install & build (发布物里的 dist 必须 freshly built)
+        run: |
+          npm ci --prefix backend --no-audit --no-fund
+          npm ci --prefix frontend --no-audit --no-fund
+          npm run build
+      - name: CLI sanity (doctor)
+        run: node ./bin/multichat.mjs doctor
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

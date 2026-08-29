@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // ── Provider / Models 路由 ──────────────────────────────────────────────
 // GET 接口返回脱敏后的 provider（apiKey 不出现在响应体中）。
 const ctx = require('../lib/context');
-const { readResponseJson } = require('../lib/util');
+const { readResponseJson, readResponseText } = require('../lib/util');
 const { redactSecrets } = require('../lib/redact');
 function normalizeProvider(input, previous = null) {
     const id = previous?.id || ctx.safeId(input.id || Date.now().toString(36), 'provider id');
@@ -103,6 +103,50 @@ module.exports = function registerProviders(app) {
             });
         }
         res.json(models);
+    });
+    // ── 连接测试：用服务端保存的密钥探测 OpenAI 兼容的 GET /models，返回可达性与模型清单 ──
+    app.post('/api/providers/:id/probe', async (req, res) => {
+        const providers = ctx.providerStore.list();
+        const provider = providers.find(p => p.id === req.params.id);
+        if (!provider)
+            return res.status(404).json({ error: 'provider not found', code: 'NOT_FOUND' });
+        const baseUrl = String(provider.baseUrl || '').replace(/\/+$/, '');
+        let parsed;
+        try {
+            parsed = new URL(baseUrl);
+        }
+        catch {
+            return res.status(400).json({ error: 'provider baseUrl 无效' });
+        }
+        const modelsUrl = `${parsed.origin}${parsed.pathname.replace(/\/+$/, '')}/models`;
+        const headers = { accept: 'application/json' };
+        if (provider.apiKey)
+            headers.authorization = `Bearer ${provider.apiKey}`;
+        try {
+            const resp = await ctx.safeFetch(modelsUrl, { headers, signal: AbortSignal.timeout(8000) }, provider.allowPrivate === true);
+            if (!resp.ok) {
+                const detail = await readResponseText(resp).catch(() => '');
+                const brief = redactSecrets(String(detail || '').slice(0, 200));
+                return res.status(resp.status).json({ ok: false, error: `HTTP ${resp.status}${brief ? `：${brief}` : ''}` });
+            }
+            const data = await readResponseJson(resp, 2_000_000);
+            const raw = Array.isArray(data.data) ? data.data : Array.isArray(data.models) ? data.models : [];
+            const models = raw.map((m) => String(m?.id || m?.name || '')).filter(Boolean);
+            const capabilities = {
+                vision: models.some(m => /(?:vision|vl|omni|multimodal|4o|gpt-4-turbo|gemini|claude-[35])/i.test(m)),
+                reasoning: models.some(m => /(?:reason|think|o[1345]-|r1|qwq)/i.test(m)),
+            };
+            res.json({ ok: true, models, capabilities, modelCount: models.length });
+        }
+        catch (error) {
+            const raw = error instanceof Error ? error.message : String(error);
+            const causeCode = error?.cause?.code || '';
+            const timedOut = /timeout|abort/i.test(raw);
+            const friendly = timedOut ? '连接超时（8s）——请确认 baseUrl 可达'
+                : /fetch failed/i.test(raw) ? `无法连接到 ${parsed.host}${causeCode ? `（${causeCode}）` : ''}`
+                    : redactSecrets(raw);
+            res.status(502).json({ ok: false, error: friendly });
+        }
     });
     // ── Local model discovery (Ollama / LM Studio) ──
     app.post('/api/fetch-local-models', async (req, res) => {

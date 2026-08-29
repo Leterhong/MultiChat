@@ -20,26 +20,44 @@ export function GeneralSettings({ params, theme, token, onSaveParams, onTheme, o
   </>;
 }
 
-function ProviderCard({ provider, onSave, onDelete }: any) {
+function ProviderCard({ provider, onSave, onDelete, onProbe }: any) {
   const models = provider.models || (provider.model ? [provider.model] : []);
   const local = ['ollama', 'lmstudio', 'mock'].includes((provider.apiType || '').toLowerCase()) || provider.id === 'mock';
   const ready = Boolean(provider.apiKeyMasked || provider.apiKey) || local;
   const [apiKey, setApiKey] = useState('');
   const [modelText, setModelText] = useState(models.join(', '));
   const [allowPrivate, setAllowPrivate] = useState(!!provider.allowPrivate);
+  const [probing, setProbing] = useState(false);
+  const [probeResult, setProbeResult] = useState('');
+  const handleProbe = async () => {
+    setProbing(true); setProbeResult('');
+    try {
+      const result = await onProbe(provider);
+      const found = Array.isArray(result.models) ? result.models : [];
+      if (found.length) {
+        if (!modelText.trim()) {
+          setModelText(found.join(', '));
+          setProbeResult(`✓ 连接成功 · 发现 ${found.length} 个模型，已填入列表，记得保存`);
+        } else setProbeResult(`✓ 连接成功 · 服务端返回 ${found.length} 个模型`);
+      } else setProbeResult('✓ 连接成功，但服务未返回模型清单；可手动填写');
+    } catch (error: any) {
+      setProbeResult(`✗ ${error.message || '连接失败'}`);
+    } finally { setProbing(false); }
+  };
   return <article className="provider-card provider-config-card">
     <div className="provider-card-head"><span className="provider-mark" aria-hidden>{(provider.name || provider.id).trim().slice(0, 1).toUpperCase() || 'M'}</span><div className="provider-identity"><h4>{provider.name || provider.id} <span className="provider-id">{provider.id}</span></h4><div className="pmeta">{provider.apiType || 'openai'} · {models.length ? `${models.length} 个模型` : '手动输入模型'}</div></div><span className={`provider-state ${ready ? local ? 'local' : 'ready' : 'missing'}`}>{ready ? local ? '本地' : '已配置' : '待配置'}</span></div>
     <div className="provider-card-fields"><div className="field"><label htmlFor={`provider-key-r-${provider.id}`}>API 密钥</label><input id={`provider-key-r-${provider.id}`} type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={provider.apiKeyMasked ? `已安全保存 ····${provider.apiKeyPreview || ''}` : local ? '本地提供方可留空' : '输入 API 密钥'} autoComplete="new-password" /></div><div className="field"><label htmlFor={`provider-models-r-${provider.id}`}>模型列表</label><textarea id={`provider-models-r-${provider.id}`} rows={1} value={modelText} onChange={(event) => setModelText(event.target.value)} /></div></div>
-    <div className="provider-card-footer"><label className="provider-private"><input type="checkbox" checked={allowPrivate} onChange={(event) => setAllowPrivate(event.target.checked)} /> 允许访问本机 / 内网</label><div className="provider-row"><button className="btn-ghost danger-ghost" type="button" onClick={() => void onDelete(provider)}>删除</button><button className="btn-primary" type="button" onClick={() => void onSave(provider, { ...(apiKey ? { apiKey } : {}), models: modelText.split(/[,\n]/).map((item) => item.trim()).filter(Boolean), allowPrivate })}>保存</button></div></div>
+    <div className="provider-card-footer"><label className="provider-private"><input type="checkbox" checked={allowPrivate} onChange={(event) => setAllowPrivate(event.target.checked)} /> 允许访问本机 / 内网</label><div className="provider-row"><button className="btn-ghost" type="button" disabled={probing} onClick={() => void handleProbe()}>{probing ? '测试中…' : '测试连接'}</button><button className="btn-ghost danger-ghost" type="button" onClick={() => void onDelete(provider)}>删除</button><button className="btn-primary" type="button" onClick={() => void onSave(provider, { ...(apiKey ? { apiKey } : {}), models: modelText.split(/[,\n]/).map((item) => item.trim()).filter(Boolean), allowPrivate })}>保存</button></div></div>
+    {probeResult && <div className="provider-probe-result" role="status">{probeResult}</div>}
   </article>;
 }
 
-export function ProviderSettings({ providers: initialProviders, onSave, onDelete, onAddBuiltin, onAddCustom }: any) {
+export function ProviderSettings({ providers: initialProviders, onSave, onDelete, onAddBuiltin, onAddCustom, onProbe }: any) {
   const [providers, setProviders] = useState(initialProviders);
   const modelCount = providers.reduce((sum: number, provider: any) => sum + (provider.models?.length || (provider.model ? 1 : 0)), 0);
   const configuredCount = providers.filter((provider: any) => Boolean(provider.apiKeyMasked || provider.apiKey) || ['ollama', 'lmstudio', 'mock'].includes((provider.apiType || '').toLowerCase())).length;
   return <section className="provider-settings"><div className="settings-page-heading"><div><h3>模型连接</h3><p className="lead">管理提供方凭证和可选模型；所有配置仅保存在本地。</p></div><div className="provider-summary" aria-label="模型配置概览"><span><strong>{providers.length}</strong> 个提供方</span><span><strong>{modelCount}</strong> 个模型</span><span><strong>{configuredCount}</strong> 个可用</span></div></div>
-    <div className="provider-grid">{providers.map((provider: any) => <ProviderCard key={provider.id} provider={provider} onSave={onSave} onDelete={async (item: any) => { if (await onDelete(item)) setProviders((current: any[]) => current.filter((row) => row.id !== item.id)); }} />)}{!providers.length && <div className="provider-empty">还没有添加任何模型，点击下方按钮开始配置。</div>}</div>
+    <div className="provider-grid">{providers.map((provider: any) => <ProviderCard key={provider.id} provider={provider} onSave={onSave} onProbe={onProbe} onDelete={async (item: any) => { if (await onDelete(item)) setProviders((current: any[]) => current.filter((row) => row.id !== item.id)); }} />)}{!providers.length && <div className="provider-empty">还没有添加任何模型，点击下方按钮开始配置。</div>}</div>
     <div className="add-provider provider-add-grid"><button type="button" className="add-tile" onClick={onAddBuiltin}><Plus className="ico" aria-hidden /><span><strong>添加提供方</strong><small>从内置模板快速配置</small></span></button><button type="button" className="add-tile" onClick={onAddCustom}><Plus className="ico" aria-hidden /><span><strong>自定义提供方</strong><small>接入 OpenAI 兼容服务</small></span></button></div>
   </section>;
 }

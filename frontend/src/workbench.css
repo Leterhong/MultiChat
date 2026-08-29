@@ -39,18 +39,28 @@
   --radius-md: var(--mc-radius-md);
   --radius-lg: var(--mc-radius-lg);
   --radius-xl: 18px;
+  --radius-pill: var(--mc-radius-pill);
   --shadow-xs: var(--mc-shadow-xs);
   --shadow-sm: var(--mc-shadow-sm);
   --shadow-md: var(--mc-shadow);
   --shadow-pop: var(--mc-shadow-pop);
+  --font-sans: var(--mc-font-sans);
+  --font-mono: var(--mc-font-mono);
+  --easing: var(--mc-easing);
+  --scrollbar-thumb: var(--mc-scrollbar-thumb);
+  --scrollbar-thumb-hover: var(--mc-scrollbar-thumb-hover);
+  --composer-side-clearance: 16px;
 }
 
 #root { height: 100%; }
 body { font-size: 14px; color: var(--label-primary); background: var(--bg-base); }
 button, [role='button'] { -webkit-tap-highlight-color: transparent; }
-button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+/* 键盘焦点环只留给按钮类控件；文本输入用容器 focus-within 或边框变色指示。 */
+button:focus-visible, [role='button']:focus-visible, [href]:focus-visible, [tabindex]:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
+input:focus-visible, textarea:focus-visible, select:focus-visible, .form-control:focus-visible { outline: none; }
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible, .form-control:focus-visible { border-color: var(--accent); }
 kbd { font: 500 10px/1.2 var(--font-mono); letter-spacing: 0; }
 .boot-error { width: min(520px, calc(100% - 32px)); margin: 15vh auto; padding: 28px; background: var(--bg-elevated); border: 1px solid var(--border-l2); border-radius: var(--radius-lg); }
 
@@ -235,6 +245,7 @@ kbd { font: 500 10px/1.2 var(--font-mono); letter-spacing: 0; }
 .btn-danger:hover { filter: brightness(.93); }
 .confirm-message { margin-bottom: 4px; color: var(--label-secondary); font-size: 13px; line-height: 1.65; white-space: pre-line; }
 .btn-ghost { color: var(--label-secondary); border-color: var(--border-l2); border-radius: 8px; }
+.provider-probe-result { margin-top: 8px; color: var(--label-secondary); font-size: 12px; line-height: 1.5; }
 .usage-kicker { color: var(--accent) !important; font: 600 11px/1.2 var(--font-sans) !important; letter-spacing: 0 !important; }
 
 /* Modal and command menu */

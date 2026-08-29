@@ -94,6 +94,7 @@ function renderSettings(tab = 'general', keepScroll = false) {
       onDelete: async (provider: any) => { if (!(await showConfirm({ title: '删除模型提供方', message: `删除「${provider.name || provider.id}」？此操作不可撤销。`, confirmLabel: '删除', danger: true }))) return false; try { await api(`/api/providers/${encodeURIComponent(provider.id)}`, { method: 'DELETE' }); await loadProviders(); renderTopbar(); toast('已删除'); return true; } catch (error: any) { toast(error.message, 'error'); return false; } },
       onAddBuiltin: showAddBuiltin,
       onAddCustom: showAddCustom,
+      onProbe: async (provider: any) => api(`/api/providers/${encodeURIComponent(provider.id)}/probe`, { method: 'POST', body: JSON.stringify({}) }),
     });
   } else if (tab === 'skills') {
     mountExtensionSettings(SkillSettings, {

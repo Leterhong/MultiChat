@@ -85,9 +85,6 @@ declare global {
   const openCompare: any;
   const setupCompare: any;
 
-  // ── markdown ──
-  const fmtTok: any;
-  const renderMarkdown: any;
 
   // ── init ──
   const bootstrap: any;

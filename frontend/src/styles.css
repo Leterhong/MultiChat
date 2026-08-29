@@ -2,56 +2,7 @@
    MultiChat Design System
    Local-first workbench · light / dark · responsive
    ========================================================= */
-:root {
-  --bg-base: #f3f5fb;
-  --bg-elevated: #ffffff;
-  --bg-hover: rgba(80, 70, 210, 0.07);
-  --bg-active: rgba(92, 82, 230, 0.12);
-  --bg-sunken: #edf0f7;
-  --border-l1: rgba(36, 43, 75, 0.045);
-  --border-l2: rgba(36, 43, 75, 0.09);
-  --border-l3: rgba(36, 43, 75, 0.14);
-  --border-l4: rgba(82, 72, 208, 0.28);
-  --label-primary: #171a2b;
-  --label-secondary: #4e556f;
-  --label-tertiary: #737b94;
-  --label-caption: #969db1;
-  --label-dimmed: #b6bbca;
-  --label-primary-bluish: #5148d9;
-  --state-business-primary: #5b52df;
-  --state-business-on-primary: #ffffff;
-  --state-business-tertiary: rgba(91, 82, 223, 0.10);
-  --accent: #5b52df;
-  --accent-strong: #4338ca;
-  --accent-cyan: #12afc4;
-  --accent-soft: rgba(91, 82, 223, 0.11);
-  --accent-soft2: rgba(18, 175, 196, 0.72);
-  --bubble-user: #eeecff;
-  --bubble-user-border: rgba(91, 82, 223, 0.15);
-  --state-error-primary: #d64b62;
-  --state-error-bg: #fff0f3;
-  --state-warning: #bb791e;
-  --state-warning-bg: #fff7e9;
-  --state-ongoing: #1d9a72;
-  --state-success-bg: #e9f8f2;
-  --scrollbar-thumb: rgba(72, 78, 112, 0.22);
-  --scrollbar-thumb-hover: rgba(72, 78, 112, 0.38);
-  --content-width: 780px;
-  --composer-card-max-width: 820px;
-  --composer-side-clearance: 16px;
-  --font-sans: "Inter", "Aptos", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
-  --radius-sm: 9px;
-  --radius-md: 13px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
-  --radius-pill: 999px;
-  --shadow-xs: 0 1px 2px rgba(25, 30, 58, 0.05);
-  --shadow-sm: 0 8px 22px rgba(37, 42, 80, 0.07);
-  --shadow-md: 0 16px 44px rgba(37, 42, 80, 0.11);
-  --shadow-pop: 0 28px 90px rgba(19, 23, 49, 0.22);
-  --easing: cubic-bezier(0.22, 0.72, 0.2, 1);
-}
+
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; padding: 0; }
 body {
@@ -63,7 +14,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 input, textarea, select { font: inherit; color: inherit; }
 a { color: inherit; text-decoration: none; }
 ::selection { background: rgba(0, 0, 0, 0.10); }
-button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+button:focus-visible, [tabindex]:focus-visible {
   outline: 3px solid rgba(91, 82, 223, 0.28); outline-offset: 2px;
 }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -1003,46 +954,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    MultiChat Workbench
    A calm, information-first surface for projects and runs.
    ========================================================= */
-:root {
-  --bg-base: #f4f3ee;
-  --bg-elevated: #fbfaf7;
-  --bg-hover: rgba(30, 38, 34, .055);
-  --bg-active: rgba(31, 104, 84, .105);
-  --bg-sunken: #eceae3;
-  --border-l1: rgba(30, 36, 33, .055);
-  --border-l2: rgba(30, 36, 33, .11);
-  --border-l3: rgba(30, 36, 33, .18);
-  --border-l4: rgba(31, 104, 84, .34);
-  --label-primary: #202622;
-  --label-secondary: #505a54;
-  --label-tertiary: #737c76;
-  --label-caption: #929992;
-  --label-dimmed: #b2b6b0;
-  --label-primary-bluish: #1f6854;
-  --state-business-primary: #1f6854;
-  --accent: #1f6854;
-  --accent-strong: #174d3f;
-  --accent-soft: rgba(31, 104, 84, .10);
-  --accent-soft2: rgba(31, 104, 84, .62);
-  --bubble-user: #e8ece7;
-  --bubble-user-border: rgba(30, 55, 44, .11);
-  --state-ongoing: #2e765e;
-  --state-success-bg: #e8f1ec;
-  --content-width: 900px;
-  --composer-card-max-width: 900px;
-  --radius-sm: 4px;
-  --radius-md: 7px;
-  --radius-lg: 9px;
-  --radius-xl: 11px;
-  --shadow-xs: 0 1px 1px rgba(24, 30, 27, .03);
-  --shadow-sm: 0 4px 14px rgba(24, 30, 27, .055);
-  --shadow-md: 0 12px 34px rgba(24, 30, 27, .09);
-  --shadow-pop: 0 24px 70px rgba(15, 21, 18, .18);
-}
 
-button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
-  outline-color: rgba(31, 104, 84, .3);
-}
 
 .app { grid-template-columns: 260px minmax(0, 1fr); }
 .sidebar {

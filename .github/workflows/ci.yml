@@ -17,9 +17,10 @@ jobs:
         with:
           node-version: 22
           package-manager-cache: false
-      # 在 Linux runner 上重新解析跨平台依赖，避免复用本机平台二进制。
+      # lockfile 含全平台原生二进制记录（esbuild/rollup 的 linux/darwin/win32 变体），
+      # npm ci 可复现安装。若更换依赖，请在本地 npm install 后提交同步的 lock。
       - name: Install deps
-        run: npm install --no-package-lock --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Run backend tests
         run: npm test
       - name: Typecheck (tsc --noEmit)
@@ -44,12 +45,8 @@ jobs:
         with:
           node-version: 22
           package-manager-cache: false
-      # 本地 Windows 生成的 lock 只记录了 win32 的 esbuild/rollup 平台二进制，
-      # npm ci 严格按 lock 只装 win32、npm install 也会沿用 lock 的 win32 记录，
-      # 都会导致 ubuntu runner 缺 linux 原生二进制、vite import rollup 时崩溃。
-      # 用 --no-package-lock 完全忽略 lock，让 runner 在 linux 上重新解析并装正确平台的原生依赖。
       - name: Install deps
-        run: npm install --no-package-lock --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Build (vite)
         run: npm run build
       - name: Frontend tests and accessibility checks
@@ -60,3 +57,38 @@ jobs:
         run: npm run lint
       - name: Lint styles
         run: npm run lint:css
+  smoke-linux:
+    name: Linux runtime smoke
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Install deps
+        run: |
+          npm ci --prefix backend --no-audit --no-fund
+          npm ci --prefix frontend --no-audit --no-fund
+      - name: Build
+        run: npm run build
+      - name: Boot and probe (npx 路径的真实启动)
+        run: |
+          node ./bin/multichat.mjs web --port 3199 --no-open --data-dir ./.smoke-data > ./.smoke.log 2>&1 &
+          server_pid=$!
+          ok=""
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:3199/api/health > /tmp/health.json; then ok=1; break; fi
+            sleep 2
+          done
+          kill $server_pid 2>/dev/null || true
+          if [ -z "$ok" ]; then
+            echo "::error::Linux 冒烟启动失败"
+            tail -60 ./.smoke.log
+            exit 1
+          fi
+          echo "health: $(cat /tmp/health.json)"
+          curl -sf http://127.0.0.1:3199/ | head -c 120
+          echo
+          grep -q "backend 源码比" ./.smoke.log && { echo "::error::构建产物落后于源码"; exit 1; } || true

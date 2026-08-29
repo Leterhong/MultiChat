@@ -16,16 +16,16 @@ flushSync(() => root.render(<StrictMode><AppShell /></StrictMode>));
 
 async function start() {
   const [Shell, Init, Data, Conversations, ModelPicker, AgentPicker, Settings,
-    PluginsUI, ImportExport, ExtensionImport, Modal, Render, Markdown, Send, Workbench, Compare] = await Promise.all([
+    PluginsUI, ImportExport, ExtensionImport, Modal, Render, Send, Workbench, Compare] = await Promise.all([
     import('./modules/shell'), import('./modules/init'), import('./modules/data'),
     import('./modules/conversations'), import('./modules/modelPicker'), import('./modules/agentPicker'),
     import('./modules/settings'), import('./modules/pluginsUI'), import('./modules/importExport'),
     import('./modules/extensionImport'), import('./modules/modal'), import('./modules/render'),
-    import('./modules/markdown'), import('./modules/send'), import('./modules/workbench'), import('./modules/compare'),
+    import('./modules/send'), import('./modules/workbench'), import('./modules/compare'),
   ]);
 
   const namespaces = [Core, Shell, Init, Data, Conversations, ModelPicker, AgentPicker,
-    Settings, PluginsUI, ImportExport, ExtensionImport, Modal, Render, Markdown, Send, Workbench, Compare];
+    Settings, PluginsUI, ImportExport, ExtensionImport, Modal, Render, Send, Workbench, Compare];
   for (const namespace of namespaces) Object.assign(globalThis, namespace);
 
   Core.applyTheme();

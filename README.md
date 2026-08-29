@@ -48,6 +48,9 @@ npx --yes github:Leterhong/MultiChat doctor
 
 `doctor` 会实际探测 `node:sqlite` 与 `DatabaseSync`、生产构建、目录权限和监听端口。若 SQLite 在受限运行环境初始化失败，服务会明确告警并自动降级到 JSON 存储；也可以主动设置 `MULTICHAT_STORE=json`。
 
+> [!NOTE]
+> 当前 Node.js（含 22.x/24.x）中 `node:sqlite` 仍是实验特性，Node 官方尚未宣布稳定。MultiChat 已把 SQLite 作为默认存储，但请把 `multichat.sqlite3` 视为「可随时由 MultiChat 迁移的内部格式」，不要直接读写或长期依赖其表结构；需要长期备份时使用项目快照功能，或设置 `MULTICHAT_STORE=json` 使用透明可读的 JSON 存储。
+
 ## 核心体验
 
 - **统一管理**：在一个界面中组织模型、对话、工作区和项目文件；
@@ -96,6 +99,45 @@ Skill 支持单文件、完整目录和 ZIP，并会原样保留但不执行 `x-
 导入分为“预检”和“安装”两个阶段。MultiChat 会检查路径穿越、压缩包限制、格式错误、同名冲突、组件越界与高风险凭据位置，并对 Plugin MCP 中的字面量凭据执行更严格限制，再通过暂存、原子替换与回滚机制完成安装。新导入的扩展默认停用，MCP 同时默认为未受信任。
 
 Skill 中的脚本只会随包保存并列出路径，不会自动执行。当前 Plugin Runtime 会加载包内的 **Skills 与 MCP servers**；其他 JS/TS、Hooks、Commands、Apps 等资源可以随包保存，但不会未经隔离和授权直接注入 MultiChat 主进程。
+
+## Docker / Linux 服务器
+
+MultiChat 是纯 Node.js 应用，Linux（x64/arm64）开箱即跑。两种常驻方式：
+
+**Docker（推荐，数据与工作区分离挂载）：**
+
+```bash
+# 使用官方镜像（推送到 main / 打 tag 时由 CI 自动构建发布）
+docker run -d --name multichat -p 3000:3000   -v multichat-data:/data   -v "$PWD:/workspace"   ghcr.io/leterhong/multichat:latest
+
+# 本地构建
+docker build -t multichat .
+docker run -d -p 3000:3000 -v multichat-data:/data -v "$PWD:/workspace" multichat
+```
+
+容器内 `/data` 保存运行数据（SQLite、加密密钥账本），`/workspace` 是 Agent 工作区（项目文件、.agents 扩展）。镜像以非 root 用户运行，默认监听 `0.0.0.0:3000`。
+
+**systemd 常驻（不用容器时）：**
+
+```ini
+# /etc/systemd/system/multichat.service
+[Unit]
+Description=MultiChat local agent workspace
+After=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/home/%i/multichat-workspace
+ExecStart=/usr/bin/env node /home/%i/multichat/bin/multichat.mjs web --host 127.0.0.1 --port 3000
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+```
+
+> [!IMPORTANT]
+> 把服务暴露到局域网或公网前，务必设置 `MULTICHAT_API_TOKEN`（保护 `/api/*` 与 `/v1/*`，包括 OpenAI 兼容透传端点）或 `MULTICHAT_BASIC_AUTH`；`/v1/chat/completions` 会使用你配置的模型密钥，无鉴权暴露等于把密钥借给别人。
 
 ## 从源码运行
 
