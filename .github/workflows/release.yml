@@ -30,6 +30,8 @@ jobs:
             exit 1
           fi
       - name: Token preflight
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -o pipefail
           if ! npm whoami 2>&1 | tee npm-preflight.txt; then
