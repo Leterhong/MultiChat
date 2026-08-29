@@ -1,0 +1,26 @@
+{
+  "name": "MultiChat · 本地模型工作台",
+  "short_name": "MultiChat",
+  "description": "本地优先的多模型 Agent 工作台：模型、Skills、MCP 与插件按运行配置组合。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#101522",
+  "theme_color": "#171915",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

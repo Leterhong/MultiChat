@@ -246,6 +246,7 @@ kbd { font: 500 10px/1.2 var(--font-mono); letter-spacing: 0; }
 .confirm-message { margin-bottom: 4px; color: var(--label-secondary); font-size: 13px; line-height: 1.65; white-space: pre-line; }
 .btn-ghost { color: var(--label-secondary); border-color: var(--border-l2); border-radius: 8px; }
 .provider-probe-result { margin-top: 8px; color: var(--label-secondary); font-size: 12px; line-height: 1.5; }
+.tool-test-result { margin-top: 8px; color: var(--label-secondary); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .usage-kicker { color: var(--accent) !important; font: 600 11px/1.2 var(--font-sans) !important; letter-spacing: 0 !important; }
 
 /* Modal and command menu */

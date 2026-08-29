@@ -55,18 +55,18 @@ async function streamReply(resumeFromRunId?: string) {
   // ── 入口校验：避免把空 key / 不可达 baseUrl 一股脑打到上游 ─────────────
   if (!provider) {
     const last = state.messages[state.messages.length - 1];
-    if (last) { last.content = '**未选择模型**：请先在「设置 → 模型」中添加并选择模型。'; last.streaming = false; }
+    if (last) { last.content = '**未选择模型**：请先在「设置 → 模型」中添加并选择模型。\n\n→ [打开 设置 → 模型连接](#/settings/providers)'; last.streaming = false; }
     renderContent(); return;
   }
   const needsKey = !['ollama', 'lmstudio', 'mock'].includes((provider.apiType || '').toLowerCase());
   if (needsKey && !provider.apiKey && !provider.apiKeyMasked) {
     const last = state.messages[state.messages.length - 1];
-    if (last) { last.content = `**缺少 API Key**：Provider「${provider.name}」尚未填写 API Key。请到「设置 → 模型」中编辑。`; last.streaming = false; }
+    if (last) { last.content = `**缺少 API Key**：Provider「${provider.name}」尚未填写 API Key。\n\n→ [打开 设置 → 模型连接填写 Key](#/settings/providers)`; last.streaming = false; }
     renderContent(); return;
   }
   if (!provider.baseUrl) {
     const last = state.messages[state.messages.length - 1];
-    if (last) { last.content = `**缺少 API 地址**：Provider「${provider.name}」尚未填写 baseUrl。请到「设置 → 模型」中编辑。`; last.streaming = false; }
+    if (last) { last.content = `**缺少 API 地址**：Provider「${provider.name}」尚未填写 baseUrl。\n\n→ [打开 设置 → 模型连接补全地址](#/settings/providers)`; last.streaming = false; }
     renderContent(); return;
   }
 
@@ -137,7 +137,8 @@ async function streamReply(resumeFromRunId?: string) {
       last.content = `**请求失败 (HTTP ${res.status})**${hint ? '：' + hint : ''}` +
         (upstreamMsg ? `\n\n> ${upstreamMsg}` : '') +
         (useAgent ? '\n\n排查建议：① 设置 → 运行配置确认提示词与 Skill 关联正确；② 设置 → 模型连接确认 API Key 正确；③ 切换其他模型试一下。'
-                   : '\n\n排查建议：① 设置 → 模型 中确认 API Key 正确；② baseUrl 可在浏览器直接访问；③ 切换其他模型试一下。');
+                   : '\n\n排查建议：① 设置 → 模型 中确认 API Key 正确；② baseUrl 可在浏览器直接访问；③ 切换其他模型试一下。') +
+        (res.status === 401 || res.status === 403 ? `\n\n→ [打开 设置 → 模型连接，测试或更换 API Key](#/settings/providers)` : '');
       last.streaming = false;
     }
     renderContent(); return;

@@ -74,7 +74,33 @@ export function SkillSettings({ initialSkills, sourceLabel, onToggle, onEdit, on
   </>;
 }
 
-export function ToolSettings({ initialTools, onToggle }: any) {
+export function ToolSettings({ initialTools, onToggle, agents = [], onTest }: any) {
   const [tools, setTools] = useState(initialTools);
-  return <><h3>内置工具</h3><p className="lead">这些是 MultiChat 自身实现的函数调用能力。停用后不会暴露给模型。</p><div className="card-grid">{tools.map((tool: any) => <article className="mc-card" key={tool.id}><div className="mc-top"><div className="mc-ico"><Wrench size={19} aria-hidden /></div><div className="mc-title-wrap"><div className="mc-title">{tool.name}</div><div className="mc-sub">{tool.id} · {tool.type || 'function'}</div></div></div><div className="mc-desc">{tool.description || ''}</div><div className="mc-tags">{(tool.permissions || []).map((permission: string) => <span className="mc-tag" key={permission}>{permission}</span>)}<span className={`mc-tag${tool.enabled ? ' on' : ''}`}>{tool.enabled ? '已启用' : '已停用'}</span></div><div className="mc-actions extension-card-actions left"><button type="button" className={`mc-toggle${tool.enabled ? ' on' : ''}`} aria-pressed={!!tool.enabled} onClick={async () => { if (await onToggle(tool)) setTools((current: any[]) => current.map((row) => row.id === tool.id ? { ...row, enabled: !row.enabled } : row)); }}><span className="mc-switch" aria-hidden /><span>{tool.enabled ? '启用中' : '已停用'}</span></button></div></article>)}{!tools.length && <div className="extension-empty">没有内置工具。</div>}</div></>;
+  const [testing, setTesting] = useState('');
+  const [results, setResults] = useState<Record<string, string>>({});
+  const runTest = async (tool: any, expression?: string) => {
+    setTesting(tool.id);
+    try {
+      const result = await onTest(tool, expression);
+      const value = result.ok
+        ? `✓ ${tool.type === 'calculator' ? expression + ' = ' : ''}${typeof result.data === 'string' ? result.data : JSON.stringify(result.data)}（${result.elapsedMs}ms）`
+        : `✗ ${result.error}`;
+      setResults((current) => ({ ...current, [tool.id]: value }));
+    } catch (error: any) {
+      setResults((current) => ({ ...current, [tool.id]: `✗ ${error.message}` }));
+    } finally { setTesting(''); }
+  };
+  const runTestable = async (tool: any) => {
+    if (tool.type === 'calculator') {
+      const expression = await showPrompt({ title: `试跑 · ${tool.name}`, label: '数学表达式', placeholder: '例如 (2 + 3) * 14 / 5', maxLength: 200 });
+      if (expression == null || !expression.trim()) return;
+      await runTest(tool, expression.trim());
+    } else await runTest(tool);
+  };
+  const refCount = (tool: any) => agents.filter((agent: any) => (agent.toolIds || []).includes(tool.id)).length;
+  return <><h3>内置工具</h3><p className="lead">这些是 MultiChat 自身实现的函数调用能力。停用后不会暴露给模型。</p><div className="card-grid">{tools.map((tool: any) => {
+    const testable = ['datetime', 'calculator'].includes(tool.type);
+    const refs = refCount(tool);
+    return <article className="mc-card" key={tool.id}><div className="mc-top"><div className="mc-ico"><Wrench size={19} aria-hidden /></div><div className="mc-title-wrap"><div className="mc-title">{tool.name}</div><div className="mc-sub">{tool.id} · {tool.type || 'function'}</div></div></div><div className="mc-desc">{tool.description || ''}</div><div className="mc-tags">{(tool.permissions || []).map((permission: string) => <span className="mc-tag" key={permission}>{permission}</span>)}<span className={`mc-tag${tool.enabled ? ' on' : ''}`}>{tool.enabled ? '已启用' : '已停用'}</span><span className={`mc-tag${refs ? ' on' : ''}`} title="引用该工具的运行配置数量">{refs ? `${refs} 个运行配置引用` : '未被运行配置引用'}</span></div><div className="mc-actions extension-card-actions left"><button type="button" className={`mc-toggle${tool.enabled ? ' on' : ''}`} aria-pressed={!!tool.enabled} onClick={async () => { if (await onToggle(tool)) setTools((current: any[]) => current.map((row) => row.id === tool.id ? { ...row, enabled: !row.enabled } : row)); }}><span className="mc-switch" aria-hidden /><span>{tool.enabled ? '启用中' : '已停用'}</span></button>{testable && <button type="button" className="mc-act wide" disabled={testing === tool.id} onClick={() => void runTestable(tool)}>{testing === tool.id ? '试跑中…' : '试跑'}</button>}</div>{results[tool.id] && <div className="tool-test-result" role="status">{results[tool.id]}</div>}</article>;
+  })}{!tools.length && <div className="extension-empty">没有内置工具。</div>}</div></>;
 }

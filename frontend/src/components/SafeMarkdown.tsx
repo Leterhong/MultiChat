@@ -30,7 +30,11 @@ export function SafeMarkdown({ children }: { children: string }) {
     remarkPlugins={[remarkGfm]}
     rehypePlugins={[rehypeSanitize]}
     components={{
-      a: ({ href, children: linkChildren }) => <a href={href} target="_blank" rel="noreferrer noopener">{linkChildren}</a>,
+      a: ({ href, children: linkChildren }) => {
+        // 外部链接新标签页打开；应用内 hash 路由（#/settings/... 等引导链接）原位导航。
+        const external = /^https?:\/\//i.test(href || '');
+        return <a href={href} {...(external ? { target: '_blank', rel: 'noreferrer noopener' } : {})}>{linkChildren}</a>;
+      },
       code: ({ className, children: codeChildren }) => {
         const value = textFromChildren(codeChildren);
         const fenced = Boolean(className) || value.includes('\n');

@@ -110,6 +110,8 @@ function renderSettings(tab = 'general', keepScroll = false) {
   } else if (tab === 'tools') {
     mountExtensionSettings(ToolSettings, {
       initialTools: state.tools,
+      agents: state.agents,
+      onTest: async (tool: any, expression?: string) => api(`/api/tools/${encodeURIComponent(tool.id)}/test`, { method: 'POST', body: JSON.stringify(expression !== undefined ? { expression } : {}) }),
       onToggle: async (tool: any) => { try { await api(`/api/tools/${encodeURIComponent(tool.id)}`, { method: 'PUT', body: JSON.stringify({ enabled: !tool.enabled }) }); await loadTools(); toast(tool.enabled ? '工具已停用' : '工具已启用'); return true; } catch (error: any) { toast(error.message, 'error'); return false; } },
     });
   } else if (tab === 'workspace') {
