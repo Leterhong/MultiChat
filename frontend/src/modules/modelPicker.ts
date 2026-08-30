@@ -79,7 +79,8 @@ function renderTopbar() {
   if (path) path.textContent = `${state.selectedWorkspace?.name || '工作区'} / ${state.selectedProject?.name || '未选择项目'}`;
   renderInspector();
 }
-// 同步两个「底部」模型切换入口：首页 hero 标签 + 对话输入框旁标签。同一份文案、同一份点击行为（均打开 openModelPicker）。
+// 同步两个模型入口的显示文案。点击行为由 React runtime action 统一管理，
+// 避免原生 onclick 与 React onClick 同时触发并把选择器重新覆盖成设置页。
 function syncModelUI() {
   const p = state.selectedProvider, m = state.selectedModel;
   const label = (p && m) ? `${p.name || p.id} · ${m}` : '选择模型';
@@ -88,7 +89,6 @@ function syncModelUI() {
     if (!el) return;
     el.textContent = label;
     el.title = p && m ? `当前：${p.name || p.id} · ${m}\n点击切换` : '点击选择模型';
-    el.onclick = openModelPicker;
   });
 }
 

@@ -19,7 +19,7 @@ function renderConvList() {
     <div class="conv-item ${c.id === state.currentConvId ? 'active' : ''}" data-id="${esc(c.id)}">
       <span class="conv-dot"></span>
       <span style="overflow:hidden;text-overflow:ellipsis;">${esc(c.title || '新对话')}</span>
-      <button class="conv-del" data-del="${esc(c.id)}" title="删除">×</button>
+      <button type="button" class="conv-del" data-del="${esc(c.id)}" title="删除对话：${esc(c.title || '新对话')}" aria-label="删除对话：${esc(c.title || '新对话')}">×</button>
     </div>
   `).join('');
   el.querySelectorAll('.conv-item').forEach(it => {
@@ -32,7 +32,13 @@ function renderConvList() {
       if (!(await showConfirm({ title: '删除对话', message: '删除该对话？', confirmLabel: '删除', danger: true }))) return;
       try { await api('/api/conversations/' + id, { method: 'DELETE' }); } catch {}
       state.conversations = state.conversations.filter(c => c.id !== id);
-      if (state.currentConvId === id) { state.currentConvId = null; state.messages = []; renderContent(); $('#topbarTitle').textContent = '新对话'; }
+      if (state.currentConvId === id) {
+        state.currentConvId = null;
+        state.messages = [];
+        renderContent();
+        $('#topbarTitle').textContent = '新对话';
+        if (location.hash !== '#/new') history.replaceState(null, '', '#/new');
+      }
       renderConvList();
     };
   });

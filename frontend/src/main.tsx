@@ -36,6 +36,7 @@ async function start() {
     send: Send.send,
     stop: Send.stopStream,
     openSettings: Settings.openSettings,
+    openModelPicker: ModelPicker.openModelPicker,
     openCompare: Compare.openCompare,
     openConversation: Conversations.openConversation,
     openInspector: Workbench.openInspector,

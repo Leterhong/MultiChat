@@ -1,4 +1,5 @@
 import { $, api, serverAuthHeaders, toast, state } from '../core/index';
+import { openModelPicker } from './modelPicker';
 
 /* --------------------------- Send (streaming) --------------------------- */
 async function send(textOverride?: string) {
@@ -7,7 +8,9 @@ async function send(textOverride?: string) {
   const text = (textOverride ?? input?.value ?? '').trim();
   if (!text) return;
   if (!state.selectedProvider || !state.selectedModel) {
-    toast('请先在右上角选择模型', 'error'); openSettings('providers'); return;
+    toast(state.providers.length ? '请先选择模型' : '请先添加模型', 'error');
+    if (state.providers.length) openModelPicker(); else openSettings('providers');
+    return;
   }
   state.messages.push({ role: 'user', content: text });
   state.messages.push({ role: 'assistant', content: '', streaming: true, model: state.selectedModel, providerName: state.selectedProvider.name || state.selectedProvider.id, startTime: performance.now() });
@@ -37,6 +40,8 @@ async function ensureConversation() {
   const r = await api('/api/conversations', { method: 'POST', body: JSON.stringify({ title, workspaceId: state.selectedWorkspace?.id || null, projectId: state.selectedProject?.id || null }) });
   state.currentConvId = r.id;
   $('#topbarTitle').textContent = r.title || '对话';
+  const route = `#/chat/${encodeURIComponent(r.id)}`;
+  if (location.hash !== route) history.replaceState(null, '', route);
   await loadConversations();
 }
 async function saveCurrentMessages() {
@@ -58,7 +63,7 @@ async function streamReply(resumeFromRunId?: string) {
     if (last) { last.content = '**未选择模型**：请先在「设置 → 模型」中添加并选择模型。\n\n→ [打开 设置 → 模型连接](#/settings/providers)'; last.streaming = false; }
     renderContent(); return;
   }
-  const needsKey = !['ollama', 'lmstudio', 'mock'].includes((provider.apiType || '').toLowerCase());
+  const needsKey = provider.id !== 'mock' && !['ollama', 'lmstudio', 'mock'].includes((provider.apiType || '').toLowerCase());
   if (needsKey && !provider.apiKey && !provider.apiKeyMasked) {
     const last = state.messages[state.messages.length - 1];
     if (last) { last.content = `**缺少 API Key**：Provider「${provider.name}」尚未填写 API Key。\n\n→ [打开 设置 → 模型连接填写 Key](#/settings/providers)`; last.streaming = false; }

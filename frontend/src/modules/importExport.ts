@@ -177,6 +177,7 @@ function showSkillModal(id) {
 }
 
 const BUILTIN_PROVIDERS = [
+  { id: 'mock',       name: '本地体验（无需密钥）', apiType: 'openai',    baseUrl: 'http://127.0.0.1:3099', models: ['echo'], allowPrivate: true },
   { id: 'openai',     name: 'OpenAI',           apiType: 'openai',    baseUrl: 'https://api.openai.com/v1', models: ['gpt-4o','gpt-4o-mini','gpt-4-turbo'] },
   { id: 'deepseek',   name: 'DeepSeek',         apiType: 'openai',    baseUrl: 'https://api.deepseek.com/v1', models: ['deepseek-chat','deepseek-reasoner'] },
   { id: 'anthropic',  name: 'Anthropic',        apiType: 'anthropic', baseUrl: 'https://api.anthropic.com/v1', models: ['claude-3-5-sonnet-latest','claude-3-opus-latest','claude-3-haiku-latest'] },

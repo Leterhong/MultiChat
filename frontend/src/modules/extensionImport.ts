@@ -13,7 +13,7 @@ const IMPORT_COPY: Record<ImportKind, any> = {
     accept: '.zip,.md',
     fileLabel: '选择 ZIP / SKILL.md',
     directory: true,
-    help: '支持 WorkBuddy 风格的 Skill ZIP、单个 SKILL.md，或直接选择完整目录。目录中的 scripts、references、assets 和 templates 会原样保留。',
+    help: '支持以 SKILL.md 为入口的 Skill ZIP、单个 SKILL.md，或直接选择完整目录。目录中的 scripts、references、assets 和 templates 会原样保留。',
   },
   mcp: {
     title: '导入 MCP 配置',

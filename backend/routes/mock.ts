@@ -4,6 +4,10 @@
 // built-in “Mock (本地体验)” provider. It never calls the network and makes the
 // first-run/chat/usage UI testable without an API key.
 module.exports = function registerMock(app) {
+  app.get('/api/mock/v1/models', (_req, res) => {
+    res.json({ object: 'list', data: [{ id: 'echo', object: 'model', owned_by: 'multichat-local' }] });
+  });
+
   app.post('/api/mock/v1/chat/completions', (req, res) => {
     const body = req.body || {};
     const messages = Array.isArray(body.messages) ? body.messages : [];

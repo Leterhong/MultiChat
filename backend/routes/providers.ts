@@ -96,7 +96,10 @@ module.exports = function registerProviders(app) {
     const idx = providers.findIndex(p => p.id === req.params.id);
     if (idx < 0) return res.status(404).json({ error: 'provider not found', code: 'NOT_FOUND' });
     const provider = providers[idx];
-    const baseUrl = String(provider.baseUrl || '').replace(/\/+$/, '');
+    const configuredBaseUrl = String(provider.baseUrl || '').replace(/\/+$/, '');
+    const baseUrl = provider.id === 'mock' && /(?:127\.0\.0\.1|localhost):3099/i.test(configuredBaseUrl)
+      ? `http://127.0.0.1:${ctx.PORT}/api/mock/v1`
+      : configuredBaseUrl;
     let parsed: URL;
     try { parsed = new URL(baseUrl); } catch { return res.status(400).json({ error: 'provider baseUrl 无效' }); }
     const modelsUrl = `${parsed.origin}${parsed.pathname.replace(/\/+$/, '')}/models`;

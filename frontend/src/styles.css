@@ -336,7 +336,7 @@ button:focus-visible, [tabindex]:focus-visible {
 .add-tile:hover { background: var(--bg-hover); border-color: var(--label-primary); color: var(--label-primary); }
 .add-tile .ico { font-size: 18px; margin-right: 4px; }
 
-/* 卡片网格（智能体 / 技能 · WorkBuddy 风格） */
+/* 卡片网格（智能体 / 技能） */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(228px, 1fr)); gap: 14px; }
 .mc-card { position: relative; display: flex; flex-direction: column; gap: 9px; padding: 16px; background: var(--bg-elevated); border: 1px solid var(--border-l2); border-radius: var(--radius-lg); cursor: pointer; transition: border-color 140ms var(--easing), box-shadow 140ms var(--easing), transform 140ms var(--easing); }
 .mc-card:hover { border-color: var(--border-l4); box-shadow: var(--shadow-md); transform: translateY(-1px); }

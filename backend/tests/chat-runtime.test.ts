@@ -37,17 +37,23 @@ test('mock provider completes non-stream and SSE chat, seeded agents exist', asy
   const agents = await fetch(`${BASE}/api/agents`).then(r => r.json()) as Array<{ id: string }>;
   assert.ok(agents.some(a => a.id === 'ag_researcher'), 'ag_researcher 应在种子数据中');
 
-  // 注册 mock 提供方（baseUrl 命中本地 mock 特判，无需真实上游）
+  // 注册 mock 提供方（baseUrl 命中本地 mock 特判，无需密钥或真实上游）
   const created = await fetch(`${BASE}/api/providers`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ id: 'mock', apiType: 'openai', baseUrl: 'http://127.0.0.1:3099', apiKey: 'test', models: ['mock-pro'], allowPrivate: true }),
+    body: JSON.stringify({ id: 'mock', apiType: 'openai', baseUrl: 'http://127.0.0.1:3099', models: ['echo'], allowPrivate: true }),
   });
   assert.equal(created.status, 200);
 
+  const probe = await fetch(`${BASE}/api/providers/mock/probe`, { method: 'POST' });
+  assert.equal(probe.status, 200);
+  const probeData = await probe.json() as { ok: boolean; models: string[] };
+  assert.equal(probeData.ok, true);
+  assert.deepEqual(probeData.models, ['echo']);
+
   const payload = {
     providerId: 'mock',
-    model: 'mock-pro',
+    model: 'echo',
     messages: [{ role: 'user', content: '你好' }],
   };
 

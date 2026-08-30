@@ -44,6 +44,10 @@ function HomeWorkspace() {
   const submit = () => {
     const value = prompt.trim();
     if (!value || !actions.send) return;
+    if (noModel) {
+      void actions.send(value);
+      return;
+    }
     setPrompt('');
     void actions.send(value);
   };
@@ -74,7 +78,7 @@ function HomeWorkspace() {
         }}
       />
       <div className="hero-actions">
-        <button className="hero-tag" id="heroModelTag" type="button" onClick={() => actions.openSettings?.('providers')}>{state.selectedModel || '选择模型'}</button>
+        <button className="hero-tag" id="heroModelTag" type="button" onClick={() => actions.openModelPicker?.()}>{state.selectedModel || '选择模型'}</button>
         <button className="hero-tag" id="heroAgents" type="button" onClick={() => actions.openSettings?.('agents')}>{agent?.name || '直接对话'}</button>
         <button className="hero-context-tag" id="heroWorkspace" type="button" onClick={() => actions.openSettings?.('workspace')}>{selectedFiles} 个文件 · {enabledMemories} 条记忆</button>
         <div className="spacer" />
@@ -289,6 +293,10 @@ export function ConversationComposer() {
     if (state.streaming) { actions.stop?.(); return; }
     const value = text.trim();
     if (!value || !actions.send) return;
+    if (!state.selectedProvider || !state.selectedModel) {
+      void actions.send(value);
+      return;
+    }
     setText('');
     void actions.send(value).finally(() => inputRef.current?.focus());
   };
@@ -312,7 +320,7 @@ export function ConversationComposer() {
       }} />
       <div className="composer-actions">
         <button className="composer-tool" id="composerFileBtn" type="button" title="管理上下文文件" onClick={() => actions.openSettings?.('workspace')}><FileText size={15} aria-hidden /><span className="composer-tool-label">{state.selectedAssetIds.size ? `文件 ${state.selectedAssetIds.size}` : '文件'}</span></button>
-        <button className="hero-tag" id="composerModelTag" type="button" title="选择模型" onClick={() => actions.openSettings?.('providers')}>{state.selectedModel || '选择模型'}</button>
+        <button className="hero-tag" id="composerModelTag" type="button" title="选择模型" onClick={() => actions.openModelPicker?.()}>{state.selectedModel || '选择模型'}</button>
         <span className="ctx-hint">Shift+Enter 换行</span><div className="spacer" />
         <button className={`send-btn${state.streaming ? ' stop' : ''}`} id="sendBtn" type="button" disabled={!ready} title={state.streaming ? '停止' : '发送'} aria-label={state.streaming ? '停止生成' : '发送消息'} onClick={submit}><span aria-hidden>{state.streaming ? '■' : '↑'}</span></button>
       </div>
