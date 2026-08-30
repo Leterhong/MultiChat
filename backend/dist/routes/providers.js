@@ -104,12 +104,14 @@ module.exports = function registerProviders(app) {
         }
         res.json(models);
     });
-    // ── 连接测试：用服务端保存的密钥探测 OpenAI 兼容的 GET /models，返回可达性与模型清单 ──
+    // ── 连接测试：用服务端保存的密钥探测 OpenAI 兼容的 GET /models，返回可达性与模型清单。
+    // 探测到的能力（vision/reasoning 启发式）会写回 provider 记录，供界面标注。──
     app.post('/api/providers/:id/probe', async (req, res) => {
         const providers = ctx.providerStore.list();
-        const provider = providers.find(p => p.id === req.params.id);
-        if (!provider)
+        const idx = providers.findIndex(p => p.id === req.params.id);
+        if (idx < 0)
             return res.status(404).json({ error: 'provider not found', code: 'NOT_FOUND' });
+        const provider = providers[idx];
         const baseUrl = String(provider.baseUrl || '').replace(/\/+$/, '');
         let parsed;
         try {
@@ -136,6 +138,12 @@ module.exports = function registerProviders(app) {
                 vision: models.some(m => /(?:vision|vl|omni|multimodal|4o|gpt-4-turbo|gemini|claude-[35])/i.test(m)),
                 reasoning: models.some(m => /(?:reason|think|o[1345]-|r1|qwq)/i.test(m)),
             };
+            // 持久化探测到的能力，界面无需再次探测即可标注。
+            try {
+                providers[idx] = { ...provider, capabilities: { ...provider.capabilities, ...capabilities } };
+                ctx.providerStore.save(providers);
+            }
+            catch { /* 能力标注失败不影响探测结果返回 */ }
             res.json({ ok: true, models, capabilities, modelCount: models.length });
         }
         catch (error) {

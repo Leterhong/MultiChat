@@ -433,3 +433,5 @@ kbd { font: 500 10px/1.2 var(--font-mono); letter-spacing: 0; }
 .msg-stats { display: flex; flex-wrap: wrap; gap: 3px 12px; }
 /* 分组标签提到 11px，缓解字号跳档 */
 .settings-group-label { font-size: 11px; }
+
+.provider-caps { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 10.5px; font-weight: 600; }
