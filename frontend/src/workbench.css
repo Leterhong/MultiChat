@@ -408,3 +408,28 @@ kbd { font: 500 10px/1.2 var(--font-mono); letter-spacing: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ── UX 统一批次：徽章/错误条/按钮/统计条 ─────────────────────────── */
+/* 状态徽章三种实现统一为同一胶囊视觉（保留各自语义色） */
+.provider-state, .passport-type, .passport-risk { border-radius: 999px; padding: 2px 9px; font-size: 11px; font-weight: 600; line-height: 1.6; white-space: nowrap; }
+/* 表单错误统一为告警条（与导入页一致），空占位时保持安静 */
+.auth-error:not(:empty) { display: flex; gap: 9px; align-items: flex-start; padding: 10px 12px; border: 1px solid rgba(196, 74, 64, .32); border-radius: 8px; background: var(--state-error-bg); color: var(--state-error-primary); font-size: 12.5px; line-height: 1.5; }
+.auth-error:not(:empty)::before { content: '!'; flex: none; width: 15px; height: 15px; display: grid; place-items: center; margin-top: 1px; border-radius: 50%; background: var(--state-error-primary); color: #fff; font: 700 10px/1 var(--font-sans); }
+/* 卡片操作按钮与虚线大卡并入统一圆角/过渡体系 */
+.mc-act, .add-tile { border-radius: 8px; transition: background 120ms var(--easing), color 120ms var(--easing), border-color 120ms var(--easing); }
+/* 弹窗行内主按钮不再被拉伸成通栏 */
+.btn-auto { width: auto !important; padding: 9px 16px !important; }
+/* 模板选择网格与字段说明文字 */
+.provider-template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.provider-template-grid .tpl-name { font-weight: 600; color: var(--label-primary); }
+.provider-template-grid .tpl-meta { font-size: 11.5px; color: var(--label-caption); margin-top: 2px; }
+.add-tile { text-align: left; padding: 14px; }
+.field-hint { font-size: 11.5px; color: var(--label-caption); margin-top: 4px; }
+.lead-tight { margin-bottom: 12px; }
+/* 首页"需要连接模型"入口按钮 */
+.model-cta { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 0; border-radius: 999px; background: var(--state-warning-bg); color: var(--state-warning); font-size: 11px; font-weight: 600; cursor: pointer; transition: filter 120ms var(--easing); }
+.model-cta:hover { filter: brightness(.96); }
+/* 对话统计条窄屏换行，不再截断 */
+.msg-stats { display: flex; flex-wrap: wrap; gap: 3px 12px; }
+/* 分组标签提到 11px，缓解字号跳档 */
+.settings-group-label { font-size: 11px; }

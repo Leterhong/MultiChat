@@ -114,7 +114,7 @@ function showImportPreview(kind: ImportKind, payload: any, preview: any) {
       ${kind === 'plugin' ? '<div class="extension-import-note">插件以完整资源包安装并独立启停，包契约使用 Codex plugin。MultiChat 当前会加载其中的 Skills 与 MCP；其他资源会保留，但不会把上传的 JS、hooks 直接注入网站主进程。</div>' : ''}
       ${conflicts.length && !cannotReplace ? '<label class="extension-import-confirm"><input type="checkbox" id="replaceExtension" /> 我已确认，用这个包覆盖当前项目中的同名项</label>' : ''}
       <div id="extensionImportErr" class="auth-error">${cannotReplace ? '同名项来自插件或其他受保护来源，本次导入不能覆盖。' : ''}</div>
-      <div class="row"><button type="button" class="btn-ghost" id="importBack">重新选择</button><button type="button" class="btn-primary" id="importCommit" style="width:auto;padding:9px 18px;" ${cannotReplace ? 'disabled' : ''}>确认导入</button></div>`,
+      <div class="row"><button type="button" class="btn-ghost" id="importBack">重新选择</button><button type="button" class="btn-primary btn-auto" id="importCommit" ${cannotReplace ? 'disabled' : ''}>确认导入</button></div>`,
     onMount: (card: any) => {
       $('#importBack', card).onclick = () => showExtensionImport(kind);
       $('#importCommit', card).onclick = async () => {
@@ -165,12 +165,12 @@ function showExtensionImport(kind: ImportKind) {
   const copy = IMPORT_COPY[kind];
   showModal({
     title: copy.title,
-    body: `<p class="lead" style="margin-bottom:14px;">${esc(copy.help)}</p>
+    body: `<p class="lead lead-tight">${esc(copy.help)}</p>
       <div class="extension-dropzone" id="extensionDropzone" tabindex="0">
         <div class="extension-drop-icon">${DROP_ICON}</div><strong>拖入文件进行预检</strong><span>不会在预检阶段执行任何脚本或 MCP 命令</span>
       </div>
       <div class="extension-picker-actions">
-        <button type="button" class="btn-primary" id="pickExtensionFile" style="width:auto;padding:9px 16px;">${esc(copy.fileLabel)}</button>
+        <button type="button" class="btn-primary btn-auto" id="pickExtensionFile">${esc(copy.fileLabel)}</button>
         ${copy.directory ? '<button type="button" class="btn-ghost" id="pickExtensionDirectory">选择完整目录</button>' : ''}
       </div>
       <input type="file" id="extensionFileInput" accept="${esc(copy.accept)}" hidden />

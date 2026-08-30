@@ -87,7 +87,7 @@ function showConfirm({ title = '请确认', message, confirmLabel = '确认', ca
     const finish = (value: boolean) => { if (!settled) { settled = true; resolve(value); } };
     showModal({
       title,
-      body: `<div class="confirm-message">${esc(message)}</div><div class="row"><button type="button" class="btn-ghost" id="dialogCancel">${esc(cancelLabel)}</button><button type="button" class="${danger ? 'btn-danger' : 'btn-primary'}" id="dialogAccept" style="width:auto;padding:9px 18px;">${esc(confirmLabel)}</button></div>`,
+      body: `<div class="confirm-message">${esc(message)}</div><div class="row"><button type="button" class="btn-ghost" id="dialogCancel">${esc(cancelLabel)}</button><button type="button" class="${danger ? 'btn-danger' : 'btn-primary'} btn-auto" id="dialogAccept">${esc(confirmLabel)}</button></div>`,
       onMount: (card: HTMLElement) => {
         $('#dialogCancel', card).onclick = () => { finish(false); closeModal(); };
         $('#dialogAccept', card).onclick = () => { finish(true); closeModal(); };
@@ -106,8 +106,8 @@ function showPrompt({ title, message = '', label = '名称', value = '', placeho
       : `<input name="value" value="${esc(value)}" placeholder="${esc(placeholder)}" ${maxLength ? `maxlength="${maxLength}"` : ''} autofocus />`;
     showModal({
       title,
-      body: `${message ? `<p class="lead" style="margin-bottom:12px;">${esc(message)}</p>` : ''}
-        <form id="dialogPromptForm"><div class="field"><label>${esc(label)}</label>${control}</div><div class="row"><button type="button" class="btn-ghost" id="dialogCancel">取消</button><button class="btn-primary" type="submit" style="width:auto;padding:9px 18px;">${esc(confirmLabel)}</button></div></form>`,
+      body: `${message ? `<p class="lead lead-tight">${esc(message)}</p>` : ''}
+        <form id="dialogPromptForm"><div class="field"><label>${esc(label)}</label>${control}</div><div class="row"><button type="button" class="btn-ghost" id="dialogCancel">取消</button><button class="btn-primary btn-auto" type="submit">${esc(confirmLabel)}</button></div></form>`,
       onMount: (card: HTMLElement) => {
         $('#dialogCancel', card).onclick = () => { finish(null); closeModal(); };
         $('#dialogPromptForm', card).onsubmit = (event: SubmitEvent) => {

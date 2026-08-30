@@ -30,6 +30,7 @@ function HomeWorkspace() {
   const actions = useAppStore((current) => current.actions);
   const inputRef = useAutosize(prompt);
   const noModel = !state.selectedProvider || !state.selectedModel;
+  const totalModels = useBusinessStore((current) => current.providers.reduce((sum: number, p: any) => sum + (p.models?.length || 0), 0));
   const selectedFiles = state.selectedAssetIds?.size || 0;
   const enabledMemories = (state.memories || []).filter((item: any) => item.enabled !== false).length;
   const agent = state.selectedAgent;
@@ -54,7 +55,9 @@ function HomeWorkspace() {
       <p>把目标、项目资料和能力组合成一次可以追踪的工作。</p>
     </header>
     <section className="home-composer" id="heroCard" aria-label="发起工作">
-      <div className="home-composer-label"><label htmlFor="heroInput">任务描述</label><span><i className={`status-pulse${noModel ? ' warn' : ''}`} />{noModel ? '需要连接模型' : '可以开始'}</span></div>
+      <div className="home-composer-label"><label htmlFor="heroInput">任务描述</label>{noModel
+        ? <button type="button" className="model-cta" title="打开 设置 → 模型连接，添加 API 地址与密钥" onClick={() => (window as any).MC?.openSettings?.('providers')}><i className="status-pulse warn" />需要连接模型 · 点此添加</button>
+        : <span><i className="status-pulse" />可以开始</span>}</div>
       <textarea
         ref={inputRef}
         className="hero-input"
@@ -75,7 +78,7 @@ function HomeWorkspace() {
         <button className="hero-tag" id="heroAgents" type="button" onClick={() => actions.openSettings?.('agents')}>{agent?.name || '直接对话'}</button>
         <button className="hero-context-tag" id="heroWorkspace" type="button" onClick={() => actions.openSettings?.('workspace')}>{selectedFiles} 个文件 · {enabledMemories} 条记忆</button>
         <div className="spacer" />
-        <button className="btn-secondary home-compare" id="heroCompare" type="button" onClick={() => actions.openCompare?.()}>模型实验</button>
+        <button className="btn-secondary home-compare" id="heroCompare" type="button" disabled={totalModels < 2} title={totalModels < 2 ? '模型实验需要至少 2 个模型，请先在 设置 → 模型连接 添加' : undefined} onClick={() => actions.openCompare?.()}>模型实验</button>
         <button className={`send-btn${state.streaming ? ' stop' : ''}`} id="heroSendBtn" type="button" disabled={!ready} title="开始" aria-label="开始运行" onClick={submit}>↑</button>
       </div>
     </section>

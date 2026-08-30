@@ -95,7 +95,7 @@ function showAgentModal(id) {
       <div id="agentErr" class="auth-error"></div>
       <div class="row">
         <button type="button" class="btn-ghost" id="agentCancel">取消</button>
-        <button type="submit" class="btn-primary" style="width:auto;padding:9px 18px;">${editing ? '保存' : '创建'}</button>
+        <button type="submit" class="btn-primary btn-auto">${editing ? '保存' : '创建'}</button>
       </div>
     </form>`,
     onMount: (card) => {
@@ -146,7 +146,7 @@ function showSkillModal(id) {
       <div id="skillErr" class="auth-error"></div>
       <div class="row">
         <button type="button" class="btn-ghost" id="skillCancel">取消</button>
-        <button type="submit" class="btn-primary" style="width:auto;padding:9px 18px;">${editing ? '保存' : '创建'}</button>
+        <button type="submit" class="btn-primary btn-auto">${editing ? '保存' : '创建'}</button>
       </div>
     </form>`,
     onMount: (card) => {
@@ -191,11 +191,8 @@ const BUILTIN_PROVIDERS = [
 function showAddBuiltin() {
   showModal({
     title: '添加提供方',
-    body: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      ${BUILTIN_PROVIDERS.map(p => `<button class="add-tile" data-id="${p.id}" style="text-align:left;padding:14px;">
-        <div style="font-weight:600;color:var(--label-primary);">${p.name}</div>
-        <div style="font-size:11.5px;color:var(--label-caption);margin-top:2px;">${p.apiType} · ${p.baseUrl}</div>
-      </button>`).join('')}
+    body: `<div class="provider-template-grid">
+      ${BUILTIN_PROVIDERS.map(p => `<button class="add-tile" data-id="${p.id}"><div class="tpl-name">${p.name}</div><div class="tpl-meta">${p.apiType} · ${p.baseUrl}</div></button>`).join('')}
     </div>`,
     onMount: (card) => {
       card.querySelectorAll('[data-id]').forEach(b => b.onclick = async () => {
@@ -212,10 +209,10 @@ function showAddCustom() {
   showModal({
     title: '自定义提供方',
     body: `<form id="customForm">
-      <div class="field"><label>Provider ID</label><input name="id" placeholder="acme-gateway" required pattern="[-a-zA-Z0-9_]+" />
-        <div style="font-size:11.5px;color:var(--label-caption);margin-top:4px;">小写字母、数字、下划线或连字符，唯一标识该提供方。</div></div>
+      <div class="field"><label>Provider ID（留空自动生成）</label><input name="id" placeholder="留空自动生成，例如 acme-gateway" />
+        <div class="field-hint">小写字母、数字、下划线或连字符，唯一标识该提供方；不确定就留空。</div></div>
       <div class="field"><label>模型列表</label><textarea name="models" rows="2" placeholder="deepseek-chat, deepseek-reasoner"></textarea>
-        <div style="font-size:11.5px;color:var(--label-caption);margin-top:4px;">逗号或换行分隔；如不确定可留空，稍后在模型卡片中补充。</div></div>
+        <div class="field-hint">逗号或换行分隔；如不确定可留空，稍后在模型卡片中补充。</div></div>
       <div class="field"><label>显示名称</label><input name="name" placeholder="显示名称" /></div>
       <div class="field"><label>API 地址</label><input name="baseUrl" placeholder="https://gateway.example/v1" required /></div>
       <div class="field"><label>API 协议</label><select name="apiType">
@@ -229,7 +226,7 @@ function showAddCustom() {
       <div id="customErr" class="auth-error"></div>
       <div class="row">
         <button type="button" class="btn-ghost" id="customCancel">取消</button>
-        <button type="submit" class="btn-primary" style="width:auto;padding:9px 18px;">保存</button>
+        <button type="submit" class="btn-primary btn-auto">保存</button>
       </div>
     </form>`,
     onMount: (card) => {
