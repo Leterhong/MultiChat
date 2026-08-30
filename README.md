@@ -101,24 +101,9 @@ Skill 支持单文件、完整目录和 ZIP，并会原样保留但不执行 `x-
 
 Skill 中的脚本只会随包保存并列出路径，不会自动执行。当前 Plugin Runtime 会加载包内的 **Skills 与 MCP servers**；其他 JS/TS、Hooks、Commands、Apps 等资源可以随包保存，但不会未经隔离和授权直接注入 MultiChat 主进程。
 
-## Docker / Linux 服务器
+## Linux 常驻运行
 
-MultiChat 是纯 Node.js 应用，Linux（x64/arm64）开箱即跑。两种常驻方式：
-
-**Docker（推荐，数据与工作区分离挂载）：**
-
-```bash
-# 使用官方镜像（推送到 main / 打 tag 时由 CI 自动构建发布）
-docker run -d --name multichat -p 3000:3000   -v multichat-data:/data   -v "$PWD:/workspace"   ghcr.io/leterhong/multichat:latest
-
-# 本地构建
-docker build -t multichat .
-docker run -d -p 3000:3000 -v multichat-data:/data -v "$PWD:/workspace" multichat
-```
-
-容器内 `/data` 保存运行数据（SQLite、加密密钥账本），`/workspace` 是 Agent 工作区（项目文件、.agents 扩展）。镜像以非 root 用户运行，默认监听 `0.0.0.0:3000`。
-
-**systemd 常驻（不用容器时）：**
+MultiChat 是纯 Node.js 应用，可通过 systemd 作为本地服务常驻运行：
 
 ```ini
 # /etc/systemd/system/multichat.service
