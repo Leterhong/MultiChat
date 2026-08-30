@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Brain, ChevronDown, FileText, ListTree, Wrench } from 'lucide-react';
+import { Brain, ChevronDown, Columns3, FileText, ListTree, ShieldCheck, Workflow, Wrench } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 import { state } from '../core';
 import { useAppStore, useBusinessStore } from '../store/appStore';
@@ -54,9 +54,16 @@ function HomeWorkspace() {
 
   return <div className="home-workbench">
     <header className="home-intro">
-      <div className="home-location">{state.selectedWorkspace?.name || '默认工作区'} <span>/</span> {state.selectedProject?.name || '未选择项目'}</div>
-      <h1>今天想完成什么？</h1>
-      <p>把目标、项目资料和能力组合成一次可以追踪的工作。</p>
+      <div className="home-intro-copy">
+        <div className="home-location">{state.selectedWorkspace?.name || '默认工作区'} <span>/</span> {state.selectedProject?.name || '未选择项目'}</div>
+        <h1>欢迎回到 MultiChat</h1>
+        <p>在同一个工作台里组织模型、项目上下文与可控能力，并保留每一次运行证据。</p>
+      </div>
+      <div className="home-feature-grid" aria-label="MultiChat 核心能力">
+        <div><Columns3 size={19} aria-hidden /><span><strong>并行验证</strong><small>相同上下文比较多个模型</small></span></div>
+        <div><Workflow size={19} aria-hidden /><span><strong>能力编排</strong><small>组合 Skills、MCP 与插件</small></span></div>
+        <div><ShieldCheck size={19} aria-hidden /><span><strong>本地可控</strong><small>数据、权限和运行证据可查</small></span></div>
+      </div>
     </header>
     <section className="home-composer" id="heroCard" aria-label="发起工作">
       <div className="home-composer-label"><label htmlFor="heroInput">任务描述</label>{noModel

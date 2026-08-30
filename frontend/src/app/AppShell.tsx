@@ -1,10 +1,12 @@
-import type { ButtonHTMLAttributes, ComponentType, ReactNode } from 'react';
+import { useEffect, useState, type ButtonHTMLAttributes, type ComponentType, type ReactNode } from 'react';
 import {
   Activity, Blocks, Bot, Box, Braces, CheckCircle2, ChevronDown, Command,
   FileText, FolderKanban, GitFork, Layers3, Menu, MessageSquarePlus, PanelRight,
-  PlugZap, Search, Settings, SlidersHorizontal, SquareStack, X, Zap,
+  Moon, PlugZap, Search, Settings, SlidersHorizontal, SquareStack, Sun, X, Zap,
 } from 'lucide-react';
 import { ConversationComposer, WorkspaceContent } from '../components/WorkspaceContent';
+import { WorkspaceRail } from '../components/WorkspaceRail';
+import { getTheme, setTheme, type ThemePreference } from '../core/theme';
 import { useBusinessStore } from '../store/appStore';
 
 type Icon = ComponentType<{ size?: number; strokeWidth?: number; className?: string; 'aria-hidden'?: boolean }>;
@@ -42,6 +44,18 @@ function IconButton({ label, title, icon: IconView, children, className = 'icon-
   </button>;
 }
 
+function ThemeToggle() {
+  const [preference, setPreference] = useState<ThemePreference>(() => getTheme());
+  useEffect(() => {
+    const sync = () => setPreference(getTheme());
+    window.addEventListener('multichat:themechange', sync);
+    return () => window.removeEventListener('multichat:themechange', sync);
+  }, []);
+  const dark = preference === 'dark' || (preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const next = dark ? 'light' : 'dark';
+  return <IconButton className="icon-btn theme-toggle" label={dark ? '切换到浅色主题' : '切换到深色主题'} icon={dark ? Sun : Moon} onClick={() => { setTheme(next); setPreference(next); }} />;
+}
+
 export function AppShell() {
   // 模型实验需要 ≥2 个可选模型；不足时按钮禁用并说明原因，而不是点击后跳走。
   const providers = useBusinessStore((s) => s.providers);
@@ -52,7 +66,7 @@ export function AppShell() {
     <div className="app" id="app">
       <aside className="sidebar" id="sidebar" aria-label="对话导航">
         <div className="brand">
-          <div className="brand-logo" aria-hidden="true">M</div>
+          <div className="brand-logo" aria-hidden="true"><Layers3 size={18} strokeWidth={2.2} /></div>
           <div className="brand-copy"><strong>MultiChat</strong><span>本地智能工作台</span></div>
           <IconButton id="sidebarClose" className="sidebar-close" label="关闭对话导航" icon={X} />
         </div>
@@ -84,6 +98,7 @@ export function AppShell() {
           <IconButton id="compareBtn" label="模型实验" title={compareHint} icon={SquareStack} disabled={!compareReady} aria-disabled={!compareReady}><span className="icon-btn-label">模型实验</span></IconButton>
           <button className="command-btn" id="commandBtn" type="button" aria-haspopup="dialog" aria-controls="commandPalette"><Command size={15} aria-hidden /><span>命令</span><kbd>Ctrl K</kbd></button>
           <IconButton id="inspectorBtn" label="上下文检查" icon={PanelRight} aria-controls="sessionInspector" aria-expanded="false"><span className="icon-btn-label">上下文</span></IconButton>
+          <ThemeToggle />
           <IconButton id="settingsBtn" label="设置" icon={Settings} />
         </header>
 
@@ -95,6 +110,7 @@ export function AppShell() {
           <div className="inspector-body" id="inspectorBody" />
         </aside>
       </main>
+      <WorkspaceRail />
     </div>
 
     <div className="mobile-scrim" id="mobileScrim" />

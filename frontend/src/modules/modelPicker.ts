@@ -70,6 +70,18 @@ function openModelPicker() {
     }
   });
 }
+function selectModel(providerId: string, model: string) {
+  const provider = state.providers.find((item) => item.id === providerId);
+  if (!provider || !(provider.models || []).includes(model)) {
+    toast('该模型已不可用，请刷新模型列表', 'error');
+    return;
+  }
+  state.selectedProvider = provider;
+  state.selectedModel = model;
+  localStorage.setItem('multichat_lastModel', `${providerId}:${model}`);
+  renderTopbar();
+  renderContent();
+}
 function renderTopbar() {
   syncModelUI();
   const a = state.selectedAgent;
@@ -93,4 +105,4 @@ function syncModelUI() {
 }
 
 
-export { openModelPicker,renderTopbar,syncModelUI };
+export { openModelPicker,selectModel,renderTopbar,syncModelUI };

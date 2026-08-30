@@ -7,6 +7,7 @@ export type RuntimeActions = {
   stop: () => void;
   openSettings: (tab?: string) => void;
   openModelPicker: () => void;
+  selectModel: (providerId: string, model: string) => void;
   openCompare: () => void;
   openConversation: (id: string) => Promise<void>;
   openInspector: () => void;

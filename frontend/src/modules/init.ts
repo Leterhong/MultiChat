@@ -99,6 +99,7 @@ async function forkConversation() {
   try {
     const r = await api('/api/conversations', { method: 'POST', body: JSON.stringify({ title, workspaceId: state.selectedWorkspace?.id || null, projectId: state.selectedProject?.id || null }) });
     state.currentConvId = r.id;
+    window.history.replaceState(null, '', `#/chat/${encodeURIComponent(r.id)}`);
     await api('/api/conversations/' + r.id + '/messages', { method: 'POST', body: JSON.stringify(history) });
     state.messages = history;
     $('#topbarTitle').textContent = r.title || '对话';

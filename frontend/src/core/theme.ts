@@ -4,7 +4,7 @@ const STORAGE_KEY = 'multichat_theme';
 const media = window.matchMedia('(prefers-color-scheme: dark)');
 
 function normalizeTheme(value: string | null): ThemePreference {
-  return value === 'dark' || value === 'system' ? value : 'light';
+  return value === 'light' || value === 'dark' || value === 'system' ? value : 'dark';
 }
 
 export function getTheme(): ThemePreference {
@@ -16,6 +16,7 @@ export function applyTheme(preference: ThemePreference = getTheme()): void {
   document.documentElement.dataset.theme = resolved;
   document.documentElement.dataset.themePreference = preference;
   document.documentElement.style.colorScheme = resolved;
+  window.dispatchEvent(new CustomEvent('multichat:themechange', { detail: { preference, resolved } }));
 }
 
 export function setTheme(preference: ThemePreference): void {

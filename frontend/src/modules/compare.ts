@@ -12,12 +12,13 @@ function targets(): CompareTarget[] {
   })));
 }
 
-async function executeTarget(target: CompareTarget, prompt: string): Promise<CompareResult> {
+async function executeTarget(target: CompareTarget, prompt: string, signal?: AbortSignal): Promise<CompareResult> {
   const started = performance.now();
   try {
     const response = await fetch(state.apiBase + '/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...serverAuthHeaders() },
+      signal,
       body: JSON.stringify({
         providerId: target.providerId,
         model: target.model,
@@ -29,7 +30,7 @@ async function executeTarget(target: CompareTarget, prompt: string): Promise<Com
         workspaceId: state.selectedWorkspace?.id || null,
         projectId: state.selectedProject?.id || null,
         assetIds: [...state.selectedAssetIds],
-        interactionId: `compare_${Date.now().toString(36)}_${target.providerId}`,
+        interactionId: `compare_${crypto.randomUUID()}`,
       }),
     });
     const payload = await response.json();
@@ -39,6 +40,7 @@ async function executeTarget(target: CompareTarget, prompt: string): Promise<Com
     }
     return { ...target, status: 'success', text: payload?.choices?.[0]?.message?.content || '', usage: payload?.usage || {}, elapsedMs: Math.round(performance.now() - started) };
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') return { ...target, status: 'cancelled', elapsedMs: Math.round(performance.now() - started) };
     return { ...target, status: 'error', error: error instanceof Error ? error.message : String(error), elapsedMs: Math.round(performance.now() - started) };
   }
 }
@@ -72,6 +74,10 @@ function openCompare() {
     return;
   }
   if ($('#modal')?.classList.contains('open') && $('#modalCard')?.classList.contains('compare-modal-card')) return;
+
+  // The experiment is a top-level workspace surface, not a settings sub-dialog.
+  // Closing settings first prevents two aria-modal regions from being exposed at once.
+  if ($('#settings')?.classList.contains('open')) closeSettings();
 
   if (location.hash !== '#/compare') {
     compareReturnHash = location.hash || (state.currentConvId ? `#/chat/${encodeURIComponent(state.currentConvId)}` : '#/new');
