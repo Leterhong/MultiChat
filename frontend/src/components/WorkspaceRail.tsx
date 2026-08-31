@@ -1,10 +1,7 @@
-import { Activity, Bot, Boxes, ChevronRight, Gauge, Layers3, LockKeyhole, SquareStack } from 'lucide-react';
+import { Activity, Bot, Boxes, Check, ChevronRight, Gauge, Layers3, LockKeyhole, SquareStack } from 'lucide-react';
 import { useAppStore, useBusinessStore } from '../store/appStore';
 import { fmtTok } from '../utils/format';
-
-function modelInitial(name: string) {
-  return name.trim().slice(0, 1).toUpperCase() || 'M';
-}
+import { ModelGlyph } from './BrandMark';
 
 export function WorkspaceRail() {
   const business = useBusinessStore((current) => current);
@@ -28,15 +25,16 @@ export function WorkspaceRail() {
   const enabledMemories = business.memories.filter((memory: any) => memory.enabled !== false).length;
 
   return <aside className="workspace-rail" aria-label="运行控制台">
+    <div className="rail-workbench-head"><div><span className="status-pulse" /><strong>运行控制台</strong></div><small>设置会应用到下一次发送</small></div>
     <section className="rail-panel rail-models">
-      <header className="rail-panel-head"><div><span className="rail-kicker">当前运行</span><h2>模型选择</h2></div><button type="button" onClick={() => actions.openSettings?.('providers')}>管理</button></header>
+      <header className="rail-panel-head"><div><span className="rail-kicker">当前运行</span><h2>选择主模型</h2></div><button type="button" onClick={() => actions.openSettings?.('providers')}>管理</button></header>
       <div className="rail-model-list">
         {models.length ? models.slice(0, 6).map((item) => {
           const active = business.selectedProvider?.id === item.providerId && business.selectedModel === item.model;
           return <button type="button" className={`rail-model-row${active ? ' active' : ''}`} key={item.id} aria-label={`${item.model} · ${item.providerName}`} aria-pressed={active} onClick={() => actions.selectModel?.(item.providerId, item.model)}>
-            <span className="rail-model-mark" aria-hidden="true">{modelInitial(item.providerName)}</span>
+            <ModelGlyph name={item.providerName} className="rail-model-mark" />
             <span className="rail-model-copy"><strong>{item.model}</strong><small>{item.providerName}</small></span>
-            <span className="rail-model-state" aria-hidden="true"><i /></span>
+            <span className="rail-model-state" aria-hidden="true">{active && <Check size={11} strokeWidth={2.6} />}</span>
           </button>;
         }) : <button type="button" className="rail-empty-action" onClick={() => actions.openSettings?.('providers')}><Layers3 size={18} aria-hidden /><span><strong>还没有模型</strong><small>添加连接后即可开始</small></span><ChevronRight size={15} aria-hidden /></button>}
       </div>

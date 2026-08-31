@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Brain, ChevronDown, Columns3, FileText, ListTree, ShieldCheck, Workflow, Wrench } from 'lucide-react';
+import { ArrowUpRight, Brain, ChevronDown, FileText, ListTree, ShieldCheck, SquareStack, Workflow, Wrench } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 import { state } from '../core';
 import { useAppStore, useBusinessStore } from '../store/appStore';
 import { fmtTok } from '../utils/format';
+import { BrandMark, ModelGlyph } from './BrandMark';
 import { SafeMarkdown } from './SafeMarkdown';
 
 const quickPrompts = [
@@ -36,6 +37,12 @@ function HomeWorkspace() {
   const agent = state.selectedAgent;
   const configuredTools = (agent?.toolIds?.length || 0) + (agent?.mcpServerIds?.length || 0);
   const recentConversations = (state.conversations || []).slice(0, 5);
+  const models = (state.providers || []).flatMap((provider: any) => (provider.models || []).map((model: string) => ({
+    id: `${provider.id}:${model}`,
+    providerId: provider.id,
+    providerName: provider.name || provider.id,
+    model,
+  })));
 
   useEffect(() => {
     if (ready && !document.querySelector('.settings.open, .modal.open')) inputRef.current?.focus();
@@ -54,15 +61,15 @@ function HomeWorkspace() {
 
   return <div className="home-workbench">
     <header className="home-intro">
-      <div className="home-intro-copy">
-        <div className="home-location">{state.selectedWorkspace?.name || '默认工作区'} <span>/</span> {state.selectedProject?.name || '未选择项目'}</div>
-        <h1>欢迎回到 MultiChat</h1>
-        <p>在同一个工作台里组织模型、项目上下文与可控能力，并保留每一次运行证据。</p>
+      <div className="home-intro-main">
+        <div className="home-eyebrow"><BrandMark size={22} /><span>MultiChat 工作台</span><i className="status-pulse" />本机已就绪</div>
+        <h1>一个问题，验证更好的答案</h1>
+        <p>统一组织模型、项目资料与执行能力；对话、实验和每一次运行都能回看。</p>
       </div>
-      <div className="home-feature-grid" aria-label="MultiChat 核心能力">
-        <div><Columns3 size={19} aria-hidden /><span><strong>并行验证</strong><small>相同上下文比较多个模型</small></span></div>
-        <div><Workflow size={19} aria-hidden /><span><strong>能力编排</strong><small>组合 Skills、MCP 与插件</small></span></div>
-        <div><ShieldCheck size={19} aria-hidden /><span><strong>本地可控</strong><small>数据、权限和运行证据可查</small></span></div>
+      <div className="home-intro-metrics" aria-label="工作台状态">
+        <div><strong>{totalModels}</strong><span>可用模型</span></div>
+        <div><strong>{selectedFiles + enabledMemories}</strong><span>上下文项目</span></div>
+        <div><strong>{agent ? configuredTools + (agent.skillRefs?.length || 0) : 0}</strong><span>已编排能力</span></div>
       </div>
     </header>
     <section className="home-composer" id="heroCard" aria-label="发起工作">
@@ -100,9 +107,30 @@ function HomeWorkspace() {
         requestAnimationFrame(() => inputRef.current?.focus());
       }}>{label}</button>)}
     </div>
-    <div className="home-overview">
+    <div className="home-dashboard">
+      <section className="home-section home-models">
+        <div className="home-section-head"><div><h2>模型阵列</h2><p>直接选择，或用相同任务并行验证</p></div><button type="button" onClick={() => actions.openSettings?.('providers')}>管理模型</button></div>
+        <div className="home-model-grid">
+          {models.length ? models.slice(0, 4).map((item: any) => {
+            const active = state.selectedProvider?.id === item.providerId && state.selectedModel === item.model;
+            return <button
+              type="button"
+              className={`home-model-card${active ? ' active' : ''}`}
+              key={item.id}
+              aria-label={`选择 ${item.model}`}
+              aria-pressed={active}
+              onClick={() => actions.selectModel?.(item.providerId, item.model)}
+            >
+              <ModelGlyph name={item.providerName} />
+              <span><strong>{item.model}</strong><small>{item.providerName}</small></span>
+              <i aria-hidden="true" />
+            </button>;
+          }) : <button type="button" className="home-model-empty" onClick={() => actions.openSettings?.('providers')}><span>连接第一个模型</span><small>支持 OpenAI 兼容地址与本地模型</small><ArrowUpRight size={15} aria-hidden /></button>}
+        </div>
+        <button type="button" className="home-experiment-entry" disabled={totalModels < 2} onClick={() => actions.openCompare?.()}><SquareStack size={16} aria-hidden /><span><strong>并行模型实验</strong><small>{totalModels < 2 ? '再添加一个模型即可使用' : `已就绪 ${totalModels} 个模型 · 同一上下文公平比较`}</small></span><ArrowUpRight size={15} aria-hidden /></button>
+      </section>
       <section className="home-section recent-work">
-        <div className="home-section-head"><div><h2>继续工作</h2><p>最近打开过的对话</p></div><button type="button" onClick={() => actions.openSettings?.('runs')}>查看运行记录</button></div>
+        <div className="home-section-head"><div><h2>继续工作</h2><p>最近打开过的对话</p></div><button type="button" onClick={() => actions.openSettings?.('runs')}>运行记录</button></div>
         <div className="recent-work-list">
           {recentConversations.length ? recentConversations.map((conversation: any) => {
             const date = new Date(conversation.updatedAt || conversation.createdAt || 0);
@@ -111,22 +139,22 @@ function HomeWorkspace() {
           }) : <div className="home-empty"><strong>还没有历史工作</strong><span>发起第一项任务后，它会出现在这里。</span></div>}
         </div>
       </section>
-      <section className="home-section context-overview">
-        <div className="home-section-head"><div><h2>本次运行</h2><p>发送前可以随时调整</p></div><button type="button" onClick={() => actions.openInspector?.()}>检查上下文</button></div>
-        <dl className="context-overview-list">
-          <div><dt>模型</dt><dd>{state.selectedProvider?.name || '未连接'} · {state.selectedModel || '未选择'}</dd></div>
-          <div><dt>运行方式</dt><dd>{agent?.name || '直接对话'}</dd></div>
-          <div><dt>项目资料</dt><dd>{selectedFiles} 个文件 · {enabledMemories} 条记忆</dd></div>
-          <div><dt>可用能力</dt><dd>{agent ? `${agent.skillRefs?.length || 0} 个 Skills · ${configuredTools} 个工具` : '按需选择运行配置'}</dd></div>
-        </dl>
-        <div className="home-links" aria-label="能力入口">
-          <button type="button" onClick={() => actions.openSettings?.('skills')}>Skills</button>
-          <button type="button" onClick={() => actions.openSettings?.('mcp')}>MCP</button>
-          <button type="button" onClick={() => actions.openSettings?.('plugins')}>插件</button>
-          <button type="button" onClick={() => actions.openSettings?.('capabilities')}>全部能力</button>
-        </div>
-      </section>
     </div>
+    <section className="home-run-strip" aria-label="本次运行配置">
+      <div className="home-run-title"><span>本次运行</span><button type="button" onClick={() => actions.openInspector?.()}>检查上下文 <ArrowUpRight size={13} aria-hidden /></button></div>
+      <dl>
+        <div><dt>模型</dt><dd>{state.selectedProvider?.name || '未连接'} · {state.selectedModel || '未选择'}</dd></div>
+        <div><dt>运行方式</dt><dd>{agent?.name || '直接对话'}</dd></div>
+        <div><dt>项目资料</dt><dd>{selectedFiles} 文件 · {enabledMemories} 记忆</dd></div>
+        <div><dt>能力</dt><dd>{agent ? `${agent.skillRefs?.length || 0} Skills · ${configuredTools} 工具` : '按需选择'}</dd></div>
+      </dl>
+      <div className="home-links" aria-label="能力入口">
+        <button type="button" onClick={() => actions.openSettings?.('skills')}><Workflow size={14} aria-hidden />Skills</button>
+        <button type="button" onClick={() => actions.openSettings?.('mcp')}>MCP</button>
+        <button type="button" onClick={() => actions.openSettings?.('plugins')}>插件</button>
+        <button type="button" onClick={() => actions.openSettings?.('capabilities')}><ShieldCheck size={14} aria-hidden />能力清单</button>
+      </div>
+    </section>
   </div>;
 }
 
@@ -221,7 +249,7 @@ function MessageStats({ message }: { message: any }) {
 function MessageView({ message, index }: { message: any; index: number }) {
   const actions = useAppStore((current) => current.actions);
   return <article className={`msg ${message.role}${message.streaming ? ' streaming' : ''}`} aria-label={message.role === 'user' ? '你的消息' : 'MultiChat 回复'}>
-    <div className="msg-avatar" aria-hidden="true">{message.role === 'assistant' ? 'M' : '你'}</div>
+    {message.role === 'assistant' ? <BrandMark className="msg-avatar" size={32} /> : <div className="msg-avatar" aria-hidden="true">你</div>}
     <div className="msg-body">
       <div className="msg-role">{message.role === 'assistant' ? 'MultiChat' : '你'}{message.role === 'assistant' && message.agentTag && <span className="msg-model">{message.agentTag}</span>}{message.role === 'assistant' && message.model && <span className="msg-model">{message.model}</span>}{message.streaming && <span className="busy-label">处理中</span>}</div>
       <ThinkingPanel message={message} />

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { ConversationComposer, WorkspaceContent } from '../components/WorkspaceContent';
 import { WorkspaceRail } from '../components/WorkspaceRail';
+import { BrandMark } from '../components/BrandMark';
 import { getTheme, setTheme, type ThemePreference } from '../core/theme';
 import { useBusinessStore } from '../store/appStore';
 
@@ -66,8 +67,8 @@ export function AppShell() {
     <div className="app" id="app">
       <aside className="sidebar" id="sidebar" aria-label="对话导航">
         <div className="brand">
-          <div className="brand-logo" aria-hidden="true"><Layers3 size={18} strokeWidth={2.2} /></div>
-          <div className="brand-copy"><strong>MultiChat</strong><span>本地智能工作台</span></div>
+          <BrandMark className="brand-logo" size={36} />
+          <div className="brand-copy"><strong>MultiChat</strong><span>多模型运行工作台</span></div>
           <IconButton id="sidebarClose" className="sidebar-close" label="关闭对话导航" icon={X} />
         </div>
         <button className="new-chat" id="newChatBtn">
@@ -80,11 +81,15 @@ export function AppShell() {
         <div className="conv-section-title"><span>最近对话</span><small>本机保存</small></div>
         <div className="conv-list" id="convList"><div className="sidebar-empty">还没有对话</div></div>
         <nav className="sidebar-tools" aria-label="工作台入口">
-          <button type="button" data-open-settings="capabilities"><Blocks size={16} aria-hidden /><span>能力清单</span></button>
+          <span className="sidebar-tools-label">工作台</span>
+          <button type="button" data-open-settings="providers"><Layers3 size={16} aria-hidden /><span>模型连接</span></button>
           <button type="button" data-open-compare disabled={!compareReady} title={compareHint}><SquareStack size={16} aria-hidden /><span>模型实验</span></button>
+          <button type="button" data-open-settings="capabilities"><Blocks size={16} aria-hidden /><span>能力中心</span></button>
           <button type="button" data-open-settings="runs"><Activity size={16} aria-hidden /><span>运行记录</span></button>
           <button type="button" data-open-settings="usage"><Zap size={16} aria-hidden /><span>Token 用量</span></button>
+          <button type="button" data-open-settings="general"><Settings size={16} aria-hidden /><span>设置</span></button>
         </nav>
+        <div className="sidebar-runtime"><span className="status-pulse" /><span>本机服务已连接</span><small>Local</small></div>
       </aside>
 
       <main className="main" id="mainWorkspace">
@@ -117,7 +122,7 @@ export function AppShell() {
     <div className="scrim" id="scrim" />
     <div className="settings" id="settings" role="dialog" aria-modal="true" aria-label="MultiChat 设置" aria-hidden="true" inert>
       <aside className="settings-side">
-        <div className="settings-brand"><div className="brand-logo" aria-hidden="true">M</div><div><strong>控制中心</strong><span>配置、能力与运行</span></div></div>
+        <div className="settings-brand"><BrandMark className="brand-logo" size={34} /><div><strong>MultiChat 控制中心</strong><span>配置、能力与运行</span></div></div>
         {settingsGroups.map(group => <div className="settings-nav-group" key={group.label}>
           <div className="settings-group-label">{group.label}</div>
           {group.items.map(({ tab, label, icon: ItemIcon }) => <button className={`settings-tab${tab === 'general' ? ' active' : ''}`} data-tab={tab} key={tab}>
