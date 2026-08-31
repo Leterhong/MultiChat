@@ -799,3 +799,65 @@ kbd { font: 500 10px/1.2 var(--font-mono); letter-spacing: 0; }
   .current-model-note span:last-child { text-align: left; }
   .experiment-settings .compare-targets label { min-width: min(100%, 150px); }
 }
+
+/* ── Project-first home ───────────────────────────────────────────────── */
+.workspace-picker { max-width: 220px !important; }
+.workspace-picker > svg:first-child { flex: none; color: var(--accent); }
+.picker-import-project {
+  width: 100%; min-height: 64px; margin: 10px 0 12px; padding: 9px 10px; display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 11px;
+  color: var(--label-primary); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 10px; text-align: left;
+}
+.picker-import-project:hover { background: color-mix(in srgb, var(--accent-soft) 72%, var(--bg-hover)); border-color: var(--accent); }
+.picker-provider-mark.folder { color: var(--accent); background: var(--bg-elevated); border-color: color-mix(in srgb, var(--accent) 28%, transparent); }
+
+.home-workbench {
+  width: 100%; max-width: none; min-height: 100%; margin: 0; padding: clamp(20px, 3vw, 34px);
+  display: flex; flex-direction: column;
+}
+.home-intro {
+  width: 100%; max-width: none; min-height: 176px; padding: clamp(24px, 3vw, 38px);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); gap: clamp(24px, 4vw, 56px);
+  background: linear-gradient(128deg, #0c2148 0%, #101a30 60%, #17243d 100%);
+}
+.home-intro-main { max-width: 760px; }
+.home-intro h1 { max-width: none; margin-top: 15px; font-size: clamp(28px, 2.6vw, 34px); }
+.home-intro p { max-width: 720px; margin-top: 9px; font-size: 13px; line-height: 1.65; }
+.home-project-card {
+  position: relative; z-index: 1; min-width: 0; min-height: 98px; padding: 15px; display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  color: #dbe7f7; background: rgba(4, 12, 27, .42); border: 1px solid rgba(148, 175, 218, .18);
+  border-radius: 12px; text-align: left; backdrop-filter: blur(8px);
+}
+.home-project-card:hover { background: rgba(12, 28, 54, .7); border-color: rgba(109, 160, 241, .55); }
+.home-project-card.has-project { border-color: rgba(83, 183, 145, .38); }
+.home-project-icon { width: 44px; height: 44px; display: grid; place-items: center; color: #9ec3ff; background: rgba(79, 129, 213, .18); border-radius: 10px; }
+.home-project-card.has-project .home-project-icon { color: #91d3b9; background: rgba(52, 152, 116, .15); }
+.home-project-copy { min-width: 0; display: flex; flex-direction: column; }
+.home-project-copy small { color: #8294ad; font-size: 9px; font-weight: 650; }
+.home-project-copy strong { margin-top: 3px; overflow: hidden; color: #f4f8ff; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.home-project-copy em { margin-top: 5px; overflow: hidden; color: #93a4ba; font-size: 9.5px; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+.home-project-card > svg { color: #71839c; }
+
+.home-composer { width: 100%; min-height: 190px; margin-top: 16px; padding: 18px 19px 14px; }
+.home-composer .hero-input { min-height: 94px; font-size: 15px; }
+.hero-tag, .hero-context-tag, .composer-tool { color: var(--label-secondary); background: var(--bg-sunken); border-color: var(--border-l2); }
+.hero-folder { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-quick { padding-top: 11px; }
+
+@media (max-width: 900px) {
+  .home-intro { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .home-project-card { width: min(100%, 460px); }
+}
+
+@media (max-width: 760px) {
+  .home-workbench { padding: 12px; }
+  .home-intro { padding: 19px; }
+  .home-intro h1 { font-size: 26px; }
+  .home-project-card { width: 100%; min-height: 84px; padding: 11px; }
+  .home-composer { min-height: 210px; margin-top: 12px; padding: 14px; }
+  .home-composer .hero-input { min-height: 102px; }
+  .hero-folder { max-width: 148px; padding-inline: 8px; color: var(--accent); gap: 5px; }
+  .topbar .workspace-picker { max-width: 150px !important; }
+}

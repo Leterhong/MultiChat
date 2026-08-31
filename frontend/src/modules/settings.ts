@@ -2,6 +2,7 @@ import { $, $$, esc, api, toast, state, saveSelectedAgent, saveParams, getTheme,
 import { GeneralSettings, ProviderSettings, SkillSettings, ToolSettings } from '../components/CoreSettings';
 import { AgentSettings, CapabilitySettings, RunsSettings, UsageSettings, WorkspaceSettings, compactNumber } from '../components/SettingsDashboards';
 import { ModelExperimentSettings, type CompareResult } from '../components/CompareLab';
+import { importProjectFolder } from './assets';
 import { applyProjectDefaults, renderFileContext } from './conversations';
 import { loadAgents, loadCapabilities, loadProjectControlData, loadProjects, loadProviders, loadRuns, loadSkills, loadTools, loadUsage, loadWorkspaces } from './data';
 import { showExtensionImport } from './extensionImport';
@@ -156,7 +157,6 @@ function renderSettings(tab = 'general', keepScroll = false) {
 
 function mountWorkspaceSettings() {
   mountExtensionSettings(WorkspaceSettings, {
-    onWorkspaceChange: async (id: string) => { state.selectedWorkspace = state.workspaces.find((item: any) => item.id === id) || null; await loadProjects(); renderTopbar(); renderContent(); renderFileContext(); },
     onProjectChange: async (id: string) => { state.selectedProject = state.projects.find((item: any) => item.id === id) || null; if (state.selectedProject) localStorage.setItem('multichat_project', state.selectedProject.id); await loadProjects(); renderTopbar(); renderContent(); renderFileContext(); },
     onSaveDefaults: async (agentId: string | null, providerId: string | null, model: string | null) => {
       if (!state.selectedProject) { toast('请先选择项目', 'error'); return; }
@@ -168,8 +168,8 @@ function mountWorkspaceSettings() {
         applyProjectDefaults(); toast('已保存项目默认');
       } catch (error: any) { toast(error.message, 'error'); }
     },
-    onNewWorkspace: showWorkspaceForm,
     onNewProject: showProjectForm,
+    onImportFolder: importProjectFolder,
     onImportUrl: showAssetUrlModal,
     onUploadFile: async (file: File) => { if (!state.selectedProject) return; try { await api('/api/assets', { method: 'POST', body: JSON.stringify({ projectId: state.selectedProject.id, name: file.name, mimeType: file.type || 'text/plain', content: await file.text() }) }); await loadProjects(); toast('文件已加入项目'); } catch (error: any) { toast(error.message, 'error'); } },
     onDeleteAsset: async (id: string) => { try { await api(`/api/assets/${encodeURIComponent(id)}`, { method: 'DELETE' }); await loadProjects(); } catch (error: any) { toast(error.message, 'error'); } },

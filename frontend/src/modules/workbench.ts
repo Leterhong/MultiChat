@@ -33,10 +33,11 @@ function readinessChecks() {
   const agent = state.selectedAgent;
   const modelOk = Boolean(state.selectedProvider && state.selectedModel);
   const connectionOk = providerReady();
+  const projectOk = Boolean(state.selectedProject && state.selectedProject.id !== 'pr_inbox' && state.selectedProject.name !== '收件箱');
   return [
     { label: '模型选择', ok: modelOk, detail: modelOk ? `${state.selectedProvider.name || state.selectedProvider.id} · ${state.selectedModel}` : '尚未选择模型', tab: 'providers' },
     { label: '连接配置', ok: connectionOk, detail: connectionOk ? '凭据与地址已配置' : '需要补充 API 地址或凭据', tab: 'providers' },
-    { label: '项目上下文', ok: Boolean(state.selectedProject), detail: state.selectedProject ? state.selectedProject.name : '尚未选择项目', tab: 'workspace' },
+    { label: '项目上下文', ok: projectOk, detail: projectOk ? state.selectedProject.name : '尚未打开项目文件夹', tab: 'workspace' },
     { label: '运行配置', ok: true, detail: agent ? agent.name : '直接对话（无工具注入）', tab: 'agents' },
   ];
 }
@@ -74,8 +75,7 @@ function renderInspector() {
       <dl class="inspector-facts">
         <div><dt>模型</dt><dd>${esc(state.selectedModel || '未选择')}</dd></div>
         <div><dt>运行配置</dt><dd>${esc(agent?.name || '直接对话')}</dd></div>
-        <div><dt>工作区</dt><dd>${esc(state.selectedWorkspace?.name || '未选择')}</dd></div>
-        <div><dt>项目</dt><dd>${esc(state.selectedProject?.name || '未选择')}</dd></div>
+        <div><dt>项目</dt><dd>${esc(state.selectedProject?.id === 'pr_inbox' ? '临时对话' : state.selectedProject?.name || '未选择')}</dd></div>
       </dl>
     </section>
     <section class="inspector-section">
@@ -148,7 +148,7 @@ function commands(): Command[] {
     { id: 'compare', label: '模型实验', description: '在设置中使用相同上下文并行比较 2–4 个模型', group: '设置', shortcut: 'Ctrl M', run: () => openSettings('experiment') },
     { id: 'providers', label: '模型连接', description: '添加模型提供方、地址和凭据', group: '设置', run: () => openSettings('providers') },
     { id: 'agents', label: '运行配置', description: '组合提示词、Skills、工具与 MCP', group: '设置', run: () => openSettings('agents') },
-    { id: 'workspace', label: '工作区与项目', description: '管理文件、记忆、快照和项目默认值', group: '设置', run: () => openSettings('workspace') },
+    { id: 'workspace', label: '项目与文件', description: '管理代码文件、记忆、快照和项目默认值', group: '设置', run: () => openSettings('workspace') },
     { id: 'skills', label: 'Skills', description: '浏览、导入和管理工作流能力', group: '能力', run: () => openSettings('skills') },
     { id: 'mcp', label: 'MCP 服务', description: '管理外部工具连接与信任状态', group: '能力', run: () => openSettings('mcp') },
     { id: 'plugins', label: '插件', description: '导入、审查和启用扩展包', group: '能力', run: () => openSettings('plugins') },

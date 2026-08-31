@@ -81,7 +81,7 @@ describe('React settings surfaces', () => {
       usageLoading: false, usageRange: '7',
       runs: [{ id: 'run', status: 'completed', startedAt: '2026-08-28T00:00:00Z', finishedAt: '2026-08-28T00:00:01Z', usage: { totalTokens: 10 } }],
     } as any);
-    const workspace = render(<WorkspaceSettings onWorkspaceChange={noopAsync} onProjectChange={noopAsync} onSaveDefaults={noopAsync} onNewWorkspace={noop} onNewProject={noop} onImportUrl={noop} onUploadFile={noopAsync} onDeleteAsset={noopAsync} onSearch={async () => []} onAddMemory={noop} onEditMemory={noop} onToggleMemory={noopAsync} onDeleteMemory={noopAsync} onCreateSnapshot={noopAsync} onRestoreSnapshot={noopAsync} onDeleteSnapshot={noopAsync} />);
+    const workspace = render(<WorkspaceSettings onProjectChange={noopAsync} onSaveDefaults={noopAsync} onNewProject={noop} onImportFolder={noopAsync} onImportUrl={noop} onUploadFile={noopAsync} onDeleteAsset={noopAsync} onSearch={async () => []} onAddMemory={noop} onEditMemory={noop} onToggleMemory={noopAsync} onDeleteMemory={noopAsync} onCreateSnapshot={noopAsync} onRestoreSnapshot={noopAsync} onDeleteSnapshot={noopAsync} />);
     expect(await axe(workspace.container)).toHaveNoViolations(); workspace.unmount();
     const agent = render(<AgentSettings onEdit={noop} onExport={noop} onDelete={noopAsync} onImport={noopAsync} />);
     expect(await axe(agent.container)).toHaveNoViolations(); agent.unmount();

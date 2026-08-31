@@ -27,7 +27,7 @@ export function WorkspaceRail() {
   return <aside className="workspace-rail" aria-label="运行控制台">
     <div className="rail-workbench-head"><div><span className="status-pulse" /><strong>运行控制台</strong></div><small>设置会应用到下一次发送</small></div>
     <section className="rail-panel rail-models">
-      <header className="rail-panel-head"><div><span className="rail-kicker">当前运行</span><h2>选择主模型</h2></div><button type="button" onClick={() => actions.openSettings?.('providers')}>管理</button></header>
+      <header className="rail-panel-head"><div><span className="rail-kicker">当前运行</span><h2>选择主模型</h2></div></header>
       <div className="rail-model-list">
         {models.length ? models.slice(0, 6).map((item) => {
           const active = business.selectedProvider?.id === item.providerId && business.selectedModel === item.model;

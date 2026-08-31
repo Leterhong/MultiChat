@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Brain, CheckCircle2, ChevronDown, FileText, FolderPlus, ListTree, ShieldCheck, Workflow, Wrench } from 'lucide-react';
+import { Brain, ChevronDown, ChevronRight, FileText, FolderOpen, FolderPlus, ListTree, Wrench } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 import { state } from '../core';
 import { useAppStore, useBusinessStore } from '../store/appStore';
 import { fmtTok } from '../utils/format';
-import { BrandMark, ModelGlyph } from './BrandMark';
+import { BrandMark } from './BrandMark';
 import { SafeMarkdown } from './SafeMarkdown';
 
 const quickPrompts = [
@@ -31,13 +31,11 @@ function HomeWorkspace() {
   const actions = useAppStore((current) => current.actions);
   const inputRef = useAutosize(prompt);
   const noModel = !state.selectedProvider || !state.selectedModel;
-  const totalModels = useBusinessStore((current) => current.providers.reduce((sum: number, p: any) => sum + (p.models?.length || 0), 0));
   const selectedFiles = state.selectedAssetIds?.size || 0;
-  const enabledMemories = (state.memories || []).filter((item: any) => item.enabled !== false).length;
-  const agent = state.selectedAgent;
-  const configuredTools = (agent?.toolIds?.length || 0) + (agent?.mcpServerIds?.length || 0);
-  const recentConversations = (state.conversations || []).slice(0, 5);
-  const providerName = state.selectedProvider?.name || state.selectedProvider?.id || '未连接模型';
+  const projectFiles = state.assets?.length || 0;
+  const project = state.selectedProject;
+  const hasProject = Boolean(project && project.id !== 'pr_inbox' && project.name !== '收件箱');
+  const projectName = hasProject ? project.name : '还没有打开项目';
 
   useEffect(() => {
     if (ready && !document.querySelector('.settings.open, .modal.open')) inputRef.current?.focus();
@@ -57,15 +55,15 @@ function HomeWorkspace() {
   return <div className="home-workbench">
     <header className="home-intro">
       <div className="home-intro-main">
-        <div className="home-eyebrow"><BrandMark size={22} /><span>MultiChat 工作台</span><i className="status-pulse" />本机已就绪</div>
-        <h1>一个问题，验证更好的答案</h1>
-        <p>统一组织模型、项目资料与执行能力；一次专注一个模型，过程与结果都能回看。</p>
+        <div className="home-eyebrow"><BrandMark size={22} /><span>MultiChat · 项目对话</span></div>
+        <h1>从项目开始工作</h1>
+        <p>选择一个本地代码文件夹，MultiChat 会保留目录结构并把相关文件装配进对话上下文。</p>
       </div>
-      <div className="home-intro-metrics" aria-label="工作台状态">
-        <div><strong>{totalModels}</strong><span>可用模型</span></div>
-        <div><strong>{selectedFiles + enabledMemories}</strong><span>上下文项目</span></div>
-        <div><strong>{agent ? configuredTools + (agent.skillRefs?.length || 0) : 0}</strong><span>已编排能力</span></div>
-      </div>
+      <button className={`home-project-card${hasProject ? ' has-project' : ''}`} type="button" onClick={() => document.getElementById('workspacePicker')?.click()}>
+        <span className="home-project-icon"><FolderOpen size={22} aria-hidden /></span>
+        <span className="home-project-copy"><small>{hasProject ? '当前项目' : '第一步'}</small><strong>{hasProject ? projectName : '选择项目文件夹'}</strong><em>{hasProject ? `${projectFiles} 个文件已建立索引` : '导入源码和文档，自动创建项目'}</em></span>
+        <ChevronRight size={17} aria-hidden />
+      </button>
     </header>
     <section className="home-composer" id="heroCard" aria-label="发起工作">
       <div className="home-composer-label"><label htmlFor="heroInput">任务描述</label>{noModel
@@ -88,9 +86,8 @@ function HomeWorkspace() {
       />
       <div className="hero-actions">
         <button className="hero-tag" id="heroModelTag" type="button" onClick={() => actions.openModelPicker?.()}>{state.selectedModel || '选择模型'}</button>
-        <button className="hero-tag" id="heroAgents" type="button" onClick={() => actions.openSettings?.('agents')}>{agent?.name || '直接对话'}</button>
-        <button className="hero-context-tag" id="heroWorkspace" type="button" onClick={() => actions.openSettings?.('workspace')}>{selectedFiles} 个文件 · {enabledMemories} 条记忆</button>
-        <button className="hero-folder" type="button" onClick={() => void actions.importProjectFolder?.()}><FolderPlus size={14} aria-hidden />添加项目文件夹</button>
+        <button className="hero-folder" type="button" onClick={() => document.getElementById('workspacePicker')?.click()}><FolderPlus size={14} aria-hidden />{hasProject ? projectName : '选择项目文件夹'}</button>
+        <button className="hero-context-tag" id="heroWorkspace" type="button" onClick={() => actions.openInspector?.()}>{selectedFiles} / {projectFiles} 文件已选择</button>
         <div className="spacer" />
         <button className={`send-btn${state.streaming ? ' stop' : ''}`} id="heroSendBtn" type="button" disabled={!ready} title="开始" aria-label="开始运行" onClick={submit}>↑</button>
       </div>
@@ -102,42 +99,6 @@ function HomeWorkspace() {
         requestAnimationFrame(() => inputRef.current?.focus());
       }}>{label}</button>)}
     </div>
-    <div className="home-dashboard">
-      <section className="home-section home-current-model">
-        <div className="home-section-head"><div><h2>当前主模型</h2><p>首页每次只向这个模型发送，并返回一份回答</p></div><button type="button" onClick={() => actions.openModelPicker?.()}>切换模型</button></div>
-        {state.selectedModel ? <button type="button" className="current-model-card" onClick={() => actions.openModelPicker?.()} aria-label={`当前模型 ${state.selectedModel}，点击切换`}>
-          <ModelGlyph name={providerName} className="current-model-mark" />
-          <span><small>{providerName}</small><strong>{state.selectedModel}</strong><em>{agent?.name || '直接对话'} · 单模型回答</em></span>
-          <CheckCircle2 size={18} aria-hidden />
-        </button> : <button type="button" className="home-model-empty" onClick={() => actions.openSettings?.('providers')}><span>连接第一个模型</span><small>支持 OpenAI 兼容地址与本地模型</small><ArrowUpRight size={15} aria-hidden /></button>}
-        <div className="current-model-note"><span>{totalModels} 个模型可选</span><span>需要并行比较时，请前往 设置 → 模型实验</span></div>
-      </section>
-      <section className="home-section recent-work">
-        <div className="home-section-head"><div><h2>继续工作</h2><p>最近打开过的对话</p></div><button type="button" onClick={() => actions.openSettings?.('runs')}>运行记录</button></div>
-        <div className="recent-work-list">
-          {recentConversations.length ? recentConversations.map((conversation: any) => {
-            const date = new Date(conversation.updatedAt || conversation.createdAt || 0);
-            const time = Number.isNaN(date.getTime()) ? '最近' : date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
-            return <button type="button" className="recent-work-item" key={conversation.id} onClick={() => actions.openConversation?.(conversation.id)}><span>{conversation.title || '未命名对话'}</span><small>{time}</small></button>;
-          }) : <div className="home-empty"><strong>还没有历史工作</strong><span>发起第一项任务后，它会出现在这里。</span></div>}
-        </div>
-      </section>
-    </div>
-    <section className="home-run-strip" aria-label="本次运行配置">
-      <div className="home-run-title"><span>本次运行</span><button type="button" onClick={() => actions.openInspector?.()}>检查上下文 <ArrowUpRight size={13} aria-hidden /></button></div>
-      <dl>
-        <div><dt>模型</dt><dd>{state.selectedProvider?.name || '未连接'} · {state.selectedModel || '未选择'}</dd></div>
-        <div><dt>运行方式</dt><dd>{agent?.name || '直接对话'}</dd></div>
-        <div><dt>项目资料</dt><dd>{selectedFiles} 文件 · {enabledMemories} 记忆</dd></div>
-        <div><dt>能力</dt><dd>{agent ? `${agent.skillRefs?.length || 0} Skills · ${configuredTools} 工具` : '按需选择'}</dd></div>
-      </dl>
-      <div className="home-links" aria-label="能力入口">
-        <button type="button" onClick={() => actions.openSettings?.('skills')}><Workflow size={14} aria-hidden />Skills</button>
-        <button type="button" onClick={() => actions.openSettings?.('mcp')}>MCP</button>
-        <button type="button" onClick={() => actions.openSettings?.('plugins')}>插件</button>
-        <button type="button" onClick={() => actions.openSettings?.('capabilities')}><ShieldCheck size={14} aria-hidden />能力清单</button>
-      </div>
-    </section>
   </div>;
 }
 

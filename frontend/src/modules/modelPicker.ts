@@ -86,9 +86,11 @@ function renderTopbar() {
   syncModelUI();
   const a = state.selectedAgent;
   $('#agentPickerName').textContent = a ? a.name : '直接对话';
-  $('#workspacePickerName').textContent = state.selectedWorkspace ? state.selectedWorkspace.name : '工作区';
+  const project = state.selectedProject;
+  const hasProject = Boolean(project && project.id !== 'pr_inbox' && project.name !== '收件箱');
+  $('#workspacePickerName').textContent = hasProject ? project.name : '添加项目';
   const path = $('#topbarPath');
-  if (path) path.textContent = `${state.selectedWorkspace?.name || '工作区'} / ${state.selectedProject?.name || '未选择项目'}`;
+  if (path) path.textContent = hasProject ? `${project.name} · ${state.assets.length} 个文件` : '未添加项目文件夹';
   renderInspector();
 }
 // 同步两个模型入口的显示文案。点击行为由 React runtime action 统一管理，

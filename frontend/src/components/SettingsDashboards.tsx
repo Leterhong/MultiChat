@@ -11,11 +11,10 @@ export function compactNumber(value: unknown) {
 }
 
 type WorkspaceProps = {
-  onWorkspaceChange: (id: string) => Promise<void>;
   onProjectChange: (id: string) => Promise<void>;
   onSaveDefaults: (agentId: string | null, providerId: string | null, model: string | null) => Promise<void>;
-  onNewWorkspace: () => void;
   onNewProject: () => void;
+  onImportFolder: () => Promise<void>;
   onImportUrl: () => void;
   onUploadFile: (file: File) => Promise<void>;
   onDeleteAsset: (id: string) => Promise<void>;
@@ -30,14 +29,12 @@ type WorkspaceProps = {
 };
 
 export function WorkspaceSettings(props: WorkspaceProps) {
-  const workspaces = useBusinessStore((current) => current.workspaces);
   const projects = useBusinessStore((current) => current.projects);
   const agents = useBusinessStore((current) => current.agents);
   const providers = useBusinessStore((current) => current.providers);
   const assets = useBusinessStore((current) => current.assets);
   const memories = useBusinessStore((current) => current.memories);
   const snapshots = useBusinessStore((current) => current.snapshots);
-  const workspace = useBusinessStore((current) => current.selectedWorkspace);
   const project = useBusinessStore((current) => current.selectedProject);
   const fileRef = useRef<HTMLInputElement>(null);
   const [defaultAgent, setDefaultAgent] = useState(project?.defaultAgentId || '');
@@ -76,15 +73,14 @@ export function WorkspaceSettings(props: WorkspaceProps) {
   };
 
   return <>
-    <h3>工作区</h3><p className="lead">按工作区和项目组织会话、文件与运行上下文。文件内容只保存在本地数据目录。</p>
+    <h3>项目与文件</h3><p className="lead">一个项目对应一个代码文件夹及其对话上下文；内部存储空间由 MultiChat 自动管理。</p>
     <section className="provider-card">
-      <h4>当前空间</h4>
-      <div className="field"><label htmlFor="workspaceSelectReact">工作区</label><select id="workspaceSelectReact" value={workspace?.id || ''} onChange={(event) => void props.onWorkspaceChange(event.target.value)}>{workspaces.map((item: any) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
-      <div className="field"><label htmlFor="projectSelectReact">项目</label><select id="projectSelectReact" value={project?.id || ''} onChange={(event) => void props.onProjectChange(event.target.value)}>{projects.map((item: any) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
+      <div className="control-card-head"><div><h4>当前项目</h4><div className="pmeta">切换项目时会自动载入对应的文件、记忆和默认模型。</div></div><button className="btn-primary compact-action" type="button" onClick={() => void props.onImportFolder()}><Upload size={15} aria-hidden /> 打开项目文件夹</button></div>
+      <div className="field"><label htmlFor="projectSelectReact">已打开的项目</label><select id="projectSelectReact" value={project?.id || ''} onChange={(event) => void props.onProjectChange(event.target.value)}>{projects.map((item: any) => <option value={item.id} key={item.id}>{item.name === '收件箱' ? '无项目（临时对话）' : item.name}</option>)}</select></div>
       <div className="field"><label htmlFor="projectAgentReact">项目默认运行配置</label><select id="projectAgentReact" value={defaultAgent} onChange={(event) => setDefaultAgent(event.target.value)}><option value="">（继承全局）</option>{agents.map((item: any) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></div>
       <div className="field"><label htmlFor="projectModelReact">项目默认模型</label><select id="projectModelReact" value={defaultModel} onChange={(event) => setDefaultModel(event.target.value)}><option value="">（继承全局）</option>{models.map((item: any) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></div>
       <div className="provider-row"><button className="btn-primary compact-action" type="button" onClick={() => void saveDefaults()}>保存项目默认</button></div>
-      <div className="provider-row"><button className="btn-ghost" type="button" onClick={props.onNewWorkspace}>新建工作区</button><button className="btn-ghost" type="button" onClick={props.onNewProject}>新建项目</button></div>
+      <div className="provider-row"><button className="btn-ghost" type="button" onClick={props.onNewProject}>新建空项目</button></div>
     </section>
     <section className="provider-card">
       <h4>项目文件</h4><div className="pmeta">支持本地文本文件和 URL 文本资源；对话时会按相关性截取并附带文件/行号来源。</div>

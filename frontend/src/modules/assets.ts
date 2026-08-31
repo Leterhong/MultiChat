@@ -25,6 +25,21 @@ function relativeName(file: ProjectFile): string {
   return String(file.webkitRelativePath || file.name).replaceAll('\\', '/').replace(/^\/+/, '');
 }
 
+export function projectFolderName(files: Iterable<ProjectFile>): string {
+  const roots = Array.from(files, (file) => {
+    const name = relativeName(file);
+    return name.includes('/') ? name.split('/').filter(Boolean)[0] : '';
+  }).filter(Boolean);
+  if (!roots.length) return '本地项目';
+  return roots.every((root) => root === roots[0]) ? roots[0].slice(0, 120) : '本地项目';
+}
+
+function projectRelativeName(file: ProjectFile, root: string): string {
+  const name = relativeName(file);
+  const prefix = `${root}/`;
+  return name.startsWith(prefix) ? name.slice(prefix.length) : name;
+}
+
 export function isProjectTextFile(file: ProjectFile): boolean {
   const name = relativeName(file);
   const parts = name.split('/').filter(Boolean);
@@ -36,31 +51,67 @@ export function isProjectTextFile(file: ProjectFile): boolean {
 }
 
 export function selectProjectFiles(files: Iterable<ProjectFile>) {
+  const candidates = Array.from(files);
+  const root = projectFolderName(candidates);
   const selected: Array<{ file: ProjectFile; name: string }> = [];
   let bytes = 0;
   let skipped = 0;
-  for (const file of files) {
+  for (const file of candidates) {
     if (selected.length >= MAX_FOLDER_FILES || !isProjectTextFile(file) || bytes + file.size > MAX_FOLDER_BYTES) {
       skipped += 1;
       continue;
     }
-    selected.push({ file, name: relativeName(file) });
+    selected.push({ file, name: projectRelativeName(file, root) });
     bytes += file.size;
   }
   return { selected, skipped, bytes };
 }
 
-async function uploadProjectFiles(files: ProjectFile[]): Promise<void> {
-  if (!state.selectedProject) {
-    toast('请先选择一个项目，再添加文件夹', 'error');
-    return;
+async function selectProjectForFolder(folderName: string) {
+  if (!state.selectedWorkspace) throw new Error('项目存储尚未初始化，请刷新页面后重试');
+  let project = state.projects.find((item: any) => item.id !== 'pr_inbox' && String(item.name).toLowerCase() === folderName.toLowerCase());
+  if (!project) {
+    project = await api('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify({
+        workspaceId: state.selectedWorkspace.id,
+        name: folderName,
+        description: '从本地项目文件夹导入',
+      }),
+    });
+    state.projects = [project, ...state.projects];
   }
-  const projectId = state.selectedProject.id;
+  const changed = state.selectedProject?.id !== project.id;
+  state.selectedProject = project;
+  localStorage.setItem('multichat_project', project.id);
+  state.assets = await api('/api/assets?projectId=' + encodeURIComponent(project.id));
+  state.selectedAssetIds = new Set(state.assets.map((asset: any) => asset.id));
+  await loadProjectControlData();
+  if (changed) {
+    if (document.querySelector('#settings.open')) closeSettings();
+    await newConversation();
+  }
+  renderTopbar();
+  renderFileContext();
+  return project;
+}
+
+async function uploadProjectFiles(files: ProjectFile[]): Promise<void> {
   const { selected, skipped } = selectProjectFiles(files);
   if (!selected.length) {
     toast('文件夹中没有可导入的文本或源代码文件', 'error');
     return;
   }
+
+  const folderName = projectFolderName(files);
+  let project: any;
+  try {
+    project = await selectProjectForFolder(folderName);
+  } catch (error: any) {
+    toast(error.message || '无法创建项目', 'error');
+    return;
+  }
+  const projectId = project.id;
 
   const existingNames = new Set((state.assets || []).map((asset: any) => String(asset.name).toLowerCase()));
   const pending = selected.filter((item) => !existingNames.has(item.name.toLowerCase()));
@@ -70,7 +121,7 @@ async function uploadProjectFiles(files: ProjectFile[]): Promise<void> {
     return;
   }
 
-  toast(`正在导入 ${pending.length} 个项目文件…`);
+  toast(`正在打开「${folderName}」并导入 ${pending.length} 个文件…`);
   const uploaded: any[] = [];
   const failed: string[] = [];
   let cursor = 0;
@@ -103,7 +154,9 @@ async function uploadProjectFiles(files: ProjectFile[]): Promise<void> {
     duplicateCount ? `忽略 ${duplicateCount} 个重复文件` : '',
     failed.length ? `${failed.length} 个文件导入失败` : '',
   ].filter(Boolean);
-  toast(`已添加 ${uploaded.length} 个项目文件${notes.length ? `；${notes.join('，')}` : ''}`, failed.length ? 'error' : undefined);
+  renderTopbar();
+  renderFileContext();
+  toast(`项目「${folderName}」已打开，新增 ${uploaded.length} 个文件${notes.length ? `；${notes.join('，')}` : ''}`, failed.length ? 'error' : undefined);
 }
 
 export function importProjectFolder(): Promise<void> {
@@ -113,7 +166,6 @@ export function importProjectFolder(): Promise<void> {
     input.multiple = true;
     input.setAttribute('webkitdirectory', '');
     input.setAttribute('directory', '');
-    input.accept = 'text/*,.md,.mdx,.json,.jsonc,.js,.jsx,.ts,.tsx,.py,.go,.rs,.java,.kt,.c,.h,.cpp,.hpp,.cs,.php,.rb,.swift,.vue,.svelte,.html,.css,.scss,.less,.yaml,.yml,.toml,.ini,.env,.sql,.graphql,.sh,.ps1,.bat,.xml,.svg';
     input.className = 'project-folder-input';
     input.setAttribute('aria-hidden', 'true');
     document.body.appendChild(input);

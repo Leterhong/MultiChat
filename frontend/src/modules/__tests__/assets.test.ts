@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isProjectTextFile, selectProjectFiles } from '../assets';
+import { isProjectTextFile, projectFolderName, selectProjectFiles } from '../assets';
 
 function projectFile(path: string, content = 'export const value = 1;', type = 'text/plain') {
   const file = new File([content], path.split('/').at(-1) || 'file.txt', { type });
@@ -9,11 +9,13 @@ function projectFile(path: string, content = 'export const value = 1;', type = '
 
 describe('project folder import', () => {
   it('keeps source files with their relative directory structure', () => {
-    const result = selectProjectFiles([
+    const files = [
       projectFile('demo/src/index.ts'),
       projectFile('demo/README.md', '# Demo'),
-    ]);
-    expect(result.selected.map((item) => item.name)).toEqual(['demo/src/index.ts', 'demo/README.md']);
+    ];
+    const result = selectProjectFiles(files);
+    expect(projectFolderName(files)).toBe('demo');
+    expect(result.selected.map((item) => item.name)).toEqual(['src/index.ts', 'README.md']);
     expect(result.skipped).toBe(0);
   });
 
@@ -27,5 +29,9 @@ describe('project folder import', () => {
     expect(isProjectTextFile(build)).toBe(false);
     expect(isProjectTextFile(binary)).toBe(false);
     expect(selectProjectFiles([source, dependency, build, binary]).skipped).toBe(3);
+  });
+
+  it('uses a safe fallback when a browser does not expose the folder path', () => {
+    expect(projectFolderName([new File(['hello'], 'README.md', { type: 'text/markdown' })])).toBe('本地项目');
   });
 });
