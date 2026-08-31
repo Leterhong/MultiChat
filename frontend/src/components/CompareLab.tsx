@@ -150,3 +150,11 @@ export function CompareLab({ targets, defaultTargetIds, initialPrompt, projectNa
     </div></details>
   </div>;
 }
+
+export function ModelExperimentSettings(props: Props) {
+  return <div className="settings-page experiment-settings">
+    <div className="settings-page-heading"><div><h3>模型实验</h3><p>仅在需要比较时使用；首页和普通对话始终只运行当前主模型。</p></div></div>
+    {props.targets.length < 2 && <div className="experiment-requirement"><strong>还需要一个模型</strong><span>至少连接两个模型后才能进行公平的并行实验。</span></div>}
+    <CompareLab {...props} />
+  </div>;
+}

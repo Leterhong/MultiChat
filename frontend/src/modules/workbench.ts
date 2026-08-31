@@ -145,7 +145,7 @@ function commands(): Command[] {
   return [
     { id: 'new', label: '新建对话', description: '清空当前视图并开始一段新对话', group: '对话', shortcut: 'Ctrl N', run: () => newConversation() },
     { id: 'inspect', label: '打开会话检查器', description: '检查模型、上下文、能力和最近运行', group: '对话', shortcut: 'Ctrl I', run: toggleInspector },
-    { id: 'compare', label: '并行模型对比', description: '使用相同上下文并行比较 2–4 个模型', group: '对话', shortcut: 'Ctrl M', run: () => openCompare() },
+    { id: 'compare', label: '模型实验', description: '在设置中使用相同上下文并行比较 2–4 个模型', group: '设置', shortcut: 'Ctrl M', run: () => openSettings('experiment') },
     { id: 'providers', label: '模型连接', description: '添加模型提供方、地址和凭据', group: '设置', run: () => openSettings('providers') },
     { id: 'agents', label: '运行配置', description: '组合提示词、Skills、工具与 MCP', group: '设置', run: () => openSettings('agents') },
     { id: 'workspace', label: '工作区与项目', description: '管理文件、记忆、快照和项目默认值', group: '设置', run: () => openSettings('workspace') },
@@ -205,7 +205,7 @@ function closeCommandPalette(restoreFocus = true) {
 
 function setupWorkbench() {
   const labels: Record<string, string> = {
-    general: '偏好设置', providers: '模型连接', agents: '运行配置',
+    general: '偏好设置', providers: '模型连接', experiment: '模型实验', agents: '运行配置',
     capabilities: '能力清单', usage: '用量', runs: '运行日志',
   };
   $$('.settings-tab[data-tab]').forEach((button: HTMLButtonElement) => {
@@ -254,7 +254,7 @@ function setupWorkbench() {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'm') {
       event.preventDefault();
       if ($('#commandPalette')?.classList.contains('open')) closeCommandPalette(false);
-      openCompare();
+      openSettings('experiment');
       return;
     }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {

@@ -1,6 +1,7 @@
 import { $, $$, esc, api, toast, state, saveSelectedAgent, saveParams, getTheme, setTheme } from '../core/index';
 import { GeneralSettings, ProviderSettings, SkillSettings, ToolSettings } from '../components/CoreSettings';
 import { AgentSettings, CapabilitySettings, RunsSettings, UsageSettings, WorkspaceSettings, compactNumber } from '../components/SettingsDashboards';
+import { ModelExperimentSettings, type CompareResult } from '../components/CompareLab';
 import { applyProjectDefaults, renderFileContext } from './conversations';
 import { loadAgents, loadCapabilities, loadProjectControlData, loadProjects, loadProviders, loadRuns, loadSkills, loadTools, loadUsage, loadWorkspaces } from './data';
 import { showExtensionImport } from './extensionImport';
@@ -9,6 +10,7 @@ import { closeModal, showModal } from './modal';
 import { renderTopbar } from './modelPicker';
 import { mountExtensionSettings, renderMcpServers, renderPlugins, showDiff, sourceLabel, unmountExtensionSettings } from './pluginsUI';
 import { renderContent } from './render';
+import { adoptResult, compareTargets, executeTarget } from './compare';
 
 $('#settingsBtn').onclick = () => openSettings();
 let settingsReturnFocus: HTMLElement | null = null;
@@ -95,6 +97,25 @@ function renderSettings(tab = 'general', keepScroll = false) {
       onAddBuiltin: showAddBuiltin,
       onAddCustom: showAddCustom,
       onProbe: async (provider: any) => api(`/api/providers/${encodeURIComponent(provider.id)}/probe`, { method: 'POST', body: JSON.stringify({}) }),
+    });
+  } else if (tab === 'experiment') {
+    const targets = compareTargets();
+    const currentId = state.selectedProvider && state.selectedModel ? `${state.selectedProvider.id}:${state.selectedModel}` : '';
+    const defaults = [currentId, ...targets.map((item) => item.id)].filter(Boolean).filter((value, index, values) => values.indexOf(value) === index).slice(0, 2);
+    const latestPrompt = [...(state.messages || [])].reverse().find((message: any) => message.role === 'user')?.content || '';
+    mountExtensionSettings(ModelExperimentSettings, {
+      targets,
+      defaultTargetIds: defaults,
+      initialPrompt: latestPrompt,
+      projectName: state.selectedProject?.name || '未选择项目',
+      fileCount: state.selectedAssetIds?.size || 0,
+      memoryCount: (state.memories || []).filter((item: any) => item.enabled !== false).length,
+      execute: executeTarget,
+      adopt: async (result: CompareResult, prompt: string) => {
+        await adoptResult(result, prompt);
+        closeSettings();
+        window.requestAnimationFrame(() => $('#input')?.focus());
+      },
     });
   } else if (tab === 'skills') {
     mountExtensionSettings(SkillSettings, {

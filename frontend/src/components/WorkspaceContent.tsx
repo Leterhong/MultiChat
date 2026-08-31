@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Brain, ChevronDown, FileText, ListTree, ShieldCheck, SquareStack, Workflow, Wrench } from 'lucide-react';
+import { ArrowUpRight, Brain, CheckCircle2, ChevronDown, FileText, FolderPlus, ListTree, ShieldCheck, Workflow, Wrench } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 import { state } from '../core';
 import { useAppStore, useBusinessStore } from '../store/appStore';
@@ -37,12 +37,7 @@ function HomeWorkspace() {
   const agent = state.selectedAgent;
   const configuredTools = (agent?.toolIds?.length || 0) + (agent?.mcpServerIds?.length || 0);
   const recentConversations = (state.conversations || []).slice(0, 5);
-  const models = (state.providers || []).flatMap((provider: any) => (provider.models || []).map((model: string) => ({
-    id: `${provider.id}:${model}`,
-    providerId: provider.id,
-    providerName: provider.name || provider.id,
-    model,
-  })));
+  const providerName = state.selectedProvider?.name || state.selectedProvider?.id || '未连接模型';
 
   useEffect(() => {
     if (ready && !document.querySelector('.settings.open, .modal.open')) inputRef.current?.focus();
@@ -64,7 +59,7 @@ function HomeWorkspace() {
       <div className="home-intro-main">
         <div className="home-eyebrow"><BrandMark size={22} /><span>MultiChat 工作台</span><i className="status-pulse" />本机已就绪</div>
         <h1>一个问题，验证更好的答案</h1>
-        <p>统一组织模型、项目资料与执行能力；对话、实验和每一次运行都能回看。</p>
+        <p>统一组织模型、项目资料与执行能力；一次专注一个模型，过程与结果都能回看。</p>
       </div>
       <div className="home-intro-metrics" aria-label="工作台状态">
         <div><strong>{totalModels}</strong><span>可用模型</span></div>
@@ -95,8 +90,8 @@ function HomeWorkspace() {
         <button className="hero-tag" id="heroModelTag" type="button" onClick={() => actions.openModelPicker?.()}>{state.selectedModel || '选择模型'}</button>
         <button className="hero-tag" id="heroAgents" type="button" onClick={() => actions.openSettings?.('agents')}>{agent?.name || '直接对话'}</button>
         <button className="hero-context-tag" id="heroWorkspace" type="button" onClick={() => actions.openSettings?.('workspace')}>{selectedFiles} 个文件 · {enabledMemories} 条记忆</button>
+        <button className="hero-folder" type="button" onClick={() => void actions.importProjectFolder?.()}><FolderPlus size={14} aria-hidden />添加项目文件夹</button>
         <div className="spacer" />
-        <button className="btn-secondary home-compare" id="heroCompare" type="button" disabled={totalModels < 2} title={totalModels < 2 ? '模型实验需要至少 2 个模型，请先在 设置 → 模型连接 添加' : undefined} onClick={() => actions.openCompare?.()}>模型实验</button>
         <button className={`send-btn${state.streaming ? ' stop' : ''}`} id="heroSendBtn" type="button" disabled={!ready} title="开始" aria-label="开始运行" onClick={submit}>↑</button>
       </div>
     </section>
@@ -108,26 +103,14 @@ function HomeWorkspace() {
       }}>{label}</button>)}
     </div>
     <div className="home-dashboard">
-      <section className="home-section home-models">
-        <div className="home-section-head"><div><h2>模型阵列</h2><p>直接选择，或用相同任务并行验证</p></div><button type="button" onClick={() => actions.openSettings?.('providers')}>管理模型</button></div>
-        <div className="home-model-grid">
-          {models.length ? models.slice(0, 4).map((item: any) => {
-            const active = state.selectedProvider?.id === item.providerId && state.selectedModel === item.model;
-            return <button
-              type="button"
-              className={`home-model-card${active ? ' active' : ''}`}
-              key={item.id}
-              aria-label={`选择 ${item.model}`}
-              aria-pressed={active}
-              onClick={() => actions.selectModel?.(item.providerId, item.model)}
-            >
-              <ModelGlyph name={item.providerName} />
-              <span><strong>{item.model}</strong><small>{item.providerName}</small></span>
-              <i aria-hidden="true" />
-            </button>;
-          }) : <button type="button" className="home-model-empty" onClick={() => actions.openSettings?.('providers')}><span>连接第一个模型</span><small>支持 OpenAI 兼容地址与本地模型</small><ArrowUpRight size={15} aria-hidden /></button>}
-        </div>
-        <button type="button" className="home-experiment-entry" disabled={totalModels < 2} onClick={() => actions.openCompare?.()}><SquareStack size={16} aria-hidden /><span><strong>并行模型实验</strong><small>{totalModels < 2 ? '再添加一个模型即可使用' : `已就绪 ${totalModels} 个模型 · 同一上下文公平比较`}</small></span><ArrowUpRight size={15} aria-hidden /></button>
+      <section className="home-section home-current-model">
+        <div className="home-section-head"><div><h2>当前主模型</h2><p>首页每次只向这个模型发送，并返回一份回答</p></div><button type="button" onClick={() => actions.openModelPicker?.()}>切换模型</button></div>
+        {state.selectedModel ? <button type="button" className="current-model-card" onClick={() => actions.openModelPicker?.()} aria-label={`当前模型 ${state.selectedModel}，点击切换`}>
+          <ModelGlyph name={providerName} className="current-model-mark" />
+          <span><small>{providerName}</small><strong>{state.selectedModel}</strong><em>{agent?.name || '直接对话'} · 单模型回答</em></span>
+          <CheckCircle2 size={18} aria-hidden />
+        </button> : <button type="button" className="home-model-empty" onClick={() => actions.openSettings?.('providers')}><span>连接第一个模型</span><small>支持 OpenAI 兼容地址与本地模型</small><ArrowUpRight size={15} aria-hidden /></button>}
+        <div className="current-model-note"><span>{totalModels} 个模型可选</span><span>需要并行比较时，请前往 设置 → 模型实验</span></div>
       </section>
       <section className="home-section recent-work">
         <div className="home-section-head"><div><h2>继续工作</h2><p>最近打开过的对话</p></div><button type="button" onClick={() => actions.openSettings?.('runs')}>运行记录</button></div>
@@ -354,7 +337,8 @@ export function ConversationComposer() {
         if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit(); }
       }} />
       <div className="composer-actions">
-        <button className="composer-tool" id="composerFileBtn" type="button" title="管理上下文文件" onClick={() => actions.openSettings?.('workspace')}><FileText size={15} aria-hidden /><span className="composer-tool-label">{state.selectedAssetIds.size ? `文件 ${state.selectedAssetIds.size}` : '文件'}</span></button>
+        <button className="composer-tool" id="composerFolderBtn" type="button" title="添加项目文件夹" onClick={() => void actions.importProjectFolder?.()}><FolderPlus size={15} aria-hidden /><span className="composer-tool-label">文件夹</span></button>
+        <button className="composer-tool" id="composerFileBtn" type="button" title="管理上下文文件" onClick={() => actions.openSettings?.('workspace')}><FileText size={15} aria-hidden /><span className="composer-tool-label">{state.selectedAssetIds.size ? `上下文 ${state.selectedAssetIds.size}` : '上下文'}</span></button>
         <button className="hero-tag" id="composerModelTag" type="button" title="选择模型" onClick={() => actions.openModelPicker?.()}>{state.selectedModel || '选择模型'}</button>
         <span className="ctx-hint">Shift+Enter 换行</span><div className="spacer" />
         <button className={`send-btn${state.streaming ? ' stop' : ''}`} id="sendBtn" type="button" disabled={!ready} title={state.streaming ? '停止' : '发送'} aria-label={state.streaming ? '停止生成' : '发送消息'} onClick={submit}><span aria-hidden>{state.streaming ? '■' : '↑'}</span></button>

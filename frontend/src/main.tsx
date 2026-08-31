@@ -16,16 +16,16 @@ flushSync(() => root.render(<StrictMode><AppShell /></StrictMode>));
 
 async function start() {
   const [Shell, Init, Data, Conversations, ModelPicker, AgentPicker, Settings,
-    PluginsUI, ImportExport, ExtensionImport, Modal, Render, Send, Workbench, Compare] = await Promise.all([
+    PluginsUI, ImportExport, ExtensionImport, Modal, Render, Send, Workbench, Compare, Assets] = await Promise.all([
     import('./modules/shell'), import('./modules/init'), import('./modules/data'),
     import('./modules/conversations'), import('./modules/modelPicker'), import('./modules/agentPicker'),
     import('./modules/settings'), import('./modules/pluginsUI'), import('./modules/importExport'),
     import('./modules/extensionImport'), import('./modules/modal'), import('./modules/render'),
-    import('./modules/send'), import('./modules/workbench'), import('./modules/compare'),
+    import('./modules/send'), import('./modules/workbench'), import('./modules/compare'), import('./modules/assets'),
   ]);
 
   const namespaces = [Core, Shell, Init, Data, Conversations, ModelPicker, AgentPicker,
-    Settings, PluginsUI, ImportExport, ExtensionImport, Modal, Render, Send, Workbench, Compare];
+    Settings, PluginsUI, ImportExport, ExtensionImport, Modal, Render, Send, Workbench, Compare, Assets];
   for (const namespace of namespaces) Object.assign(globalThis, namespace);
 
   Core.applyTheme();
@@ -41,6 +41,10 @@ async function start() {
     openCompare: Compare.openCompare,
     openConversation: Conversations.openConversation,
     openInspector: Workbench.openInspector,
+    importProjectFolder: async () => {
+      await Assets.importProjectFolder();
+      Workbench.renderInspector();
+    },
     copyMessage: Send.copyMessage,
     editMessage: Send.editMessage,
     regenerateMessage: Send.regenerateMessage,

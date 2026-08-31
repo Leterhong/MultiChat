@@ -1,4 +1,4 @@
-import { Activity, Bot, Boxes, Check, ChevronRight, Gauge, Layers3, LockKeyhole, SquareStack } from 'lucide-react';
+import { Activity, Bot, Boxes, Check, ChevronRight, FolderPlus, Gauge, Layers3, LockKeyhole } from 'lucide-react';
 import { useAppStore, useBusinessStore } from '../store/appStore';
 import { fmtTok } from '../utils/format';
 import { ModelGlyph } from './BrandMark';
@@ -39,7 +39,6 @@ export function WorkspaceRail() {
         }) : <button type="button" className="rail-empty-action" onClick={() => actions.openSettings?.('providers')}><Layers3 size={18} aria-hidden /><span><strong>还没有模型</strong><small>添加连接后即可开始</small></span><ChevronRight size={15} aria-hidden /></button>}
       </div>
       {models.length > 6 && <button type="button" className="rail-more" onClick={() => actions.openModelPicker?.()}>查看全部 {models.length} 个模型</button>}
-      <button type="button" className="rail-compare" disabled={models.length < 2} title={models.length < 2 ? '至少添加两个模型后可用' : '用相同上下文并行比较模型'} onClick={() => actions.openCompare?.()}><SquareStack size={16} aria-hidden /><span>并行模型实验</span><small>{models.length < 2 ? '需要 2 个模型' : `已就绪 ${models.length} 个`}</small></button>
     </section>
 
     <section className="rail-panel">
@@ -47,6 +46,7 @@ export function WorkspaceRail() {
       <div className="rail-config-list">
         <button type="button" onClick={() => actions.openSettings?.('agents')}><Bot size={16} aria-hidden /><span><small>运行配置</small><strong>{business.selectedAgent?.name || '直接对话'}</strong></span><ChevronRight size={15} aria-hidden /></button>
         <button type="button" onClick={() => actions.openSettings?.('workspace')}><Boxes size={16} aria-hidden /><span><small>项目上下文</small><strong>{selectedFiles} 文件 · {enabledMemories} 记忆</strong></span><ChevronRight size={15} aria-hidden /></button>
+        <button type="button" onClick={() => void actions.importProjectFolder?.()}><FolderPlus size={16} aria-hidden /><span><small>添加代码资料</small><strong>导入项目文件夹</strong></span><ChevronRight size={15} aria-hidden /></button>
         <button type="button" onClick={() => actions.openSettings?.('general')}><Gauge size={16} aria-hidden /><span><small>生成参数</small><strong>温度 {business.params.temperature} · {fmtTok(business.params.max_tokens)} Token</strong></span><ChevronRight size={15} aria-hidden /></button>
       </div>
     </section>

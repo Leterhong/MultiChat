@@ -11,6 +11,7 @@ export type RuntimeActions = {
   openCompare: () => void;
   openConversation: (id: string) => Promise<void>;
   openInspector: () => void;
+  importProjectFolder: () => Promise<void>;
   copyMessage: (index: number) => Promise<void>;
   editMessage: (index: number) => void;
   regenerateMessage: (index: number) => Promise<void>;

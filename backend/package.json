@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "dev": "tsx watch server.ts",
-    "test": "tsc -p tsconfig.test.json && node --test .test-dist/tests/*.test.js",
+    "test": "tsc -p tsconfig.test.json && node --test --test-concurrency=1 .test-dist/tests/*.test.js",
     "lint": "eslint . --ext .ts,.cjs --max-warnings 99999",
     "typecheck": "tsc --noEmit"
   },

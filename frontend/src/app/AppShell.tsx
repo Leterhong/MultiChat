@@ -1,14 +1,15 @@
 import { useEffect, useState, type ButtonHTMLAttributes, type ComponentType, type ReactNode } from 'react';
 import {
   Activity, Blocks, Bot, Box, Braces, CheckCircle2, ChevronDown, Command,
-  FileText, FolderKanban, GitFork, Layers3, Menu, MessageSquarePlus, PanelRight,
-  Moon, PlugZap, Search, Settings, SlidersHorizontal, SquareStack, Sun, X, Zap,
+  FileText, FlaskConical, FolderKanban, FolderPlus, GitFork, Layers3, Menu,
+  MessageSquarePlus, PanelRight, Moon, PlugZap, Search, Settings,
+  SlidersHorizontal, Sun, X, Zap,
 } from 'lucide-react';
 import { ConversationComposer, WorkspaceContent } from '../components/WorkspaceContent';
 import { WorkspaceRail } from '../components/WorkspaceRail';
 import { BrandMark } from '../components/BrandMark';
 import { getTheme, setTheme, type ThemePreference } from '../core/theme';
-import { useBusinessStore } from '../store/appStore';
+import { useAppStore } from '../store/appStore';
 
 type Icon = ComponentType<{ size?: number; strokeWidth?: number; className?: string; 'aria-hidden'?: boolean }>;
 type SettingsItem = { tab: string; label: string; icon: Icon };
@@ -18,6 +19,7 @@ const settingsGroups: Array<{ label: string; items: SettingsItem[] }> = [
     { tab: 'general', label: '偏好设置', icon: SlidersHorizontal },
     { tab: 'workspace', label: '工作区', icon: FolderKanban },
     { tab: 'providers', label: '模型连接', icon: Layers3 },
+    { tab: 'experiment', label: '模型实验', icon: FlaskConical },
   ] },
   { label: '能力编排', items: [
     { tab: 'agents', label: '运行配置', icon: Bot },
@@ -58,11 +60,7 @@ function ThemeToggle() {
 }
 
 export function AppShell() {
-  // 模型实验需要 ≥2 个可选模型；不足时按钮禁用并说明原因，而不是点击后跳走。
-  const providers = useBusinessStore((s) => s.providers);
-  const modelCount = providers.reduce((sum, p) => sum + (p.models?.length || 0), 0);
-  const compareReady = modelCount >= 2;
-  const compareHint = compareReady ? '用相同上下文并行比较 2–4 个模型' : `模型实验需要至少 2 个模型（当前 ${modelCount} 个），请先在 设置 → 模型连接 添加`;
+  const actions = useAppStore((current) => current.actions);
   return <>
     <div className="app" id="app">
       <aside className="sidebar" id="sidebar" aria-label="对话导航">
@@ -83,7 +81,7 @@ export function AppShell() {
         <nav className="sidebar-tools" aria-label="工作台入口">
           <span className="sidebar-tools-label">工作台</span>
           <button type="button" data-open-settings="providers"><Layers3 size={16} aria-hidden /><span>模型连接</span></button>
-          <button type="button" data-open-compare disabled={!compareReady} title={compareHint}><SquareStack size={16} aria-hidden /><span>模型实验</span></button>
+          <button type="button" data-open-settings="experiment"><FlaskConical size={16} aria-hidden /><span>模型实验</span></button>
           <button type="button" data-open-settings="capabilities"><Blocks size={16} aria-hidden /><span>能力中心</span></button>
           <button type="button" data-open-settings="runs"><Activity size={16} aria-hidden /><span>运行记录</span></button>
           <button type="button" data-open-settings="usage"><Zap size={16} aria-hidden /><span>Token 用量</span></button>
@@ -92,30 +90,32 @@ export function AppShell() {
         <div className="sidebar-runtime"><span className="status-pulse" /><span>本机服务已连接</span><small>Local</small></div>
       </aside>
 
-      <main className="main" id="mainWorkspace">
+      <div className="workspace-frame">
         <header className="topbar">
           <IconButton id="sidebarToggle" className="mobile-menu" label="打开对话导航" icon={Menu} aria-expanded="false" />
           <div className="topbar-context"><div className="topbar-title" id="topbarTitle">新对话</div><div className="topbar-path" id="topbarPath">默认工作区 / 默认项目</div></div>
           <div className="topbar-spacer" />
           <button className="model-picker workspace-picker" id="workspacePicker"><span className="picker-prefix">项目</span><span className="mp-name" id="workspacePickerName">默认工作区</span><ChevronDown size={14} aria-hidden /></button>
           <button className="model-picker" id="agentPicker"><span className="picker-status" aria-hidden /><span className="mp-name" id="agentPickerName">直接对话</span><ChevronDown size={14} aria-hidden /></button>
+          <IconButton id="folderImportBtn" label="添加项目文件夹" title="将本地项目文件夹导入当前对话上下文" icon={FolderPlus} onClick={() => void actions.importProjectFolder?.()}><span className="icon-btn-label">文件夹</span></IconButton>
           <IconButton id="forkBtn" label="创建分支" title="从当前对话创建分支" icon={GitFork}><span className="icon-btn-label">分支</span></IconButton>
-          <IconButton id="compareBtn" label="模型实验" title={compareHint} icon={SquareStack} disabled={!compareReady} aria-disabled={!compareReady}><span className="icon-btn-label">模型实验</span></IconButton>
           <button className="command-btn" id="commandBtn" type="button" aria-haspopup="dialog" aria-controls="commandPalette"><Command size={15} aria-hidden /><span>命令</span><kbd>Ctrl K</kbd></button>
           <IconButton id="inspectorBtn" label="上下文检查" icon={PanelRight} aria-controls="sessionInspector" aria-expanded="false"><span className="icon-btn-label">上下文</span></IconButton>
           <ThemeToggle />
           <IconButton id="settingsBtn" label="设置" icon={Settings} />
         </header>
 
-        <div className="content" id="content"><WorkspaceContent /></div>
-        <ConversationComposer />
+        <main className="main" id="mainWorkspace">
+          <div className="content" id="content"><WorkspaceContent /></div>
+          <ConversationComposer />
 
-        <aside className="session-inspector" id="sessionInspector" aria-label="会话检查器" aria-hidden="true" inert>
-          <div className="inspector-head"><div><strong>上下文检查</strong><span>核对模型真正收到的内容</span></div><IconButton id="inspectorClose" className="inspector-close" label="关闭上下文检查" icon={X} /></div>
-          <div className="inspector-body" id="inspectorBody" />
-        </aside>
-      </main>
-      <WorkspaceRail />
+          <aside className="session-inspector" id="sessionInspector" aria-label="会话检查器" aria-hidden="true" inert>
+            <div className="inspector-head"><div><strong>上下文检查</strong><span>核对模型真正收到的内容</span></div><IconButton id="inspectorClose" className="inspector-close" label="关闭上下文检查" icon={X} /></div>
+            <div className="inspector-body" id="inspectorBody" />
+          </aside>
+        </main>
+        <WorkspaceRail />
+      </div>
     </div>
 
     <div className="mobile-scrim" id="mobileScrim" />
