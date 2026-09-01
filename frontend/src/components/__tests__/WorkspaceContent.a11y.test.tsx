@@ -31,7 +31,7 @@ describe('WorkspaceContent accessibility', () => {
       state.selectedModel = 'echo';
     });
     expect(screen.getByRole('button', { name: 'echo' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '从项目开始工作' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '从项目到可验证结果' })).toBeInTheDocument();
   });
 
   it('opens the model picker from React and keeps a draft when no model is selected', () => {

@@ -1,16 +1,18 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Brain, ChevronDown, ChevronRight, FileText, FolderOpen, FolderPlus, ListTree, Wrench } from 'lucide-react';
+import { Brain, CheckCircle2, ChevronDown, ChevronRight, FileText, FolderOpen, FolderPlus, ListChecks, ListTree, SearchCheck, TerminalSquare, Wrench } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 import { state } from '../core';
+import { WORK_MODE_LABELS } from '../core/workflow';
 import { useAppStore, useBusinessStore } from '../store/appStore';
 import { fmtTok } from '../utils/format';
 import { BrandMark } from './BrandMark';
 import { SafeMarkdown } from './SafeMarkdown';
+import { openWorkflowRail } from './workflowRailDom';
 
 const quickPrompts = [
-  ['理解当前项目', '请分析当前项目上下文，先列出关键事实、未知项和建议的下一步。'],
-  ['审查问题与风险', '请审查当前方案，指出优先级最高的缺陷、潜在漏洞和可以验证的改进项。'],
-  ['制定实施计划', '请基于当前上下文制定一份按优先级排序、可直接执行且包含验收标准的实施计划。'],
+  ['梳理代码结构', '请读取当前项目上下文，说明核心模块、关键数据流、未知项和建议的下一步。'],
+  ['定位并修复问题', '请基于当前项目定位最可能的根因，实施最小修复，并完成相关验证。'],
+  ['审查本次改动', '请审查当前改动，按严重程度列出缺陷、回归风险、安全问题和验证证据。'],
 ];
 
 function useAutosize(value: string) {
@@ -55,20 +57,28 @@ function HomeWorkspace() {
   return <div className="home-workbench">
     <header className="home-intro">
       <div className="home-intro-main">
-        <div className="home-eyebrow"><BrandMark size={22} /><span>MultiChat · 项目对话</span></div>
-        <h1>从项目开始工作</h1>
-        <p>选择一个本地代码文件夹，MultiChat 会保留目录结构并把相关文件装配进对话上下文。</p>
+        <div className="home-eyebrow"><BrandMark size={22} /><span>MultiChat · 本地开发工作台</span></div>
+        <h1>从项目到可验证结果</h1>
+        <p>带着项目上下文开始任务，先规划、再执行，并把工具活动、权限授权和验证结果留在同一条工作流里。</p>
       </div>
       <button className={`home-project-card${hasProject ? ' has-project' : ''}`} type="button" onClick={() => document.getElementById('workspacePicker')?.click()}>
         <span className="home-project-icon"><FolderOpen size={22} aria-hidden /></span>
         <span className="home-project-copy"><small>{hasProject ? '当前项目' : '第一步'}</small><strong>{hasProject ? projectName : '选择项目文件夹'}</strong><em>{hasProject ? `${projectFiles} 个文件已建立索引` : '导入源码和文档，自动创建项目'}</em></span>
         <ChevronRight size={17} aria-hidden />
       </button>
+      <div className="home-workflow-loop" aria-label="开发任务流程">
+        <button type="button" onClick={() => actions.openInspector?.()}><span>01</span><strong>理解上下文</strong><small>项目文件与记忆</small></button>
+        <button type="button" onClick={() => openWorkflowRail('plan')}><span>02</span><strong>计划与执行</strong><small>步骤和权限边界</small></button>
+        <button type="button" onClick={() => openWorkflowRail('activity')}><span>03</span><strong>验证与审查</strong><small>活动和运行证据</small></button>
+      </div>
     </header>
     <section className="home-composer" id="heroCard" aria-label="发起工作">
-      <div className="home-composer-label"><label htmlFor="heroInput">任务描述</label>{noModel
-        ? <button type="button" className="model-cta" title="打开 设置 → 模型连接，添加 API 地址与密钥" onClick={() => (window as any).MC?.openSettings?.('providers')}><i className="status-pulse warn" />需要连接模型 · 点此添加</button>
-        : <span><i className="status-pulse" />可以开始</span>}</div>
+      <div className="home-composer-label"><label htmlFor="heroInput">任务描述</label><div className="home-task-status"><button type="button" onClick={() => openWorkflowRail('run')}>
+        {state.workflow.mode === 'execute' ? <TerminalSquare size={13} aria-hidden /> : state.workflow.mode === 'plan' ? <ListChecks size={13} aria-hidden /> : <SearchCheck size={13} aria-hidden />}
+        {WORK_MODE_LABELS[state.workflow.mode]}模式
+      </button>{noModel
+        ? <button type="button" className="model-cta" title="打开 设置 → 模型连接，添加 API 地址与密钥" onClick={() => (window as any).MC?.openSettings?.('providers')}><i className="status-pulse warn" />需要连接模型</button>
+        : <span><i className="status-pulse" />可以开始</span>}</div></div>
       <textarea
         ref={inputRef}
         className="hero-input"
@@ -86,6 +96,7 @@ function HomeWorkspace() {
       />
       <div className="hero-actions">
         <button className="hero-tag" id="heroModelTag" type="button" onClick={() => actions.openModelPicker?.()}>{state.selectedModel || '选择模型'}</button>
+        <button className="hero-workflow-tag" type="button" onClick={() => openWorkflowRail('plan')}><CheckCircle2 size={14} aria-hidden />{state.workflow.steps.length ? `${state.workflow.steps.filter((step: any) => step.done).length}/${state.workflow.steps.length} 步` : '添加计划'}</button>
         <button className="hero-folder" type="button" onClick={() => document.getElementById('workspacePicker')?.click()}><FolderPlus size={14} aria-hidden />{hasProject ? projectName : '选择项目文件夹'}</button>
         <button className="hero-context-tag" id="heroWorkspace" type="button" onClick={() => actions.openInspector?.()}>{selectedFiles} / {projectFiles} 文件已选择</button>
         <div className="spacer" />
@@ -298,6 +309,7 @@ export function ConversationComposer() {
         if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit(); }
       }} />
       <div className="composer-actions">
+        <button className="composer-tool composer-mode" type="button" title="切换任务模式" onClick={() => openWorkflowRail('run')}>{state.workflow.mode === 'execute' ? <TerminalSquare size={15} aria-hidden /> : state.workflow.mode === 'plan' ? <ListChecks size={15} aria-hidden /> : <SearchCheck size={15} aria-hidden />}<span className="composer-tool-label">{WORK_MODE_LABELS[state.workflow.mode]}</span></button>
         <button className="composer-tool" id="composerFolderBtn" type="button" title="添加项目文件夹" onClick={() => void actions.importProjectFolder?.()}><FolderPlus size={15} aria-hidden /><span className="composer-tool-label">文件夹</span></button>
         <button className="composer-tool" id="composerFileBtn" type="button" title="管理上下文文件" onClick={() => actions.openSettings?.('workspace')}><FileText size={15} aria-hidden /><span className="composer-tool-label">{state.selectedAssetIds.size ? `上下文 ${state.selectedAssetIds.size}` : '上下文'}</span></button>
         <button className="hero-tag" id="composerModelTag" type="button" title="选择模型" onClick={() => actions.openModelPicker?.()}>{state.selectedModel || '选择模型'}</button>

@@ -7,6 +7,7 @@ import { installRuntimeActions, markAppReady } from './store/appStore';
 import './design/tokens.css';
 import './styles.css';
 import './workbench.css';
+import './developer-workspace.css';
 
 const mount = document.getElementById('root');
 if (!mount) throw new Error('MultiChat root mount is missing');

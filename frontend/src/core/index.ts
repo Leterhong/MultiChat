@@ -15,3 +15,13 @@ export {
   notifyMessagesChanged,
 } from './state';
 export type { BusinessState } from './state';
+export {
+  WORK_MODE_LABELS,
+  buildWorkflowInstruction,
+  copyWorkflowSession,
+  createWorkflowSession,
+  loadWorkflowSession,
+  saveWorkflowSession,
+  workflowScope,
+} from './workflow';
+export type { WorkMode, WorkflowChecks, WorkflowSession, WorkflowStep } from './workflow';

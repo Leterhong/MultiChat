@@ -1,4 +1,5 @@
 import { createStore } from 'zustand/vanilla';
+import { loadWorkflowSession } from './workflow';
 
 // Zustand 是业务状态的唯一数据源。`state` Proxy 只作为旧模块迁移期间的
 // 兼容门面：任何顶层赋值都会进入 store 并触发精确订阅，不再维护第二份数据。
@@ -63,6 +64,8 @@ const initialBusinessState = {
   selectedAgent: null, // null = 直接对话；否则为 agent 对象
   currentTab: 'providers', // 设置面板当前激活 tab
   currentRunId: null, // 当前进行中的 run id（用于停止/继续流式）
+  workflowScope: 'draft',
+  workflow: loadWorkflowSession('draft'),
 };
 
 export type BusinessState = typeof initialBusinessState;

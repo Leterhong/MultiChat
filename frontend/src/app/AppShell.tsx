@@ -2,12 +2,13 @@ import { useEffect, useState, type ButtonHTMLAttributes, type ComponentType, typ
 import {
   Activity, Bot, Box, Braces, CheckCircle2, ChevronDown, Command,
   FileText, FlaskConical, FolderKanban, GitFork, Layers3, Menu,
-  MessageSquarePlus, PanelRight, Moon, PlugZap, Search, Settings,
+  ListChecks, MessageSquarePlus, PanelRight, Moon, PlugZap, Search, Settings,
   SlidersHorizontal, Sun, X, Zap,
 } from 'lucide-react';
 import { ConversationComposer, WorkspaceContent } from '../components/WorkspaceContent';
 import { WorkspaceRail } from '../components/WorkspaceRail';
 import { BrandMark } from '../components/BrandMark';
+import { openWorkflowRail, setWorkflowRailOpen, syncWorkflowRailLayout, workflowRailUsesDrawer } from '../components/workflowRailDom';
 import { getTheme, setTheme, type ThemePreference } from '../core/theme';
 
 type Icon = ComponentType<{ size?: number; strokeWidth?: number; className?: string; 'aria-hidden'?: boolean }>;
@@ -59,6 +60,23 @@ function ThemeToggle() {
 }
 
 export function AppShell() {
+  useEffect(() => {
+    const onResize = () => syncWorkflowRailLayout();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && workflowRailUsesDrawer() && document.body.classList.contains('workflow-rail-open')) {
+        event.preventDefault();
+        setWorkflowRailOpen(false, { restoreFocus: true });
+      }
+    };
+    syncWorkflowRailLayout();
+    window.addEventListener('resize', onResize);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
+
   return <>
     <div className="app" id="app">
       <aside className="sidebar" id="sidebar" aria-label="对话导航">
@@ -87,6 +105,7 @@ export function AppShell() {
           <button className="model-picker" id="agentPicker"><span className="picker-status" aria-hidden /><span className="mp-name" id="agentPickerName">直接对话</span><ChevronDown size={14} aria-hidden /></button>
           <IconButton id="forkBtn" label="创建分支" title="从当前对话创建分支" icon={GitFork}><span className="icon-btn-label">分支</span></IconButton>
           <button className="command-btn" id="commandBtn" type="button" aria-haspopup="dialog" aria-controls="commandPalette"><Command size={15} aria-hidden /><span>命令</span><kbd>Ctrl K</kbd></button>
+          <IconButton id="workflowRailToggle" label="开发工作台" title="打开任务计划与运行配置" icon={ListChecks} aria-controls="workflowRail" aria-expanded="false" onClick={() => openWorkflowRail('run')}><span className="icon-btn-label">任务</span></IconButton>
           <IconButton id="inspectorBtn" label="上下文检查" icon={PanelRight} aria-controls="sessionInspector" aria-expanded="false"><span className="icon-btn-label">上下文</span></IconButton>
           <ThemeToggle />
           <IconButton id="settingsBtn" label="设置" icon={Settings} />

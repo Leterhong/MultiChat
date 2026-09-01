@@ -1,4 +1,4 @@
-import { $, api, serverAuthHeaders, toast, state } from '../core/index';
+import { $, api, serverAuthHeaders, toast, state, buildWorkflowInstruction, copyWorkflowSession, workflowScope } from '../core/index';
 import { openModelPicker } from './modelPicker';
 
 /* --------------------------- Send (streaming) --------------------------- */
@@ -39,6 +39,9 @@ async function ensureConversation() {
   const title = state.messages.find(m => m.role === 'user')?.content?.slice(0, 24) || '新对话';
   const r = await api('/api/conversations', { method: 'POST', body: JSON.stringify({ title, workspaceId: state.selectedWorkspace?.id || null, projectId: state.selectedProject?.id || null }) });
   state.currentConvId = r.id;
+  const nextWorkflowScope = workflowScope(r.id, r.projectId || state.selectedProject?.id);
+  state.workflow = copyWorkflowSession(state.workflowScope, nextWorkflowScope, state.workflow);
+  state.workflowScope = nextWorkflowScope;
   $('#topbarTitle').textContent = r.title || '对话';
   const route = `#/chat/${encodeURIComponent(r.id)}`;
   if (location.hash !== route) history.replaceState(null, '', route);
@@ -80,10 +83,15 @@ async function streamReply(resumeFromRunId?: string) {
     ? `/api/agents/${state.selectedAgent.id}/chat`
     : `/v1/chat/completions`;
 
+  const workflowInstruction = buildWorkflowInstruction(state.workflow);
+  const requestMessages = state.messages
+    .filter(m => !m.streaming || m.role === 'user')
+    .map(m => ({ role: m.role, content: m.content }));
+  requestMessages.unshift({ role: 'system', content: workflowInstruction });
   const body: any = {
     model: provider.id + ':' + model,
     providerId: provider.id,
-    messages: state.messages.filter(m => !m.streaming || m.role === 'user').map(m => ({ role: m.role, content: m.content })),
+    messages: requestMessages,
     stream: true,
     temperature: state.params.temperature,
     max_tokens: state.params.max_tokens,

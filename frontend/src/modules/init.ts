@@ -1,4 +1,4 @@
-import { $, api, toast, state, loadSelectedAgent } from '../core/index';
+import { $, api, toast, state, loadSelectedAgent, loadWorkflowSession, workflowScope } from '../core/index';
 
 /* --------------------------- Init --------------------------- */
 async function bootstrap() {
@@ -46,6 +46,8 @@ async function initApp() {
   // Projects depend on loaded Agents/Providers; their explicit defaults take
   // precedence over the user's last global selection.
   await loadWorkspaces();
+  state.workflowScope = workflowScope(null, state.selectedProject?.id);
+  state.workflow = loadWorkflowSession(state.workflowScope);
   renderTopbar();
   renderContent();
   renderSettings();

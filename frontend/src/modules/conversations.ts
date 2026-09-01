@@ -1,4 +1,10 @@
-import { $, esc, api, toast, state, saveSelectedAgent } from '../core/index';
+import { $, esc, api, toast, state, saveSelectedAgent, loadWorkflowSession, workflowScope } from '../core/index';
+
+function activateWorkflow(conversationId = state.currentConvId, projectId = state.selectedProject?.id) {
+  const scope = workflowScope(conversationId, projectId);
+  state.workflowScope = scope;
+  state.workflow = loadWorkflowSession(scope);
+}
 
 /* --------------------------- Conversations --------------------------- */
 async function loadConversations() {
@@ -35,6 +41,7 @@ function renderConvList() {
       if (state.currentConvId === id) {
         state.currentConvId = null;
         state.messages = [];
+        activateWorkflow(null, state.selectedProject?.id);
         renderContent();
         $('#topbarTitle').textContent = '新对话';
         if (location.hash !== '#/new') history.replaceState(null, '', '#/new');
@@ -46,6 +53,7 @@ function renderConvList() {
 async function newConversation() {
   state.currentConvId = null;
   state.messages = [];
+  activateWorkflow(null, state.selectedProject?.id);
   $('#topbarTitle').textContent = '新对话';
   renderContent();
   renderConvList();
@@ -69,6 +77,7 @@ async function openConversation(id) {
     }
     state.currentConvId = c.id;
     state.messages = (c.messages || []).map(m => ({ role: m.role, content: m.content, model: m.model }));
+    activateWorkflow(c.id, c.projectId || state.selectedProject?.id);
     $('#topbarTitle').textContent = c.title || '对话';
     renderTopbar();
     renderContent();
@@ -107,4 +116,4 @@ function applyProjectDefaults() {
   renderTopbar();
 }
 
-export { loadConversations,renderConvList,newConversation,openConversation,fmtSize,renderFileContext,applyProjectDefaults };
+export { activateWorkflow,loadConversations,renderConvList,newConversation,openConversation,fmtSize,renderFileContext,applyProjectDefaults };
