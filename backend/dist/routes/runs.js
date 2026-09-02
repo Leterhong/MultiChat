@@ -10,6 +10,14 @@ module.exports = function registerRuns(app) {
             runs = runs.filter(x => x.agentId === req.query.agent);
         res.json(runs.slice(0, limit));
     });
+    // ── 审计导出：完整 Run/Turn/Step/审批链，供合规归档（JSON，企业审计包入口）──
+    app.get('/api/runs/export', (req, res) => {
+        const runs = ctx.store.read(ctx.RUN_FILE, []);
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Content-Disposition', 'attachment; filename="multichat-audit-' + stamp + '.json"');
+        res.json({ exportedAt: new Date().toISOString(), format: 'multichat-audit/v1', runCount: runs.length, runs });
+    });
     app.get('/api/runs/:id', (req, res) => {
         const run = ctx.store.read(ctx.RUN_FILE, []).find(x => x.id === req.params.id);
         if (!run)
