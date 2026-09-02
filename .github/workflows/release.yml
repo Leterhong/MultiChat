@@ -82,7 +82,7 @@ jobs:
       # 公开 issue 携带完整报错与预检结果，匿名可读。
       - name: Open debug issue on failure
         if: failure() && steps.publish.outcome == 'failure'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
