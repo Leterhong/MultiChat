@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # 后端运行时依赖：每月集中处理，避免碎片化升级干扰
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: monthly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    reviewers:
+      - Leterhong
+  # 前端依赖
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: monthly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    reviewers:
+      - Leterhong
+  # GitHub Actions 自身跟进
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
