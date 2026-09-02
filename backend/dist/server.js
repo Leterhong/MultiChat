@@ -64,6 +64,7 @@ require('./routes/workspaces')(app);
 require('./routes/assistants')(app);
 require('./routes/runs')(app);
 require('./routes/prompt-templates')(app);
+require('./routes/runs')(app);
 require('./routes/usage')(app);
 require('./routes/control-plane')(app);
 require('./routes/skills')(app);
@@ -85,6 +86,8 @@ app.use(errorHandler);
 // ── 启动 ──
 runtime.ensureSeed();
 require('./extensions/manager').ensureDefaults();
+// 每日自动快照调度（可用 MULTICHAT_AUTO_SNAPSHOT=0 关闭）
+require("./runtime/auto-snapshot").startAutoSnapshots();
 const server = app.listen(PORT, HOST, () => {
     console.log(`Multi-model chat server running on http://${HOST}:${PORT}`);
     console.log(`OpenAI-compatible endpoint: POST /v1/chat/completions`);

@@ -197,4 +197,7 @@ module.exports = function registerControlPlane(app) {
         res.json({ ok: true });
     });
 };
+// 供每日自动快照调度复用
+module.exports.makeSnapshot = makeSnapshot;
+module.exports.snapshotRows = snapshotRows;
 //# sourceMappingURL=control-plane.js.map
