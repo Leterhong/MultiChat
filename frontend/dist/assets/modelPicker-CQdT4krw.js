@@ -1,4 +1,4 @@
-import{_ as e,d as t,g as n,y as r}from"./index-M700RccX.js";function i(){if(!t.providers.length){openSettings(`providers`),n(`请先添加模型`);return}let e=[];t.providers.forEach(t=>{let n=t.models||(t.model?[t.model]:[]),r=t.name||t.id,i={pid:t.id,providerName:r,apiType:t.apiType||`openai`,initial:r.trim().slice(0,1).toUpperCase()||`M`};n.length?n.forEach(t=>e.push({...i,model:t,modelLabel:t})):e.push({...i,model:``,modelLabel:`手动输入模型名`,custom:!0})}),showModal({title:`选择模型`,body:`<div class="picker-dialog-intro">
+import{_ as e,d as t,g as n,y as r}from"./index-D8jDxM4u.js";function i(){if(!t.providers.length){openSettings(`providers`),n(`请先添加模型`);return}let e=[];t.providers.forEach(t=>{let n=t.models||(t.model?[t.model]:[]),r=t.name||t.id,i={pid:t.id,providerName:r,apiType:t.apiType||`openai`,initial:r.trim().slice(0,1).toUpperCase()||`M`};n.length?n.forEach(t=>e.push({...i,model:t,modelLabel:t})):e.push({...i,model:``,modelLabel:`手动输入模型名`,custom:!0})}),showModal({title:`选择模型`,body:`<div class="picker-dialog-intro">
         <span>为接下来的消息选择运行模型</span>
         <span>${e.length} 个可用模型</span>
       </div>

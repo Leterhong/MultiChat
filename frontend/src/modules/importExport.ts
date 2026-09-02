@@ -62,7 +62,9 @@ function showAgentModal(id) {
     body: `<form id="agentForm">
       <div class="field"><label>名称</label><input name="name" value="${a ? esc(a.name) : ''}" placeholder="中英翻译" required /></div>
       <div class="field"><label>描述</label><input name="description" value="${a ? esc(a.description || '') : ''}" placeholder="一句话说明这套配置适合什么任务" /></div>
-      <div class="field"><label>系统提示词</label><textarea name="systemPrompt" rows="4" placeholder="你是一个...">${a ? esc(a.systemPrompt || '') : ''}</textarea></div>
+      <div class="field"><label>系统提示词 <button type="button" class="btn-ghost tpl-save" id="savePromptTpl" style="float:right;font-size:11px;">存为模板</button></label>
+        <select id="promptTplPick" class="form-control" style="margin-bottom:6px;"><option value="">从模板填充…</option></select>
+        <textarea name="systemPrompt" rows="4" placeholder="你是一个...">${a ? esc(a.systemPrompt || '') : ''}</textarea></div>
       <div class="field"><label>单次最大执行轮数</label><input name="maxIterations" type="number" min="1" max="30" step="1" value="${esc(a?.maxIterations || 12)}" /><div class="pmeta">达到上限后保存检查点，可在对话中继续运行。</div></div>
       <div class="field"><label>Agent Skills（先提供描述，匹配任务时再加载完整工作流）</label>
         <div class="extension-checks">
@@ -100,6 +102,39 @@ function showAgentModal(id) {
     </form>`,
     onMount: (card) => {
       $('#agentCancel', card).onclick = closeModal;
+      // 提示词模板库：填充与另存
+      const pick = $('#promptTplPick', card);
+      const ta = card.querySelector('[name="systemPrompt"]');
+      void (async () => {
+        try {
+          const templates = await api('/api/prompt-templates');
+          for (const tpl of templates) {
+            const option = document.createElement('option');
+            option.value = tpl.id; option.textContent = tpl.name;
+            pick.appendChild(option);
+          }
+        } catch { /* 模板加载失败不打断表单 */ }
+      })();
+      pick.onchange = async () => {
+        if (!pick.value) return;
+        const templates = await api('/api/prompt-templates');
+        const tpl = templates.find(x => x.id === pick.value);
+        if (tpl) ta.value = tpl.content;
+      };
+      $('#savePromptTpl', card).onclick = async () => {
+        const content = ta.value.trim();
+        if (!content) { toast('提示词为空，无法存为模板', 'error'); return; }
+        const name = await showPrompt({ title: '保存为提示词模板', label: '模板名称', placeholder: '例如：代码审查员', maxLength: 80 });
+        if (!name) return;
+        try {
+          await api('/api/prompt-templates', { method: 'POST', body: JSON.stringify({ name, content }) });
+          const option = document.createElement('option');
+          option.value = (await api('/api/prompt-templates')).find(x => x.name === name)?.id || '';
+          option.textContent = name; option.selected = true;
+          pick.appendChild(option);
+          toast('已保存模板：' + name);
+        } catch (error: any) { toast(error.message, 'error'); }
+      };
       $('#agentForm', card).onsubmit = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
