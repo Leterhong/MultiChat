@@ -861,3 +861,5 @@ kbd { font: 500 10px/1.2 var(--font-mono); letter-spacing: 0; }
   .hero-folder { max-width: 148px; padding-inline: 8px; color: var(--accent); gap: 5px; }
   .topbar .workspace-picker { max-width: 150px !important; }
 }
+
+.heading-actions-row { display: flex; gap: 8px; flex: none; }
