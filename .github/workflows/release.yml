@@ -94,6 +94,6 @@ jobs:
               body: '发布预检与报错如下：\n\n```\n' + read('npm-preflight.txt') + '\n\n=== npm publish 输出 ===\n' + read('npm-publish.log') + '\n```',
             });
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
