@@ -110,25 +110,29 @@ module.exports = function registerControlPlane(app) {
             res.status(400).json({ error: error.message });
         }
     });
-    app.put('/api/memories/:id', async (req, res) => {
-        let updated = null;
-        await ctx.store.mutate(MEMORY_FILE, rows => rows.map(item => {
-            if (item.id !== req.params.id)
-                return item;
-            updated = { ...item, ...(req.body.title !== undefined ? { title: cleanText(req.body.title, 120) } : {}), ...(req.body.content !== undefined ? { content: cleanText(req.body.content, 4000) } : {}), ...(req.body.enabled !== undefined ? { enabled: req.body.enabled === true } : {}), updatedAt: now() };
-            return updated;
-        }), []);
-        if (!updated)
-            return res.status(404).json({ error: 'memory not found' });
-        res.json(updated);
+    app.put('/api/memories/:id', (req, res, next) => {
+        void (async () => {
+            let updated = null;
+            await ctx.store.mutate(MEMORY_FILE, rows => rows.map(item => {
+                if (item.id !== req.params.id)
+                    return item;
+                updated = { ...item, ...(req.body.title !== undefined ? { title: cleanText(req.body.title, 120) } : {}), ...(req.body.content !== undefined ? { content: cleanText(req.body.content, 4000) } : {}), ...(req.body.enabled !== undefined ? { enabled: req.body.enabled === true } : {}), updatedAt: now() };
+                return updated;
+            }), []);
+            if (!updated)
+                return res.status(404).json({ error: 'memory not found' });
+            res.json(updated);
+        })().catch(next);
     });
-    app.delete('/api/memories/:id', async (req, res) => {
-        let found = false;
-        await ctx.store.mutate(MEMORY_FILE, rows => rows.filter(item => { if (item.id === req.params.id)
-            found = true; return item.id !== req.params.id; }), []);
-        if (!found)
-            return res.status(404).json({ error: 'memory not found' });
-        res.json({ ok: true });
+    app.delete('/api/memories/:id', (req, res, next) => {
+        void (async () => {
+            let found = false;
+            await ctx.store.mutate(MEMORY_FILE, rows => rows.filter(item => { if (item.id === req.params.id)
+                found = true; return item.id !== req.params.id; }), []);
+            if (!found)
+                return res.status(404).json({ error: 'memory not found' });
+            res.json({ ok: true });
+        })().catch(next);
     });
     app.get('/api/projects/:id/search', (req, res) => {
         try {

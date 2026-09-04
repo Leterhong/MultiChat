@@ -10,6 +10,8 @@ import {
   readFileSync,
   readdirSync,
   statSync,
+  unlinkSync,
+  writeFileSync,
 } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { homedir } from 'node:os';
@@ -333,6 +335,11 @@ async function runWeb(options, deployAlias = false) {
   }
   assertDistinctDirectories(options.workspace, options.dataDir);
   await mkdir(options.dataDir, { recursive: true });
+  try {
+    probeDirectoryWrite(options.dataDir);
+  } catch (error) {
+    throw new CliError(`数据目录不可写：${options.dataDir}（${error.message}）`);
+  }
 
   const port = await checkPort(options.host, options.port);
   if (!port.ok) {
@@ -401,6 +408,15 @@ function nearestExistingDirectory(target) {
   return isDirectory(current) ? current : path.dirname(current);
 }
 
+function probeDirectoryWrite(directory) {
+  const probe = path.join(directory, `.multichat-write-probe-${process.pid}-${Date.now()}`);
+  try {
+    writeFileSync(probe, 'ok', { encoding: 'utf8', flag: 'wx' });
+  } finally {
+    try { unlinkSync(probe); } catch {}
+  }
+}
+
 async function runDoctor(options) {
   const runtime = resolveRuntime();
   const results = [];
@@ -418,6 +434,7 @@ async function runDoctor(options) {
   } else {
     try {
       accessSync(options.workspace, constants.R_OK | constants.W_OK);
+      probeDirectoryWrite(options.workspace);
       add('PASS', '工作区', options.workspace);
     } catch (error) {
       add('FAIL', '工作区', `${options.workspace}：${error.message}`);
@@ -433,6 +450,7 @@ async function runDoctor(options) {
     try {
       if (!writableRoot) throw new Error('找不到可写父目录');
       accessSync(writableRoot, constants.W_OK);
+      probeDirectoryWrite(writableRoot);
       add('PASS', '数据目录', existsSync(options.dataDir) ? options.dataDir : `${options.dataDir}（首次启动时创建）`);
     } catch (error) {
       add('FAIL', '数据目录', `${options.dataDir}：${error.message}`);

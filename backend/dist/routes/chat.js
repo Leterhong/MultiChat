@@ -35,13 +35,35 @@ function usageContext(body, provider, modelName, extra = {}) {
         ...extra,
     };
 }
+async function recordUsageSafely(store, entry) {
+    try {
+        await usageLedger.recordUsage(store, entry);
+    }
+    catch (error) {
+        // Usage telemetry must never turn an otherwise valid chat response into a
+        // failed request. Keep the failure visible to operators without exposing
+        // credentials or upstream response bodies.
+        console.error('Usage persistence error:', redactSecrets(error?.message || String(error)));
+    }
+}
+function requestValidationError(body, { allowResume = false } = {}) {
+    if (!String(body.model || '').trim())
+        return 'model 不能为空';
+    if ((!allowResume || !body.resumeFromRunId) && (!Array.isArray(body.messages) || body.messages.length === 0)) {
+        return 'messages 必须是非空数组';
+    }
+    return '';
+}
 module.exports = function registerChat(app) {
     // ── OpenAI 兼容统一端点（透传上游，做 SSE 适配） ──
     app.post('/v1/chat/completions', async (req, res) => {
-        const body = req.body;
+        const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
         const requestStartedAt = new Date().toISOString();
         const requestStartedMs = Date.now();
-        const requestedModel = body.model || '';
+        const validationError = requestValidationError(body);
+        if (validationError)
+            return res.status(400).json({ error: { message: validationError }, code: 'BAD_REQUEST' });
+        const requestedModel = String(body.model).trim();
         // model format: "providerId:modelName" or plain "modelName"
         // modelName may contain colons (e.g. Ollama: "llama3:latest")
         const explicitProviderId = String(body.providerId || body.provider || '').trim();
@@ -113,7 +135,7 @@ module.exports = function registerChat(app) {
             }, allowPrivateProvider(provider));
             if (!upstream.ok) {
                 const errText = await readResponseText(upstream, 128_000);
-                await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+                await recordUsageSafely(ctx.store, usageContext(body, provider, modelName, {
                     timestamp: requestStartedAt, durationMs: Date.now() - requestStartedMs,
                     interactionId: body.interactionId || res.locals?.requestId, mode: 'chat', status: 'error', errorCode: `HTTP_${upstream.status}`,
                     usage: { input: 0, output: 0, total: 0, source: 'estimated' },
@@ -131,7 +153,7 @@ module.exports = function registerChat(app) {
                 const sse = new SSEDecoder();
                 let observedUsage = {};
                 let output = '';
-                (async () => {
+                void (async () => {
                     let status = 'success';
                     try {
                         while (true) {
@@ -167,7 +189,7 @@ module.exports = function registerChat(app) {
                     }
                     finally {
                         const normalized = usageLedger.normalizeUsage(observedUsage, messages, output);
-                        await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+                        await recordUsageSafely(ctx.store, usageContext(body, provider, modelName, {
                             timestamp: requestStartedAt, durationMs: Date.now() - requestStartedMs,
                             interactionId: body.interactionId || res.locals?.requestId, mode: 'chat', status,
                             usage: normalized,
@@ -177,13 +199,20 @@ module.exports = function registerChat(app) {
                             res.end();
                         }
                     }
-                })();
+                })().catch((error) => {
+                    console.error('Stream finalization error:', redactSecrets(error?.message || String(error)));
+                    if (!res.writableEnded && !res.destroyed) {
+                        res.write(`data: ${JSON.stringify({ error: { message: '流式响应意外中断' } })}\n\n`);
+                        res.write('data: [DONE]\n\n');
+                        res.end();
+                    }
+                });
             }
             else {
                 const data = await readResponseJson(upstream, 20_000_000);
                 const transformed = adapter.transformResponse(data);
                 const output = transformed?.choices?.[0]?.message?.content || '';
-                await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+                await recordUsageSafely(ctx.store, usageContext(body, provider, modelName, {
                     timestamp: requestStartedAt, durationMs: Date.now() - requestStartedMs,
                     interactionId: body.interactionId || res.locals?.requestId, mode: 'chat', status: 'success',
                     usage: usageLedger.normalizeUsage(transformed.usage, messages, output),
@@ -194,7 +223,7 @@ module.exports = function registerChat(app) {
         catch (err) {
             const safeMessage = redactSecrets(err.message);
             console.error('Upstream error:', safeMessage);
-            await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+            await recordUsageSafely(ctx.store, usageContext(body, provider, modelName, {
                 timestamp: requestStartedAt, durationMs: Date.now() - requestStartedMs,
                 interactionId: body.interactionId || res.locals?.requestId, mode: 'chat', status: err.name === 'AbortError' ? 'cancelled' : 'error', errorCode: err.name || 'UPSTREAM_ERROR',
                 usage: { input: 0, output: 0, total: 0, source: 'estimated' },
@@ -212,7 +241,10 @@ module.exports = function registerChat(app) {
             if (!found)
                 return res.status(404).json({ error: { message: 'Agent not found: ' + req.params.id } });
             const body = req.body || {};
-            const requestedModel = body.model || '';
+            const validationError = requestValidationError(body, { allowResume: true });
+            if (validationError)
+                return res.status(400).json({ error: { message: validationError }, code: 'BAD_REQUEST' });
+            const requestedModel = String(body.model).trim();
             const explicitProviderId = String(body.providerId || body.provider || '').trim();
             const colonIdx = requestedModel.indexOf(':');
             let providerId, modelName;
@@ -413,7 +445,7 @@ module.exports = function registerChat(app) {
                         emit('step_update', modelStep);
                         run.status = cancelled ? 'cancelled' : 'error';
                         run.error = modelStep.error;
-                        await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+                        await recordUsageSafely(ctx.store, usageContext(body, provider, modelName, {
                             timestamp: modelStep.startedAt, durationMs: Date.parse(modelStep.finishedAt) - Date.parse(modelStep.startedAt),
                             interactionId: run.id, runId: run.id, mode: 'agent', status: run.status, errorCode: cancelled ? 'CANCELLED' : 'NETWORK_ERROR', step: iter,
                             usage: { input: 0, output: 0, total: 0, source: 'estimated' },
@@ -436,7 +468,7 @@ module.exports = function registerChat(app) {
                         emit('step_update', modelStep);
                         run.status = 'error';
                         run.error = modelStep.error;
-                        await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+                        await recordUsageSafely(ctx.store, usageContext(body, provider, modelName, {
                             timestamp: modelStep.startedAt, durationMs: Date.parse(modelStep.finishedAt) - Date.parse(modelStep.startedAt),
                             interactionId: run.id, runId: run.id, mode: 'agent', status: 'error', errorCode: `HTTP_${upstream.status}`, step: iter,
                             usage: { input: 0, output: 0, total: 0, source: 'estimated' },
@@ -455,7 +487,7 @@ module.exports = function registerChat(app) {
                         emit('step_update', modelStep);
                         run.status = 'error';
                         run.error = modelStep.error;
-                        await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+                        await recordUsageSafely(ctx.store, usageContext(body, provider, modelName, {
                             timestamp: modelStep.startedAt, durationMs: Date.parse(modelStep.finishedAt) - Date.parse(modelStep.startedAt),
                             interactionId: run.id, runId: run.id, mode: 'agent', status: 'error', errorCode: 'EMPTY_BODY', step: iter,
                             usage: { input: 0, output: 0, total: 0, source: 'estimated' },
@@ -552,7 +584,7 @@ module.exports = function registerChat(app) {
                         run.usage.reportedTokens += normalized.total;
                     else
                         run.usage.estimatedTokens += normalized.total;
-                    await usageLedger.recordUsage(ctx.store, usageContext(body, provider, modelName, {
+                    await recordUsageSafely(ctx.store, usageContext(body, provider, modelName, {
                         timestamp: modelStep.startedAt, durationMs: modelStep.durationMs,
                         interactionId: run.id, runId: run.id, mode: 'agent', status: 'success', step: iter,
                         usage: normalized,

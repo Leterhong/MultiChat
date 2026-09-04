@@ -18,9 +18,14 @@ async function send(textOverride?: string) {
   state.streaming = true; updateSendBtn();
   renderContent();
   if (state.messages.length) { const ci = $('#input'); if (ci) ci.focus(); }
-  try { await ensureConversation(); } catch {}
-  await streamReply();
-  state.streaming = false; updateSendBtn();
+  try {
+    await ensureConversation();
+  } catch (error: any) {
+    finishStreamingError('无法创建或保存对话', error);
+    await finishStreamingState();
+    return;
+  }
+  await runActiveStream();
 }
 
 function updateSendBtn() {
@@ -56,6 +61,45 @@ async function saveCurrentMessages() {
     });
   } catch {}
 }
+
+function finishStreamingError(label: string, error: any) {
+  const last = state.messages[state.messages.length - 1];
+  if (!last || last.role !== 'assistant') return;
+  const detail = error?.message ? `：${error.message}` : '';
+  last.content = last.content
+    ? `${last.content}\n\n**${label}**${detail}`
+    : `**${label}**${detail}`;
+  last.streaming = false;
+}
+
+async function finishStreamingState() {
+  const last = state.messages[state.messages.length - 1];
+  if (last?.streaming) last.streaming = false;
+  state.abortCtrl = null;
+  state.streaming = false;
+  updateSendBtn();
+  await saveCurrentMessages();
+}
+
+async function runActiveStream(resumeFromRunId?: string) {
+  try {
+    await streamReply(resumeFromRunId);
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      const last = state.messages[state.messages.length - 1];
+      if (last) {
+        last.cancelled = true;
+        if (!last.content) last.content = '（已停止）';
+      }
+    } else {
+      finishStreamingError('连接意外中断', error);
+      toast('连接意外中断，请重试', 'error');
+    }
+  } finally {
+    await finishStreamingState();
+  }
+}
+
 async function streamReply(resumeFromRunId?: string) {
   const provider = state.selectedProvider;
   const model = state.selectedModel;
@@ -288,9 +332,7 @@ async function regenerateMessage(index: number) {
   state.messages.push({ role: 'assistant', content: '', streaming: true, model: state.selectedModel, providerName: state.selectedProvider?.name || state.selectedProvider?.id, startTime: performance.now() });
   state.streaming = true;
   renderContent();
-  await streamReply();
-  state.streaming = false;
-  renderContent();
+  await runActiveStream();
 }
 
 async function resumeMessage(index: number) {
@@ -300,10 +342,7 @@ async function resumeMessage(index: number) {
   state.messages.push({ role: 'assistant', content: '', streaming: true, model: state.selectedModel, providerName: state.selectedProvider?.name || state.selectedProvider?.id, startTime: performance.now() });
   state.streaming = true;
   renderContent();
-  await streamReply(source.resumeRunId);
-  state.streaming = false;
-  renderContent();
-  await saveCurrentMessages();
+  await runActiveStream(source.resumeRunId);
 }
 
 async function resolveApproval(approvalId: string, action: 'approve' | 'reject') {

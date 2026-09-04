@@ -1,7 +1,7 @@
 // 核心依赖统一出口：业务模块统一从这里 import，避免散落引用各子模块。
 export { $, $$, esc } from './dom';
 export { toast } from './toast';
-export { api, serverAuthHeaders } from './api';
+export { api, getServerToken, serverAuthHeaders, serverTokenStorageKey, setServerToken } from './api';
 export { applyTheme, getTheme, setTheme } from './theme';
 export type { ThemePreference } from './theme';
 export {

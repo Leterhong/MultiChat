@@ -13,18 +13,26 @@ function normalize(raw) {
 
 module.exports = function registerPromptTemplates(app) {
   app.get('/api/prompt-templates', (req, res) => res.json(ctx.store.read('prompt_templates.json', [])));
-  app.post('/api/prompt-templates', (req, res) => {
+  app.post('/api/prompt-templates', (req, res, next) => {
     let tpl;
     try { tpl = normalize(req.body); } catch (e) { return res.status(400).json({ error: e.message, code: 'INVALID_TEMPLATE' }); }
-    ctx.store.mutate('prompt_templates.json', rows => {
-      const i = rows.findIndex(r => r.name === tpl.name);
-      if (i >= 0) rows[i] = tpl; else rows.push(tpl);
-      return rows;
-    }, []);
-    res.status(201).json(tpl);
+    void ctx.store.mutate('prompt_templates.json', rows => {
+        const i = rows.findIndex(r => r.name === tpl.name);
+        if (i >= 0) rows[i] = tpl; else rows.push(tpl);
+        return rows;
+      }, [])
+      .then(() => res.status(201).json(tpl))
+      .catch(next);
   });
-  app.delete('/api/prompt-templates/:id', (req, res) => {
-    ctx.store.mutate('prompt_templates.json', rows => rows.filter(r => r.id !== req.params.id), []);
-    res.json({ ok: true });
+  app.delete('/api/prompt-templates/:id', (req, res, next) => {
+    let found = false;
+    void ctx.store.mutate('prompt_templates.json', rows => rows.filter(row => {
+        if (row.id === req.params.id) found = true;
+        return row.id !== req.params.id;
+      }), [])
+      .then(() => found
+        ? res.json({ ok: true })
+        : res.status(404).json({ error: 'template not found', code: 'TEMPLATE_NOT_FOUND' }))
+      .catch(next);
   });
 };

@@ -8,7 +8,8 @@ module.exports = function registerAssistants(app) {
   });
   app.post('/api/assistants', (req, res) => {
     const assistants = ctx.store.read('assistants.json', []);
-    const assistant = { id: Date.now().toString(36), ...req.body };
+    const input = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+    const assistant = { ...input, id: Date.now().toString(36) };
     assistants.push(assistant);
     ctx.store.write('assistants.json', assistants);
     res.json(assistant);
@@ -17,7 +18,8 @@ module.exports = function registerAssistants(app) {
     const assistants = ctx.store.read('assistants.json', []);
     const idx = assistants.findIndex(a => a.id === req.params.id);
     if (idx < 0) return res.status(404).json({ error: 'not found' });
-    assistants[idx] = { ...assistants[idx], ...req.body, id: req.params.id };
+    const input = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+    assistants[idx] = { ...assistants[idx], ...input, id: req.params.id };
     ctx.store.write('assistants.json', assistants);
     res.json(assistants[idx]);
   });

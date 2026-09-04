@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
   publish:
@@ -67,32 +66,6 @@ jobs:
           path: npm-publish.log
           retention-days: 7
           if-no-files-found: ignore
-      # 同时推到调试分支：raw 文件匿名可读，避免诊断来回。
-      - name: Push debug log to branch
-        if: failure() && steps.publish.outcome == 'failure'
-        run: |
-          git config user.email "ci@multichat.local"
-          git config user.name "multichat-ci"
-          git checkout -b ci/npm-publish-debug
-          git add npm-publish.log npm-preflight.txt
-          git commit -m "ci: npm publish failure log (${GITHUB_REF_NAME})"
-          git push "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci/npm-publish-debug --force
-        env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-      # 公开 issue 携带完整报错与预检结果，匿名可读。
-      - name: Open debug issue on failure
-        if: failure() && steps.publish.outcome == 'failure'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const read = (f) => { try { return fs.readFileSync(f, 'utf8').slice(-2500); } catch { return '(无)'; } };
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `[debug] npm publish failure (${context.ref})`,
-              body: '发布预检与报错如下：\n\n```\n' + read('npm-preflight.txt') + '\n\n=== npm publish 输出 ===\n' + read('npm-publish.log') + '\n```',
-            });
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

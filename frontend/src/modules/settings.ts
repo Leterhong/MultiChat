@@ -1,4 +1,4 @@
-import { $, $$, esc, api, toast, state, saveSelectedAgent, saveParams, getTheme, setTheme } from '../core/index';
+import { $, $$, esc, api, getServerToken, setServerToken, toast, state, saveSelectedAgent, saveParams, getTheme, setTheme } from '../core/index';
 import { GeneralSettings, ProviderSettings, SkillSettings, ToolSettings } from '../components/CoreSettings';
 import { AgentSettings, CapabilitySettings, RunsSettings, UsageSettings, WorkspaceSettings, compactNumber } from '../components/SettingsDashboards';
 import { ModelExperimentSettings, type CompareResult } from '../components/CompareLab';
@@ -85,10 +85,10 @@ function renderSettings(tab = 'general', keepScroll = false) {
     mountExtensionSettings(GeneralSettings, {
       params: state.params,
       theme: getTheme(),
-      token: localStorage.getItem('multichat_server_token') || '',
+      token: getServerToken(),
       onSaveParams: (params: any) => { state.params = params; saveParams(); toast('已保存'); },
       onTheme: (theme: string) => { setTheme(theme as any); toast('主题已切换'); },
-      onSaveToken: (value: string) => { if (value) localStorage.setItem('multichat_server_token', value); else localStorage.removeItem('multichat_server_token'); toast(value ? '访问令牌已保存' : '访问令牌已清除'); },
+      onSaveToken: (value: string) => { setServerToken(value); toast(value.trim() ? '访问令牌已保存' : '访问令牌已清除'); },
     });
   } else if (tab === 'providers') {
     mountExtensionSettings(ProviderSettings, {

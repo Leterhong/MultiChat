@@ -44,7 +44,7 @@ function normalizeAgent(raw) {
 }
 
 module.exports = function registerImport(app) {
-  app.post('/api/import', async (req, res) => {
+  app.post('/api/import', (req, res, next) => {
     const body = req.body || {};
     if (body.url || body.format === 'zip' || body.skills || body.type || body.mcp) {
       return fail(res, 400, 'INVALID_PACKAGE', 'Skill 请导入标准 SKILL.md 目录，Plugin 请使用 .codex-plugin/plugin.json，MCP 请使用独立 MCP server 配置');
@@ -59,14 +59,15 @@ module.exports = function registerImport(app) {
     let normalized;
     try { normalized = incoming.map(normalizeAgent); }
     catch (error) { return fail(res, 400, 'INVALID_PACKAGE', error.message); }
-    await ctx.store.mutate(ctx.AGENT_FILE, agents => {
-      for (const item of normalized) {
-        const index = agents.findIndex(agent => agent.id === item.id);
-        if (index >= 0) agents[index] = item;
-        else agents.push(item);
-      }
-      return agents;
-    }, []);
-    res.json({ ok: true, agents: normalized.length, skills: 0 });
+    void ctx.store.mutate(ctx.AGENT_FILE, agents => {
+        for (const item of normalized) {
+          const index = agents.findIndex(agent => agent.id === item.id);
+          if (index >= 0) agents[index] = item;
+          else agents.push(item);
+        }
+        return agents;
+      }, [])
+      .then(() => res.json({ ok: true, agents: normalized.length, skills: 0 }))
+      .catch(next);
   });
 };

@@ -17,8 +17,17 @@ function runAutoSnapshotSweep(nowMs = Date.now()) {
     const created = [];
     let pruned = 0;
     const projects = ctx.workspaceStore.projects();
+    const assets = ctx.workspaceStore.assets();
+    const memories = ctx.store.read('memories.json', []);
     const rows = ctx.store.read('snapshots.json', []);
     for (const project of projects) {
+        const hasRecoverableState = assets.some(item => item.projectId === project.id)
+            || memories.some(item => item.projectId === project.id)
+            || Boolean(project.defaultAgentId || project.defaultProviderId || project.defaultModel);
+        // A fresh inbox/project has nothing to recover. Skipping it avoids a daily
+        // stream of empty snapshots that obscures meaningful restore points.
+        if (!hasRecoverableState)
+            continue;
         const autoRows = rows
             .filter(row => row.projectId === project.id && isAutomatic(row))
             .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));

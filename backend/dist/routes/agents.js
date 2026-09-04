@@ -27,7 +27,8 @@ module.exports = function registerAgents(app) {
     });
     app.post('/api/agents', (req, res) => {
         const agents = ctx.store.read(ctx.AGENT_FILE, []);
-        const agent = normalizeCapabilityRefs({ id: 'ag_' + Date.now().toString(36), skillIds: [], skillRefs: [], toolIds: [], mcpServerIds: [], systemPrompt: '', createdAt: new Date().toISOString(), ...req.body }, !Array.isArray(req.body?.toolIds));
+        const input = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+        const agent = normalizeCapabilityRefs({ skillIds: [], skillRefs: [], toolIds: [], mcpServerIds: [], systemPrompt: '', ...input, id: 'ag_' + Date.now().toString(36), createdAt: new Date().toISOString() }, !Array.isArray(input.toolIds));
         agents.push(agent);
         ctx.store.write(ctx.AGENT_FILE, agents);
         res.json(agent);
@@ -37,7 +38,8 @@ module.exports = function registerAgents(app) {
         const idx = agents.findIndex(a => a.id === req.params.id);
         if (idx < 0)
             return res.status(404).json({ error: 'not found' });
-        agents[idx] = normalizeCapabilityRefs({ ...agents[idx], ...req.body, id: req.params.id }, !Array.isArray(req.body?.toolIds));
+        const input = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+        agents[idx] = normalizeCapabilityRefs({ ...agents[idx], ...input, id: req.params.id, createdAt: agents[idx].createdAt }, !Array.isArray(input.toolIds));
         ctx.store.write(ctx.AGENT_FILE, agents);
         res.json(agents[idx]);
     });

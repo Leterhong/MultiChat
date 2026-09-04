@@ -64,7 +64,6 @@ require('./routes/workspaces')(app);
 require('./routes/assistants')(app);
 require('./routes/runs')(app);
 require('./routes/prompt-templates')(app);
-require('./routes/runs')(app);
 require('./routes/usage')(app);
 require('./routes/control-plane')(app);
 require('./routes/skills')(app);

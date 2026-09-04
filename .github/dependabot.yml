@@ -1,27 +1,56 @@
 version: 2
 updates:
-  # 后端运行时依赖：每月集中处理，避免碎片化升级干扰
+  # npm 发布包的运行时依赖
   - package-ecosystem: npm
-    directory: /backend
+    directory: /
+    open-pull-requests-limit: 1
     schedule:
       interval: monthly
     groups:
       minor-and-patch:
+        patterns: ['*']
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+    reviewers:
+      - Leterhong
+  # 后端运行时依赖：每月集中处理，避免碎片化升级干扰
+  - package-ecosystem: npm
+    directory: /backend
+    open-pull-requests-limit: 1
+    schedule:
+      interval: monthly
+    groups:
+      minor-and-patch:
+        patterns: ['*']
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     reviewers:
       - Leterhong
   # 前端依赖
   - package-ecosystem: npm
     directory: /frontend
+    open-pull-requests-limit: 1
     schedule:
       interval: monthly
     groups:
       minor-and-patch:
+        patterns: ['*']
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     reviewers:
       - Leterhong
   # GitHub Actions 自身跟进
   - package-ecosystem: github-actions
     directory: /
+    open-pull-requests-limit: 1
     schedule:
       interval: monthly
+    groups:
+      actions:
+        patterns: ['*']

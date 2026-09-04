@@ -56,10 +56,23 @@ test('conversation ids with traversal or separators return 400, never 500', asyn
 
   // 4) 正常流程不受影响：创建 → 取回 → 删除
   const created = await fetch(`${BASE}/api/conversations`, {
-    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: '回归测试' }),
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: 'client-chosen', createdAt: '2000-01-01', title: '回归测试' }),
   });
   assert.equal(created.status, 200);
-  const conv = await created.json() as { id: string };
+  const conv = await created.json() as { id: string; createdAt: string };
+  assert.notEqual(conv.id, 'client-chosen');
+  assert.notEqual(conv.createdAt, '2000-01-01');
+
+  // 消息存储拒绝会让前端状态损坏的非数组/非法结构。
+  const invalidMessages = await fetch(`${BASE}/api/conversations/${conv.id}/messages`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ role: 'user', content: 'not-an-array' }),
+  });
+  assert.equal(invalidMessages.status, 400);
+  const validMessages = await fetch(`${BASE}/api/conversations/${conv.id}/messages`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify([{ role: 'user', content: 'hello' }]),
+  });
+  assert.equal(validMessages.status, 200);
+
   const got = await fetch(`${BASE}/api/conversations/${conv.id}`);
   assert.equal(got.status, 200);
   const removed = await fetch(`${BASE}/api/conversations/${conv.id}`, { method: 'DELETE' });

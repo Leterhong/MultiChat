@@ -60,6 +60,7 @@ describe('React settings surfaces', () => {
 
   it('keeps provider and Skill management accessible after the React migration', async () => {
     const providers = render(<ProviderSettings providers={[{ id: 'mock', name: '本地体验', apiType: 'openai', models: ['echo'], allowPrivate: true }]} onSave={noopAsync} onDelete={noopAsync} onAddBuiltin={noop} onAddCustom={noop} />);
+    expect(providers.getByLabelText('模型配置概览')).toHaveTextContent('1 个可用');
     expect(await axe(providers.container)).toHaveNoViolations();
     providers.unmount();
     const skills = render(<SkillSettings initialSkills={[{ id: 'review', key: 'review', name: '代码审查', description: '检查代码风险', enabled: true, source: { kind: 'repo' }, resources: ['references'] }]} sourceLabel={sourceLabel} onToggle={noopAsync} onEdit={noop} onDiff={noopAsync} onDelete={noopAsync} onImport={noop} onAdd={noop} />);

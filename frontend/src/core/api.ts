@@ -2,8 +2,48 @@
 // 依赖 state（读取 apiBase），单向依赖，无循环。
 import { state } from './state';
 
+const LEGACY_SERVER_TOKEN_KEY = 'multichat_server_token';
+const SERVER_TOKEN_PREFIX = 'multichat_server_token:';
+
+function apiOrigin() {
+  try {
+    return new URL(state.apiBase || location.origin, location.href).origin;
+  } catch {
+    return location.origin;
+  }
+}
+
+export function serverTokenStorageKey() {
+  return SERVER_TOKEN_PREFIX + apiOrigin();
+}
+
+export function getServerToken() {
+  const key = serverTokenStorageKey();
+  const scoped = localStorage.getItem(key);
+  if (scoped !== null) return scoped;
+
+  // 旧版令牌只允许迁移给承载当前页面的同源服务，避免 ?api=… 把令牌
+  // 自动发送到另一个本地端口或第三方地址。
+  if (apiOrigin() === location.origin) {
+    const legacy = localStorage.getItem(LEGACY_SERVER_TOKEN_KEY) || '';
+    if (legacy) {
+      localStorage.setItem(key, legacy);
+      localStorage.removeItem(LEGACY_SERVER_TOKEN_KEY);
+    }
+    return legacy;
+  }
+  return '';
+}
+
+export function setServerToken(value: string) {
+  const key = serverTokenStorageKey();
+  const token = value.trim();
+  if (token) localStorage.setItem(key, token);
+  else localStorage.removeItem(key);
+}
+
 export function serverAuthHeaders() {
-  const token = localStorage.getItem('multichat_server_token') || '';
+  const token = getServerToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

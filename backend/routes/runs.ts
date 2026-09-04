@@ -39,26 +39,39 @@ module.exports = function registerRuns(app) {
   // 审批决策：写入持久化检查点，不占用原 Agent 响应连接。
   app.post('/api/runs/:id/approval/:approvalId', (req, res, next) => {
     void (async () => {
-    const run = ctx.store.read(ctx.RUN_FILE, []).find(x => x.id === req.params.id);
-    if (!run) return res.status(404).json({ error: { message: 'run not found' }, code: 'RUN_NOT_FOUND' });
-    const rec = (run.approvals || []).find(a => a.id === req.params.approvalId);
-    if (!rec || rec.status !== 'pending') {
-      return res.status(409).json({
-        error: { message: '审批请求不存在或已处理' + (rec ? '（当前状态：' + rec.status + '）' : '') },
-        code: 'APPROVAL_NOT_PENDING',
-      });
-    }
-    const action = req.body && req.body.action;
-    if (action !== 'approve' && action !== 'reject') {
-      return res.status(400).json({ error: { message: 'action 必须是 approve 或 reject' }, code: 'BAD_REQUEST' });
-    }
-    rec.status = action === 'approve' ? 'approved' : 'rejected';
-    rec.resolvedAt = new Date().toISOString();
-    run.status = 'paused';
-    run.pauseReason = action === 'approve' ? 'approval granted; ready to resume' : 'approval rejected; ready to resume';
-    if (run.checkpoint) run.checkpoint.approvalDecision = action;
-    await ctx.store.mutate(ctx.RUN_FILE, (runs) => runs.map(item => item.id === run.id ? run : item), []);
-    res.json({ ok: true, approvalId: req.params.approvalId, action, runId: req.params.id, resumable: true });
+      const action = req.body && req.body.action;
+      if (action !== 'approve' && action !== 'reject') {
+        return res.status(400).json({ error: { message: 'action 必须是 approve 或 reject' }, code: 'BAD_REQUEST' });
+      }
+
+      let outcome = { kind: 'missing-run', status: '' };
+      await ctx.store.mutate(ctx.RUN_FILE, (runs) => {
+        const run = runs.find(item => item.id === req.params.id);
+        if (!run) return undefined;
+        const rec = (run.approvals || []).find(item => item.id === req.params.approvalId);
+        if (!rec || rec.status !== 'pending') {
+          outcome = { kind: 'not-pending', status: rec?.status || '' };
+          return undefined;
+        }
+        rec.status = action === 'approve' ? 'approved' : 'rejected';
+        rec.resolvedAt = new Date().toISOString();
+        run.status = 'paused';
+        run.pauseReason = action === 'approve' ? 'approval granted; ready to resume' : 'approval rejected; ready to resume';
+        if (run.checkpoint) run.checkpoint.approvalDecision = action;
+        outcome = { kind: 'updated', status: rec.status };
+        return runs;
+      }, []);
+
+      if (outcome.kind === 'missing-run') {
+        return res.status(404).json({ error: { message: 'run not found' }, code: 'RUN_NOT_FOUND' });
+      }
+      if (outcome.kind === 'not-pending') {
+        return res.status(409).json({
+          error: { message: '审批请求不存在或已处理' + (outcome.status ? '（当前状态：' + outcome.status + '）' : '') },
+          code: 'APPROVAL_NOT_PENDING',
+        });
+      }
+      res.json({ ok: true, approvalId: req.params.approvalId, action, runId: req.params.id, resumable: true });
     })().catch(next);
   });
 };
