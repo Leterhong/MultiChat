@@ -1,9 +1,11 @@
 version: 2
+# MultiChat 采用单 main 分支维护；依赖风险由 CI 的 npm audit 阻断，
+# 定期升级由维护者集中执行，避免自动更新分支持续堆积。
 updates:
   # npm 发布包的运行时依赖
   - package-ecosystem: npm
     directory: /
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 0
     schedule:
       interval: monthly
     groups:
@@ -18,7 +20,7 @@ updates:
   # 后端运行时依赖：每月集中处理，避免碎片化升级干扰
   - package-ecosystem: npm
     directory: /backend
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 0
     schedule:
       interval: monthly
     groups:
@@ -33,7 +35,7 @@ updates:
   # 前端依赖
   - package-ecosystem: npm
     directory: /frontend
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 0
     schedule:
       interval: monthly
     groups:
@@ -48,7 +50,7 @@ updates:
   # GitHub Actions 自身跟进
   - package-ecosystem: github-actions
     directory: /
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 0
     schedule:
       interval: monthly
     groups:

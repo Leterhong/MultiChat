@@ -25,6 +25,8 @@ jobs:
       # npm ci 可复现安装。若更换依赖，请在本地 npm install 后提交同步的 lock。
       - name: Install deps
         run: npm ci --no-audit --no-fund
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
       - name: Run backend tests
         run: npm test
       - name: Typecheck (tsc --noEmit)
@@ -51,6 +53,8 @@ jobs:
           package-manager-cache: false
       - name: Install deps
         run: npm ci --no-audit --no-fund
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
       - name: Build (vite)
         run: npm run build
       - name: Frontend tests and accessibility checks
@@ -73,8 +77,11 @@ jobs:
           package-manager-cache: false
       - name: Install deps
         run: |
+          npm ci --no-audit --no-fund
           npm ci --prefix backend --no-audit --no-fund
           npm ci --prefix frontend --no-audit --no-fund
+      - name: Audit published runtime dependencies
+        run: npm audit --audit-level=high
       - name: Build
         run: npm run build
       - name: Boot and probe (npx 路径的真实启动)
