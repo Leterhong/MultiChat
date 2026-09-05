@@ -1,4 +1,4 @@
-import { $, esc, toast, state } from '../core/index';
+import { esc, toast, state } from '../core/index';
 
 /* --------------------------- Model picker --------------------------- */
 function openModelPicker() {
@@ -83,27 +83,13 @@ function selectModel(providerId: string, model: string) {
   renderContent();
 }
 function renderTopbar() {
-  syncModelUI();
-  const a = state.selectedAgent;
-  $('#agentPickerName').textContent = a ? a.name : '直接对话';
-  const project = state.selectedProject;
-  const hasProject = Boolean(project && project.id !== 'pr_inbox' && project.name !== '收件箱');
-  $('#workspacePickerName').textContent = hasProject ? project.name : '添加项目';
-  const path = $('#topbarPath');
-  if (path) path.textContent = hasProject ? `${project.name} · ${state.assets.length} 个文件` : '未添加项目文件夹';
+  // 顶栏、工作区与模型入口均由 React 订阅 Zustand 精确渲染。
+  // 这里保留兼容入口，只负责刷新尚未迁移的 Inspector。
   renderInspector();
 }
-// 同步两个模型入口的显示文案。点击行为由 React runtime action 统一管理，
-// 避免原生 onclick 与 React onClick 同时触发并把选择器重新覆盖成设置页。
+// 旧模块仍会调用该函数。React 已直接订阅模型状态，因此无需修改 DOM。
 function syncModelUI() {
-  const p = state.selectedProvider, m = state.selectedModel;
-  const label = (p && m) ? `${p.name || p.id} · ${m}` : '选择模型';
-  [ '#heroModelTag', '#composerModelTag' ].forEach(sel => {
-    const el = $(sel);
-    if (!el) return;
-    el.textContent = label;
-    el.title = p && m ? `当前：${p.name || p.id} · ${m}\n点击切换` : '点击选择模型';
-  });
+  return;
 }
 
 

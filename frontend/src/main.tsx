@@ -3,11 +3,17 @@ import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { AppShell } from './app/AppShell';
 import * as Core from './core/index';
-import { installRuntimeActions, markAppReady } from './store/appStore';
+import { installRuntimeActions, markAppReady, setWorkspaceView } from './store/appStore';
 import './design/tokens.css';
 import './styles.css';
 import './workbench.css';
 import './developer-workspace.css';
+import './design/system.css';
+import './design/shell.css';
+import './design/home.css';
+import './design/chat.css';
+import './design/activity.css';
+import './design/surfaces.css';
 
 const mount = document.getElementById('root');
 if (!mount) throw new Error('MultiChat root mount is missing');
@@ -84,14 +90,25 @@ async function start() {
   Workbench.setupWorkbench();
   Compare.setupCompare();
   installRuntimeActions({
-    send: Send.send,
+    send: async (text?: string) => {
+      setWorkspaceView('chat');
+      await Send.send(text);
+    },
     stop: Send.stopStream,
-    newConversation: Conversations.newConversation,
+    newConversation: async () => {
+      setWorkspaceView('chat');
+      await Conversations.newConversation();
+    },
+    deleteConversation: Conversations.deleteConversation,
+    renameConversation: Conversations.renameConversation,
     openSettings: Settings.openSettings,
     openModelPicker: ModelPicker.openModelPicker,
     selectModel: ModelPicker.selectModel,
     openCompare: Compare.openCompare,
-    openConversation: Conversations.openConversation,
+    openConversation: async (id: string) => {
+      setWorkspaceView('chat');
+      await Conversations.openConversation(id);
+    },
     openInspector: Workbench.openInspector,
     importProjectFolder: async () => {
       await Assets.importProjectFolder();

@@ -7,7 +7,7 @@ import { AppShell } from '../AppShell';
 describe('AppShell navigation', () => {
   beforeEach(() => {
     document.body.className = '';
-    useAppStore.setState({ ready: true, actions: {} });
+    useAppStore.setState({ ready: true, workspaceView: 'home', taskMode: 'chat', actions: {} });
   });
 
   it('has no detectable accessibility violations and exposes one settings entry', async () => {
@@ -30,9 +30,9 @@ describe('AppShell navigation', () => {
     main.inert = true;
     document.body.classList.add('mobile-nav-open');
 
-    fireEvent.click(screen.getByRole('button', { name: /^模型实验$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^项目$/ }));
 
-    expect(openSettings).toHaveBeenCalledWith('experiment');
+    expect(openSettings).toHaveBeenCalledWith('workspace');
     expect(sidebar).not.toHaveClass('open');
     expect(main.inert).toBe(false);
     expect(document.body).not.toHaveClass('mobile-nav-open');

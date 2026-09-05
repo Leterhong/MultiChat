@@ -1,34 +1,23 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
-  Activity,
   ArrowUp,
-  Bot,
   Brain,
   CheckCircle2,
   ChevronDown,
-  ChevronRight,
-  CircleDot,
-  Clock3,
-  FileCode2,
+  Copy,
   FileText,
   FolderOpen,
   FolderPlus,
-  Gauge,
   Layers3,
-  ListChecks,
   ListTree,
-  Play,
-  SearchCheck,
-  ShieldCheck,
-  Sparkles,
-  TerminalSquare,
+  Plus,
+  RefreshCw,
   Wrench,
 } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 import { state } from '../core';
-import { WORK_MODE_LABELS } from '../core/workflow';
 import { useAppStore, useBusinessStore } from '../store/appStore';
-import { fmtTok } from '../utils/format';
+import { fmtTok, formatRecentTime } from '../utils/format';
 import { BrandMark } from './BrandMark';
 import { ModelGlyph } from './BrandMark';
 import { SafeMarkdown } from './SafeMarkdown';
@@ -51,43 +40,23 @@ function useAutosize(value: string) {
   return ref;
 }
 
-function shortDate(value: unknown) {
-  const time = Date.parse(String(value || ''));
-  if (!Number.isFinite(time)) return '';
-  return new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric' }).format(time);
-}
-
-function runStatus(status: string) {
-  if (status === 'completed') return '已完成';
-  if (status === 'error') return '失败';
-  if (status === 'cancelled') return '已取消';
-  return '运行中';
-}
-
 function HomeWorkspace() {
   const business = useBusinessStore((current) => current) as any;
-  const [prompt, setPrompt] = useState('');
   const ready = useAppStore((current) => current.ready);
   const actions = useAppStore((current) => current.actions);
+  const taskMode = useAppStore((current) => current.taskMode);
+  const setTaskMode = useAppStore((current) => current.setTaskMode);
+  const [prompt, setPrompt] = useState('');
   const inputRef = useAutosize(prompt);
-  const noModel = !business.selectedProvider || !business.selectedModel;
   const selectedFiles = business.selectedAssetIds?.size || 0;
   const projectFiles = business.assets?.length || 0;
-  const project = business.selectedProject;
-  const hasProject = Boolean(project && project.id !== 'pr_inbox' && project.name !== '收件箱');
-  const projectName = hasProject ? project.name : '还没有打开项目';
-  const models = business.providers.flatMap((provider: any) =>
-    (provider.models || []).map((model: string) => ({ provider, model }))
+  const memories = business.memories?.filter((item: any) => item.enabled !== false).length || 0;
+  const hasProject = Boolean(
+    business.selectedProject && business.selectedProject.id !== 'pr_inbox' && business.selectedProject.name !== '收件箱'
   );
-  const recentConversations = business.conversations.slice(0, 4);
-  const recentRuns = business.runs.slice(0, 4);
-  const enabledCapabilities =
-    business.skills.filter((item: any) => item.enabled !== false).length +
-    business.tools.filter((item: any) => item.enabled !== false).length +
-    business.mcpServers.filter((item: any) => item.enabled !== false).length +
-    business.plugins.filter((item: any) => item.enabled !== false).length;
-  const runTokens = business.runs.reduce((sum: number, run: any) => sum + Number(run.usage?.totalTokens || 0), 0);
-  const completedRuns = business.runs.filter((run: any) => run.status === 'completed').length;
+  const recentTasks = (business.conversations || []).slice(0, 5);
+  const workspaceName = business.selectedWorkspace?.name || '本机工作区';
+  const projectName = hasProject ? business.selectedProject.name : '临时任务';
 
   useEffect(() => {
     if (ready && !document.querySelector('.settings.open, .modal.open')) inputRef.current?.focus();
@@ -95,8 +64,18 @@ function HomeWorkspace() {
 
   const submit = () => {
     const value = prompt.trim();
-    if (!value || !actions.send) return;
-    if (noModel) {
+    if (!value) return;
+    if (taskMode === 'compare') {
+      localStorage.setItem('multichat_compare_draft', value);
+      actions.openCompare?.();
+      return;
+    }
+    if (taskMode === 'agent' && !business.selectedAgent) {
+      document.getElementById('agentPicker')?.click();
+      return;
+    }
+    if (!actions.send) return;
+    if (!business.selectedProvider || !business.selectedModel) {
       void actions.send(value);
       return;
     }
@@ -105,55 +84,26 @@ function HomeWorkspace() {
   };
 
   return (
-    <div className="home-workbench dashboard-home">
-      <section className="dashboard-hero" id="heroCard" aria-label="发起工作">
-        <div className="dashboard-hero-heading">
-          <div className="home-eyebrow">
-            <BrandMark size={20} />
-            <span>MultiChat Workspace</span>
-            <i className="status-pulse" />
-            <span>本机就绪</span>
-          </div>
-          <h1>今天想推进什么？</h1>
-          <p>对话、项目上下文、智能体工具与运行证据，会在同一个本地工作流里持续衔接。</p>
+    <div className="home-workbench workspace-home">
+      <section className="home-task-entry" aria-labelledby="homeTaskTitle">
+        <div className="home-workspace-context">
+          <span className="home-page-label">新任务</span>
+          <span className="home-context-divider" aria-hidden />
+          <button type="button" onClick={() => actions.openSettings?.('workspace')}>
+            <FolderOpen size={13} aria-hidden />
+            {workspaceName} / {projectName}
+          </button>
         </div>
-        <div className="dashboard-composer-shell">
-          <div className="home-composer-label">
-            <label htmlFor="heroInput">告诉 MultiChat 你的目标</label>
-            <div className="home-task-status">
-              <button type="button" onClick={() => openWorkflowRail('run')}>
-                {business.workflow.mode === 'execute' ? (
-                  <TerminalSquare size={13} aria-hidden />
-                ) : business.workflow.mode === 'plan' ? (
-                  <ListChecks size={13} aria-hidden />
-                ) : (
-                  <SearchCheck size={13} aria-hidden />
-                )}
-                {WORK_MODE_LABELS[business.workflow.mode]}
-              </button>
-              {noModel ? (
-                <button
-                  type="button"
-                  className="model-cta"
-                  title="添加一个模型连接"
-                  onClick={() => actions.openSettings?.('providers')}
-                >
-                  <i className="status-pulse warn" />
-                  连接模型
-                </button>
-              ) : (
-                <span>
-                  <i className="status-pulse" />
-                  {business.selectedModel}
-                </span>
-              )}
-            </div>
-          </div>
+        <h1 id="homeTaskTitle">今天想完成什么？</h1>
+        <p>描述你的目标，MultiChat 会根据任务选择合适的 AI 工作方式。</p>
+
+        <div className="universal-composer" id="heroCard">
           <textarea
             ref={inputRef}
             className="hero-input"
             id="heroInput"
-            placeholder="描述目标、相关文件和你希望得到的结果…"
+            aria-label="告诉 MultiChat 你的目标"
+            placeholder="描述你想完成的任务..."
             rows={3}
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
@@ -164,54 +114,68 @@ function HomeWorkspace() {
               }
             }}
           />
+          <div className="home-mode-row">
+            <span>工作方式</span>
+            <div className="task-mode-switch" role="group" aria-label="任务模式">
+              {(['chat', 'agent', 'compare'] as const).map((mode) => (
+                <button
+                  className={taskMode === mode ? 'active' : ''}
+                  type="button"
+                  aria-pressed={taskMode === mode}
+                  key={mode}
+                  onClick={() => setTaskMode(mode)}
+                >
+                  {mode === 'chat' ? '对话' : mode === 'agent' ? 'Agent' : '模型对比'}
+                </button>
+              ))}
+            </div>
+            <span className="home-mode-description">
+              {taskMode === 'chat'
+                ? '使用当前模型直接交流'
+                : taskMode === 'agent'
+                  ? '调用工具与能力完成任务'
+                  : '并行验证多个模型的答案'}
+            </span>
+          </div>
           <div className="hero-actions">
+            <button type="button" title="添加项目文件夹" onClick={() => void actions.importProjectFolder?.()}>
+              <Plus size={15} aria-hidden />
+              <span>文件</span>
+            </button>
+            <button type="button" title="查看本轮上下文" onClick={() => openWorkflowRail('context')}>
+              <Layers3 size={15} aria-hidden />
+              <span>上下文{selectedFiles ? ` ${selectedFiles}` : ''}</span>
+            </button>
+            <span className="composer-context-summary">
+              {hasProject ? `${projectFiles} 文件 · ${memories} 记忆` : '未添加项目上下文'}
+            </span>
+            <div className="spacer" />
             <button
-              className="hero-tag"
+              className="hero-model"
               id="heroModelTag"
               type="button"
               aria-label={`模型：${business.selectedModel || '选择模型'}`}
               onClick={() => actions.openModelPicker?.()}
             >
-              <Layers3 size={14} aria-hidden />
-              {business.selectedModel || '选择模型'}
+              <ModelGlyph name={business.selectedProvider?.name || business.selectedModel || 'M'} />
+              <span>{business.selectedModel || '选择模型'}</span>
+              <ChevronDown size={13} aria-hidden />
             </button>
-            <button className="hero-workflow-tag" type="button" onClick={() => openWorkflowRail('plan')}>
-              <CheckCircle2 size={14} aria-hidden />
-              {business.workflow.steps.length
-                ? `${business.workflow.steps.filter((step: any) => step.done).length}/${business.workflow.steps.length} 步`
-                : '添加计划'}
-            </button>
-            <button
-              className="hero-folder"
-              type="button"
-              onClick={() => document.getElementById('workspacePicker')?.click()}
-            >
-              <FolderPlus size={14} aria-hidden />
-              {hasProject ? projectName : '选择项目文件夹'}
-            </button>
-            <button
-              className="hero-context-tag"
-              id="heroWorkspace"
-              type="button"
-              onClick={() => actions.openInspector?.()}
-            >
-              {selectedFiles} / {projectFiles} 文件已选择
-            </button>
-            <div className="spacer" />
             <button
               className={`send-btn${business.streaming ? ' stop' : ''}`}
               id="heroSendBtn"
               type="button"
-              disabled={!ready}
+              disabled={!ready || !prompt.trim()}
               title="开始"
-              aria-label="开始运行"
+              aria-label="开始任务"
               onClick={submit}
             >
-              <ArrowUp size={18} aria-hidden />
+              <ArrowUp size={17} aria-hidden />
             </button>
           </div>
         </div>
-        <div className="home-quick" aria-label="常用任务">
+
+        <div className="home-quick" aria-label="建议任务">
           <span>快速开始</span>
           {quickPrompts.map(([label, value]) => (
             <button
@@ -226,230 +190,45 @@ function HomeWorkspace() {
             </button>
           ))}
         </div>
-      </section>
 
-      <section className="dashboard-metrics" aria-label="工作台概览">
-        <article>
-          <Layers3 size={16} aria-hidden />
-          <span>
-            <strong>{models.length}</strong>
-            <small>可用模型</small>
-          </span>
-        </article>
-        <article>
-          <FileCode2 size={16} aria-hidden />
-          <span>
-            <strong>{projectFiles}</strong>
-            <small>项目文件</small>
-          </span>
-        </article>
-        <article>
-          <ShieldCheck size={16} aria-hidden />
-          <span>
-            <strong>{enabledCapabilities}</strong>
-            <small>启用能力</small>
-          </span>
-        </article>
-        <article>
-          <Gauge size={16} aria-hidden />
-          <span>
-            <strong>{fmtTok(runTokens)}</strong>
-            <small>近期 Token</small>
-          </span>
-        </article>
-      </section>
-
-      <div className="dashboard-grid">
-        <section className="dashboard-card dashboard-recent">
+        <section className="home-recent" aria-labelledby="homeRecentTitle">
           <header>
             <div>
-              <span className="dashboard-kicker">继续工作</span>
-              <h2>最近对话</h2>
+              <h2 id="homeRecentTitle">最近任务</h2>
+              <p>继续上次没有完成的工作</p>
             </div>
-            <button type="button" onClick={() => void actions.newConversation?.()}>
-              <span>新建</span>
-              <ArrowUp size={14} aria-hidden />
-            </button>
+            <span>本机保存</span>
           </header>
-          {recentConversations.length ? (
-            <div className="dashboard-list">
-              {recentConversations.map((conversation: any) => (
-                <button
-                  type="button"
-                  key={conversation.id}
-                  onClick={() => void actions.openConversation?.(conversation.id)}
-                >
-                  <span className="dashboard-list-icon">
-                    <CircleDot size={15} aria-hidden />
-                  </span>
-                  <span>
-                    <strong>{conversation.title || '新对话'}</strong>
-                    <small>{shortDate(conversation.updatedAt || conversation.createdAt) || '本机对话'}</small>
-                  </span>
-                  <ChevronRight size={15} aria-hidden />
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="dashboard-empty">
-              <Sparkles size={20} aria-hidden />
-              <strong>从第一个问题开始</strong>
-              <span>会话会自动保存在当前设备。</span>
-            </div>
-          )}
-        </section>
-
-        <section className="dashboard-card dashboard-context">
-          <header>
-            <div>
-              <span className="dashboard-kicker">项目上下文</span>
-              <h2>{hasProject ? projectName : '打开一个项目'}</h2>
-            </div>
-            <FolderOpen size={18} aria-hidden />
-          </header>
-          <p>
-            {hasProject
-              ? '已建立文件上下文，可在发送前精确选择要提供给模型的内容。'
-              : '添加本地文件夹后，可围绕真实代码、文档和项目记忆工作。'}
-          </p>
-          <dl>
-            <div>
-              <dt>文件</dt>
-              <dd>{projectFiles}</dd>
-            </div>
-            <div>
-              <dt>已选择</dt>
-              <dd>{selectedFiles}</dd>
-            </div>
-            <div>
-              <dt>记忆</dt>
-              <dd>{business.memories.filter((item: any) => item.enabled !== false).length}</dd>
-            </div>
-          </dl>
-          <button
-            className="dashboard-primary-action"
-            type="button"
-            onClick={() => void actions.importProjectFolder?.()}
-          >
-            <FolderPlus size={15} aria-hidden />
-            {hasProject ? '添加项目文件夹' : '选择项目文件夹'}
-          </button>
-        </section>
-
-        <section className="dashboard-card dashboard-runs">
-          <header>
-            <div>
-              <span className="dashboard-kicker">运行证据</span>
-              <h2>最近运行</h2>
-            </div>
-            <button type="button" onClick={() => actions.openSettings?.('runs')}>
-              查看全部
-            </button>
-          </header>
-          {recentRuns.length ? (
-            <div className="run-mini-list">
-              {recentRuns.map((run: any) => (
-                <button type="button" key={run.id} onClick={() => actions.openSettings?.('runs')}>
-                  <i className={`run-state ${run.status || 'running'}`} />
-                  <span>
-                    <strong>{run.agentName || run.agentId || '直接对话'}</strong>
-                    <small>
-                      {run.model || '未指定模型'} · {fmtTok(run.usage?.totalTokens || 0)} tokens
-                    </small>
-                  </span>
-                  <em>{runStatus(run.status)}</em>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="dashboard-empty compact">
-              <Activity size={20} aria-hidden />
-              <strong>还没有运行记录</strong>
-              <span>模型请求、工具调用与审批结果会出现在这里。</span>
-            </div>
-          )}
-        </section>
-
-        <section className="dashboard-card dashboard-model">
-          <header>
-            <div>
-              <span className="dashboard-kicker">当前配置</span>
-              <h2>主模型</h2>
-            </div>
-            <button type="button" onClick={() => actions.openModelPicker?.()}>
-              切换
-            </button>
-          </header>
-          {business.selectedModel ? (
-            <button className="dashboard-model-current" type="button" onClick={() => actions.openModelPicker?.()}>
-              <ModelGlyph name={business.selectedProvider?.name || business.selectedModel} />
-              <span>
-                <strong>{business.selectedModel}</strong>
-                <small>{business.selectedProvider?.name || '模型提供方'}</small>
-              </span>
-              <span className="status-pulse" />
-            </button>
-          ) : (
-            <button className="dashboard-model-empty" type="button" onClick={() => actions.openSettings?.('providers')}>
-              <Layers3 size={18} aria-hidden />
-              <span>
-                <strong>连接模型</strong>
-                <small>添加 API 地址与凭据</small>
-              </span>
-            </button>
-          )}
-          <div className="dashboard-model-stats">
-            <span>
-              <strong>{completedRuns}</strong>
-              <small>已完成运行</small>
-            </span>
-            <span>
-              <strong>{business.agents.length}</strong>
-              <small>智能体配置</small>
-            </span>
+          <div className="home-recent-list">
+            {recentTasks.map((conversation: any) => (
+              <button
+                type="button"
+                key={conversation.id}
+                onClick={() => void actions.openConversation?.(conversation.id)}
+              >
+                <span className="home-recent-mark" aria-hidden>
+                  {conversation.compareMode ? 'C' : conversation.agentId ? 'A' : 'T'}
+                </span>
+                <span className="home-recent-title">{conversation.title || '新任务'}</span>
+                <span className="home-recent-meta">
+                  {formatRecentTime(conversation.updatedAt || conversation.createdAt)} ·{' '}
+                  {conversation.compareMode ? '模型对比' : conversation.agentId ? 'Agent' : '对话'}
+                </span>
+                <span className="home-recent-arrow" aria-hidden>
+                  →
+                </span>
+              </button>
+            ))}
+            {!recentTasks.length && (
+              <div className="home-recent-empty">
+                <span>还没有最近任务</span>
+                <small>在上方描述目标，第一项工作会出现在这里。</small>
+              </div>
+            )}
           </div>
         </section>
-
-        <section className="dashboard-card dashboard-actions">
-          <header>
-            <div>
-              <span className="dashboard-kicker">快捷操作</span>
-              <h2>组织下一步</h2>
-            </div>
-            <Play size={17} aria-hidden />
-          </header>
-          <div className="quick-action-grid">
-            <button type="button" onClick={() => openWorkflowRail('plan')}>
-              <ListChecks size={16} aria-hidden />
-              <span>
-                <strong>制定计划</strong>
-                <small>拆成可验证步骤</small>
-              </span>
-            </button>
-            <button type="button" onClick={() => actions.openInspector?.()}>
-              <SearchCheck size={16} aria-hidden />
-              <span>
-                <strong>检查上下文</strong>
-                <small>确认模型将收到什么</small>
-              </span>
-            </button>
-            <button type="button" onClick={() => actions.openSettings?.('agents')}>
-              <Bot size={16} aria-hidden />
-              <span>
-                <strong>编排智能体</strong>
-                <small>组合工具与能力</small>
-              </span>
-            </button>
-            <button type="button" onClick={() => openWorkflowRail('activity')}>
-              <Clock3 size={16} aria-hidden />
-              <span>
-                <strong>查看活动</strong>
-                <small>跟踪当前运行证据</small>
-              </span>
-            </button>
-          </div>
-        </section>
-      </div>
+        <div className="home-footnote">Enter 开始 · Shift Enter 换行 · 数据默认保存在当前设备</div>
+      </section>
     </div>
   );
 }
@@ -494,13 +273,18 @@ function ToolPanels({ message }: { message: any }) {
             }}
           >
             <summary>
-              <Wrench className="tool-ico" aria-hidden />
+              <span className="execution-status completed">
+                <CheckCircle2 size={14} aria-hidden />
+              </span>
               <span className="tool-name">{tool.name}</span>
-              <span className="tool-sep" />
               <span className="tool-summary">{head}</span>
+              <span className="execution-meta">已完成</span>
               <span className="tool-caret" />
             </summary>
-            <pre className="tool-body">{body}</pre>
+            <div className="execution-detail">
+              <span>输出</span>
+              <pre className="tool-body">{body || '工具执行完成，未返回文本内容。'}</pre>
+            </div>
           </details>
         );
       })}
@@ -723,6 +507,9 @@ function MessageStats({ message }: { message: any }) {
 
 function MessageView({ message, index }: { message: any; index: number }) {
   const actions = useAppStore((current) => current.actions);
+  const usage = message.usage || {};
+  const totalTokens = usage.total_tokens ?? usage.total ?? usage.totalTokens;
+  const elapsed = message.elapsedMs != null ? `${(message.elapsedMs / 1000).toFixed(1)}s` : '';
   return (
     <article
       className={`msg ${message.role}${message.streaming ? ' streaming' : ''}`}
@@ -737,10 +524,19 @@ function MessageView({ message, index }: { message: any; index: number }) {
       )}
       <div className="msg-body">
         <div className="msg-role">
-          {message.role === 'assistant' ? 'MultiChat' : '你'}
+          <span className="message-identity">
+            {message.role === 'assistant' && <i className="model-status-dot" />}
+            {message.role === 'assistant' ? message.model || 'MultiChat' : '你'}
+          </span>
           {message.role === 'assistant' && message.agentTag && <span className="msg-model">{message.agentTag}</span>}
-          {message.role === 'assistant' && message.model && <span className="msg-model">{message.model}</span>}
-          {message.streaming && <span className="busy-label">处理中</span>}
+          {message.role === 'assistant' && !message.streaming && (
+            <span className="message-hover-meta">
+              {[message.providerName, elapsed, totalTokens != null ? `${fmtTok(totalTokens)} tokens` : '']
+                .filter(Boolean)
+                .join(' · ')}
+            </span>
+          )}
+          {message.streaming && <span className="busy-label">正在生成</span>}
         </div>
         <ThinkingPanel message={message} />
         <div className={`msg-content${message.role === 'user' ? ' user-plain-text' : ''}`}>
@@ -772,9 +568,11 @@ function MessageView({ message, index }: { message: any; index: number }) {
           {message.role === 'assistant' && !message.streaming && (
             <>
               <button className="msg-action" type="button" onClick={() => void actions.copyMessage?.(index)}>
+                <Copy size={13} aria-hidden />
                 复制
               </button>
               <button className="msg-action" type="button" onClick={() => void actions.regenerateMessage?.(index)}>
+                <RefreshCw size={13} aria-hidden />
                 重新生成
               </button>
             </>
@@ -793,6 +591,7 @@ function MessageView({ message, index }: { message: any; index: number }) {
 function ConversationWorkspace() {
   const messages = useBusinessStore((current) => current.messages);
   const streaming = useBusinessStore((current) => current.streaming);
+  const selectedProject = useBusinessStore((current) => current.selectedProject) as any;
   const [announcement, setAnnouncement] = useState('');
   useEffect(() => {
     if (!streaming) return;
@@ -803,31 +602,51 @@ function ConversationWorkspace() {
     return () => window.clearTimeout(timer);
   }, [messages, streaming]);
   return (
-    <>
-      <Virtuoso
-        className="transcript transcript-virtual"
-        data={messages}
-        followOutput={streaming ? 'auto' : false}
-        increaseViewportBy={{ top: 500, bottom: 800 }}
-        components={{ Footer: () => <div className="transcript-footer" aria-hidden="true" /> }}
-        itemContent={(index, message) => <MessageView index={index} message={message} />}
-      />
-      <div className="sr-only" aria-live="polite" aria-atomic="false">
-        {announcement}
-      </div>
-    </>
+    <div className="chat-workspace">
+      <section className="conversation-canvas" aria-label="当前对话">
+        <header className="task-header">
+          <span>{selectedProject?.id === 'pr_inbox' ? '临时任务' : selectedProject?.name || '无项目上下文'}</span>
+          <span className={streaming ? 'running' : ''}>
+            <i aria-hidden />
+            {streaming ? '运行中' : messages.length ? '已保存' : '准备就绪'}
+          </span>
+        </header>
+        {messages.length ? (
+          <Virtuoso
+            className="transcript transcript-virtual"
+            data={messages}
+            followOutput={streaming ? 'auto' : false}
+            increaseViewportBy={{ top: 500, bottom: 800 }}
+            components={{ Footer: () => <div className="transcript-footer" aria-hidden="true" /> }}
+            itemContent={(index, message) => <MessageView index={index} message={message} />}
+          />
+        ) : (
+          <div className="conversation-start">
+            <BrandMark size={30} />
+            <h1>开始新任务</h1>
+            <p>描述目标，MultiChat 会使用当前模型与项目上下文继续工作。</p>
+          </div>
+        )}
+        <ConversationComposer />
+        <div className="sr-only" aria-live="polite" aria-atomic="false">
+          {announcement}
+        </div>
+      </section>
+    </div>
   );
 }
 
 export function WorkspaceContent() {
-  const hasMessages = useBusinessStore((current) => current.messages.length > 0);
-  return hasMessages ? <ConversationWorkspace /> : <HomeWorkspace />;
+  const workspaceView = useAppStore((current) => current.workspaceView);
+  return workspaceView === 'chat' ? <ConversationWorkspace /> : <HomeWorkspace />;
 }
 
 export function ConversationComposer() {
   useBusinessStore((current) => current);
   const ready = useAppStore((current) => current.ready);
   const actions = useAppStore((current) => current.actions);
+  const taskMode = useAppStore((current) => current.taskMode);
+  const setTaskMode = useAppStore((current) => current.setTaskMode);
   const [text, setText] = useState('');
   const [filesOpen, setFilesOpen] = useState(true);
   const inputRef = useAutosize(text);
@@ -847,14 +666,23 @@ export function ConversationComposer() {
       document.documentElement.style.removeProperty('--mc-keyboard-offset');
     };
   }, []);
-  if (!state.messages.length) return null;
   const submit = () => {
     if (state.streaming) {
       actions.stop?.();
       return;
     }
     const value = text.trim();
-    if (!value || !actions.send) return;
+    if (!value) return;
+    if (taskMode === 'compare') {
+      localStorage.setItem('multichat_compare_draft', value);
+      actions.openCompare?.();
+      return;
+    }
+    if (taskMode === 'agent' && !state.selectedAgent) {
+      document.getElementById('agentPicker')?.click();
+      return;
+    }
+    if (!actions.send) return;
     if (!state.selectedProvider || !state.selectedModel) {
       void actions.send(value);
       return;
@@ -952,21 +780,6 @@ export function ConversationComposer() {
         />
         <div className="composer-actions">
           <button
-            className="composer-tool composer-mode"
-            type="button"
-            title="切换任务模式"
-            onClick={() => openWorkflowRail('run')}
-          >
-            {state.workflow.mode === 'execute' ? (
-              <TerminalSquare size={15} aria-hidden />
-            ) : state.workflow.mode === 'plan' ? (
-              <ListChecks size={15} aria-hidden />
-            ) : (
-              <SearchCheck size={15} aria-hidden />
-            )}
-            <span className="composer-tool-label">{WORK_MODE_LABELS[state.workflow.mode]}</span>
-          </button>
-          <button
             className="composer-tool"
             id="composerFolderBtn"
             type="button"
@@ -997,6 +810,19 @@ export function ConversationComposer() {
           >
             {state.selectedModel || '选择模型'}
           </button>
+          <div className="task-mode-switch compact" role="group" aria-label="任务模式">
+            {(['chat', 'agent', 'compare'] as const).map((mode) => (
+              <button
+                className={taskMode === mode ? 'active' : ''}
+                type="button"
+                aria-pressed={taskMode === mode}
+                key={mode}
+                onClick={() => setTaskMode(mode)}
+              >
+                {mode === 'chat' ? '对话' : mode === 'agent' ? '智能体' : '对比'}
+              </button>
+            ))}
+          </div>
           <span className="ctx-hint">Shift+Enter 换行</span>
           <div className="spacer" />
           <button

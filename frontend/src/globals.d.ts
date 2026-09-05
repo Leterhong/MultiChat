@@ -65,6 +65,7 @@ declare global {
   const openModelPicker: any;
   const renderTopbar: any;
   const syncModelUI: any;
+  const selectModel: any;
 
   // ── render ──
   const renderContent: any;
@@ -84,7 +85,6 @@ declare global {
   // ── compare ──
   const openCompare: any;
   const setupCompare: any;
-
 
   // ── init ──
   const bootstrap: any;

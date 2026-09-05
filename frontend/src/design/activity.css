@@ -1,0 +1,217 @@
+.workspace-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.workflow-rail-head > div {
+  min-width: 0;
+}
+
+.workflow-rail-head > div > span:last-child {
+  min-width: 0;
+}
+
+.workflow-rail-head small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-tabs {
+  flex: 0 0 auto;
+}
+
+.workflow-task-tabs {
+  grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(0, 0.8fr));
+}
+
+.workflow-tabs .rail-back {
+  justify-content: flex-start;
+  padding-inline: var(--mc-space-2);
+  color: var(--mc-text-subtle);
+}
+
+.workflow-tabs .rail-back svg {
+  transform: rotate(180deg);
+}
+
+.workflow-rail-body {
+  flex: 1;
+}
+
+.context-budget-card {
+  padding: var(--mc-space-4);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--mc-accent) 10%, transparent), transparent 52%),
+    var(--mc-surface-subtle);
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-md);
+}
+
+.context-budget-title,
+.context-budget-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mc-space-3);
+}
+
+.context-budget-title span,
+.context-budget-legend,
+.context-budget-card p {
+  color: var(--mc-text-faint);
+  font-size: 9px;
+}
+
+.context-budget-title strong {
+  color: var(--mc-text);
+  font: 650 13px/1.2 var(--mc-font-mono);
+}
+
+.context-budget-card .context-budget-track {
+  height: 6px;
+  margin: var(--mc-space-4) 0 var(--mc-space-2);
+  overflow: hidden;
+  background: var(--mc-surface-active);
+  border-radius: 999px;
+}
+
+.context-budget-card .context-budget-track span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--mc-accent), var(--mc-ai));
+  border-radius: inherit;
+}
+
+.context-budget-card p {
+  margin: var(--mc-space-3) 0 0;
+  line-height: 1.55;
+}
+
+.context-source-list {
+  display: grid;
+  gap: 2px;
+  margin-top: var(--mc-space-2);
+}
+
+.context-source-list button {
+  min-height: 54px;
+  padding: var(--mc-space-2) var(--mc-space-1);
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--mc-space-2);
+  color: var(--mc-text-muted);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--mc-line-faint);
+  border-radius: var(--mc-radius-sm);
+}
+
+.context-source-list button:hover {
+  background: var(--mc-surface-hover);
+}
+
+.context-source-list button > span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.context-source-list strong {
+  color: var(--mc-text);
+  font-size: 10px;
+  font-weight: 620;
+}
+
+.context-source-list small {
+  overflow: hidden;
+  color: var(--mc-text-faint);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-source-list b {
+  min-width: 24px;
+  padding: 3px 6px;
+  color: var(--mc-accent-strong);
+  background: var(--mc-accent-soft);
+  border-radius: 999px;
+  font: 650 9px/1.2 var(--mc-font-mono);
+  text-align: center;
+}
+
+.rail-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mc-space-2);
+}
+
+.rail-metric-grid article {
+  min-height: 116px;
+  padding: var(--mc-space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  color: var(--mc-accent-strong);
+  background: var(--mc-surface-subtle);
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-md);
+}
+
+.rail-metric-grid article > span {
+  margin-top: auto;
+  color: var(--mc-text-faint);
+  font-size: 8.5px;
+}
+
+.rail-metric-grid article > strong {
+  margin-top: 3px;
+  color: var(--mc-text);
+  font: 680 18px/1.15 var(--mc-font-mono);
+}
+
+.rail-metric-grid article > small {
+  margin-top: 5px;
+  color: var(--mc-text-subtle);
+  font-size: 8px;
+}
+
+.metrics-context-card dl {
+  margin: var(--mc-space-2) 0 0;
+  display: grid;
+}
+
+.metrics-context-card dl > div {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mc-space-3);
+  border-bottom: 1px solid var(--mc-line-faint);
+}
+
+.metrics-context-card dt {
+  color: var(--mc-text-faint);
+  font-size: 8.5px;
+}
+
+.metrics-context-card dd {
+  max-width: 65%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--mc-text);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .rail-metric-grid article {
+    min-height: 100px;
+  }
+}

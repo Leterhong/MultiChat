@@ -44,14 +44,14 @@ describe('workflow rail responsive behavior', () => {
     expect(rail.hasAttribute('inert')).toBe(true);
   });
 
-  it('keeps the rail visible and accessible on a wide workspace', () => {
+  it('keeps the rail closed by default on a wide workspace', () => {
     setViewportWidth(1536);
     syncWorkflowRailLayout();
 
     const rail = document.getElementById('workflowRail')!;
     expect(document.body.classList.contains('workflow-rail-open')).toBe(false);
-    expect(rail.getAttribute('aria-hidden')).toBe('false');
-    expect(rail.hasAttribute('inert')).toBe(false);
-    expect(document.getElementById('workflowRailToggle')?.getAttribute('aria-expanded')).toBe('true');
+    expect(rail.getAttribute('aria-hidden')).toBe('true');
+    expect(rail.hasAttribute('inert')).toBe(true);
+    expect(document.getElementById('workflowRailToggle')?.getAttribute('aria-expanded')).toBe('false');
   });
 });

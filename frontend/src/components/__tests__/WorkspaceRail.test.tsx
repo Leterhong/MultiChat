@@ -28,9 +28,10 @@ describe('WorkspaceRail', () => {
     useAppStore.setState({ ready: true, actions: { selectModel } });
     const { container } = render(<WorkspaceRail />);
 
+    fireEvent(window, new CustomEvent('multichat:workflowtab', { detail: { tab: 'run' } }));
     fireEvent.click(screen.getByRole('button', { name: 'review · 第二模型' }));
     expect(selectModel).toHaveBeenCalledWith('second', 'review');
-    fireEvent.click(screen.getByRole('tab', { name: '活动' }));
+    fireEvent.click(screen.getByRole('button', { name: '活动中心' }));
     expect(screen.getByText('120')).toBeInTheDocument();
     expect(screen.getByText('2.0s')).toBeInTheDocument();
     expect(await axe(container, { rules: { 'color-contrast': { enabled: false } } })).toHaveNoViolations();
@@ -40,6 +41,7 @@ describe('WorkspaceRail', () => {
     useAppStore.setState({ ready: true, actions: {} });
     render(<WorkspaceRail />);
 
+    fireEvent(window, new CustomEvent('multichat:workflowtab', { detail: { tab: 'run' } }));
     fireEvent.click(screen.getByRole('radio', { name: '审查' }));
     expect(state.workflow.mode).toBe('review');
 

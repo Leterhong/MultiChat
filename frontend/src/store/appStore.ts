@@ -6,6 +6,8 @@ export type RuntimeActions = {
   send: (text?: string) => Promise<void>;
   stop: () => void;
   newConversation: () => Promise<void>;
+  deleteConversation: (id: string) => Promise<void>;
+  renameConversation: (id: string) => Promise<void>;
   openSettings: (tab?: string) => void;
   openModelPicker: () => void;
   selectModel: (providerId: string, model: string) => void;
@@ -21,17 +23,28 @@ export type RuntimeActions = {
   refreshFileContext: () => void;
 };
 
+export type WorkspaceView = 'home' | 'chat';
+export type TaskMode = 'chat' | 'agent' | 'compare';
+
 type AppViewState = {
   ready: boolean;
+  workspaceView: WorkspaceView;
+  taskMode: TaskMode;
   actions: Partial<RuntimeActions>;
   setReady: (ready: boolean) => void;
+  setWorkspaceView: (view: WorkspaceView) => void;
+  setTaskMode: (mode: TaskMode) => void;
   installActions: (actions: Partial<RuntimeActions>) => void;
 };
 
 export const useAppStore = create<AppViewState>((set) => ({
   ready: false,
+  workspaceView: 'home',
+  taskMode: 'chat',
   actions: {},
   setReady: (ready) => set({ ready }),
+  setWorkspaceView: (workspaceView) => set({ workspaceView }),
+  setTaskMode: (taskMode) => set({ taskMode }),
   installActions: (actions) => set((current) => ({ actions: { ...current.actions, ...actions } })),
 }));
 
@@ -39,3 +52,5 @@ export const useBusinessStore = <T>(selector: (current: BusinessState) => T) => 
 export const installRuntimeActions = (actions: Partial<RuntimeActions>) =>
   useAppStore.getState().installActions(actions);
 export const markAppReady = () => useAppStore.getState().setReady(true);
+export const setWorkspaceView = (view: WorkspaceView) => useAppStore.getState().setWorkspaceView(view);
+export const setTaskMode = (mode: TaskMode) => useAppStore.getState().setTaskMode(mode);
