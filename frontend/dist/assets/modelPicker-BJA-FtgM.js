@@ -1,4 +1,4 @@
-import{p as e,v as t,x as n,y as r}from"./index-k-fK6-R2.js";function i(){if(!e.providers.length){openSettings(`providers`),t(`请先添加模型`);return}let r=[];e.providers.forEach(e=>{let t=e.models||(e.model?[e.model]:[]),n=e.name||e.id,i={pid:e.id,providerName:n,apiType:e.apiType||`openai`,initial:n.trim().slice(0,1).toUpperCase()||`M`};t.length?t.forEach(e=>r.push({...i,model:e,modelLabel:e})):r.push({...i,model:``,modelLabel:`手动输入模型名`,custom:!0})}),showModal({title:`选择模型`,body:`<div class="picker-dialog-intro">
+import{p as e,v as t,x as n,y as r}from"./index-Cv3_ss_R.js";function i(){if(!e.providers.length){openSettings(`providers`),t(`请先添加模型`);return}let r=[];e.providers.forEach(e=>{let t=e.models||(e.model?[e.model]:[]),n=e.name||e.id,i={pid:e.id,providerName:n,apiType:e.apiType||`openai`,initial:n.trim().slice(0,1).toUpperCase()||`M`};t.length?t.forEach(e=>r.push({...i,model:e,modelLabel:e})):r.push({...i,model:``,modelLabel:`手动输入模型名`,custom:!0})}),showModal({title:`选择模型`,body:`<div class="picker-dialog-intro">
         <span>为接下来的消息选择运行模型</span>
         <span>${r.length} 个可用模型</span>
       </div>

@@ -5,6 +5,7 @@ import { businessStore, type BusinessState } from '../core/state';
 export type RuntimeActions = {
   send: (text?: string) => Promise<void>;
   stop: () => void;
+  newConversation: () => Promise<void>;
   openSettings: (tab?: string) => void;
   openModelPicker: () => void;
   selectModel: (providerId: string, model: string) => void;
@@ -34,6 +35,7 @@ export const useAppStore = create<AppViewState>((set) => ({
   installActions: (actions) => set((current) => ({ actions: { ...current.actions, ...actions } })),
 }));
 
-export const useBusinessStore = <T,>(selector: (current: BusinessState) => T) => useStore(businessStore, selector);
-export const installRuntimeActions = (actions: Partial<RuntimeActions>) => useAppStore.getState().installActions(actions);
+export const useBusinessStore = <T>(selector: (current: BusinessState) => T) => useStore(businessStore, selector);
+export const installRuntimeActions = (actions: Partial<RuntimeActions>) =>
+  useAppStore.getState().installActions(actions);
 export const markAppReady = () => useAppStore.getState().setReady(true);

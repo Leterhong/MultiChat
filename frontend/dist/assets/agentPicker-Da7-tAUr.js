@@ -1,4 +1,4 @@
-import{f as e,p as t,v as n,x as r,y as i}from"./index-k-fK6-R2.js";import{importProjectFolder as a}from"./assets-ROEnRNon.js";i(`#workspacePicker`).onclick=()=>{let e=t.projects.map(e=>({id:e.id,name:e.name,description:e.description}));showModal({title:`选择项目`,body:`<div class="picker-dialog-intro"><span>每个项目保存自己的文件、记忆和对话上下文</span><span>${e.length} 个项目</span></div>
+import{f as e,p as t,v as n,x as r,y as i}from"./index-Cv3_ss_R.js";import{importProjectFolder as a}from"./assets-BHsR_XFT.js";i(`#workspacePicker`).onclick=()=>{let e=t.projects.map(e=>({id:e.id,name:e.name,description:e.description}));showModal({title:`选择项目`,body:`<div class="picker-dialog-intro"><span>每个项目保存自己的文件、记忆和对话上下文</span><span>${e.length} 个项目</span></div>
       <button type="button" class="picker-import-project" data-import-project>
         <span class="picker-provider-mark folder" aria-hidden="true">＋</span>
         <span class="picker-option-copy"><strong>打开本地项目文件夹</strong><small>自动创建项目并导入可读取的源码与文档</small></span>

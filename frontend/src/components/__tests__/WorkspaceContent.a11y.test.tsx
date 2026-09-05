@@ -30,8 +30,8 @@ describe('WorkspaceContent accessibility', () => {
       state.selectedProvider = { id: 'mock', name: '本地模型' };
       state.selectedModel = 'echo';
     });
-    expect(screen.getByRole('button', { name: 'echo' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '从项目到可验证结果' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '模型：echo' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '今天想推进什么？' })).toBeInTheDocument();
   });
 
   it('opens the model picker from React and keeps a draft when no model is selected', () => {
@@ -41,10 +41,10 @@ describe('WorkspaceContent accessibility', () => {
     useAppStore.setState({ ready: true, actions: { send, openModelPicker } });
     render(<WorkspaceContent />);
 
-    fireEvent.click(screen.getByRole('button', { name: '选择模型' }));
+    fireEvent.click(screen.getByRole('button', { name: '模型：选择模型' }));
     expect(openModelPicker).toHaveBeenCalledOnce();
 
-    const input = screen.getByRole('textbox', { name: '任务描述' });
+    const input = screen.getByRole('textbox', { name: '告诉 MultiChat 你的目标' });
     fireEvent.change(input, { target: { value: '不要丢失这段草稿' } });
     fireEvent.click(screen.getByRole('button', { name: '开始运行' }));
     expect(send).toHaveBeenCalledWith('不要丢失这段草稿');
