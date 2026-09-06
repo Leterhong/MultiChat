@@ -10,7 +10,7 @@
 .sidebar {
   min-width: 0;
   min-height: 0;
-  padding: 12px 10px 10px;
+  padding: 12px 9px 10px;
   display: flex;
   flex-direction: column;
   color: var(--mc-sidebar-text);
@@ -20,7 +20,7 @@
 
 .brand {
   min-height: 42px;
-  padding: 0 8px;
+  padding: 0 7px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -138,7 +138,7 @@
 
 .new-task-button {
   width: 100%;
-  min-height: 38px;
+  min-height: 40px;
   padding: 0 11px;
   display: flex;
   align-items: center;
@@ -293,7 +293,7 @@
 }
 
 .recent-work-row {
-  min-height: 43px;
+  min-height: 41px;
   position: relative;
   display: flex;
   align-items: center;
@@ -307,7 +307,7 @@
 
 .recent-work-open {
   min-width: 0;
-  height: 43px;
+  height: 41px;
   padding: 0 8px;
   display: flex;
   flex: 1;

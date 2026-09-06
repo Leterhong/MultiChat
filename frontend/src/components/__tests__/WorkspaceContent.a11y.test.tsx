@@ -9,6 +9,7 @@ import { WorkspaceContent } from '../WorkspaceContent';
 describe('WorkspaceContent accessibility', () => {
   beforeEach(() => {
     state.messages = [];
+    state.currentConvId = null;
     state.providers = [];
     state.selectedProvider = null;
     state.selectedModel = null;
@@ -25,6 +26,19 @@ describe('WorkspaceContent accessibility', () => {
   it('has no detectable axe violations on the home workspace', async () => {
     const { container } = render(<WorkspaceContent />);
     expect(await axe(container, { rules: { 'color-contrast': { enabled: false } } })).toHaveNoViolations();
+  });
+
+  it('turns an empty conversation into an inline task start surface', () => {
+    state.currentConvId = 'empty-task';
+    state.conversations = [{ id: 'empty-task', title: '整理当前项目' }] as any[];
+    useAppStore.setState({ workspaceView: 'chat' });
+
+    const { container } = render(<WorkspaceContent />);
+
+    expect(screen.getByRole('heading', { name: '整理当前项目' })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('描述你想完成的任务…')).toBeInTheDocument();
+    expect(container.querySelector('.composer-wrap')).toHaveClass('composer-start');
+    expect(container.querySelector('.conversation-start')).not.toBeInTheDocument();
   });
 
   it('reacts to the Zustand-backed compatibility state without a revision refresh', () => {

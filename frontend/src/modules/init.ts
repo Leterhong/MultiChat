@@ -43,11 +43,10 @@ async function applyLocationRoute() {
   if (parts[0] === 'chat' && parts[1] && parts[1] !== state.currentConvId) {
     setWorkspaceView('chat');
     await openConversation(parts[1]);
-  } else if (parts[0] === 'new' && (state.currentConvId || state.messages.length)) {
-    setWorkspaceView('chat');
-    await newConversation();
   } else if (parts[0] === 'new') {
-    setWorkspaceView('chat');
+    if (state.currentConvId || state.messages.length) await newConversation();
+    else setWorkspaceView('home');
+    history.replaceState(null, '', '#/home');
   }
 }
 

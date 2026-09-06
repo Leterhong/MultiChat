@@ -155,7 +155,10 @@ export function AppShell() {
     if (currentConvId) {
       const route = `#/chat/${encodeURIComponent(currentConvId)}`;
       if (location.hash !== route) history.pushState(null, '', route);
-    } else if (location.hash !== '#/new') history.pushState(null, '', '#/new');
+    } else {
+      setWorkspaceView('home');
+      if (location.hash !== '#/home') history.pushState(null, '', '#/home');
+    }
   };
 
   const startTask = (mode: TaskMode) => {

@@ -72,7 +72,7 @@ async function renameConversation(id) {
   }
 }
 async function newConversation() {
-  setWorkspaceView('chat');
+  setWorkspaceView('home');
   state.currentConvId = null;
   state.messages = [];
   activateWorkflow(null, state.selectedProject?.id);
@@ -80,8 +80,8 @@ async function newConversation() {
   renderContent();
   renderConvList();
   renderInspector();
-  requestAnimationFrame(() => ($('#input') || $('#heroInput'))?.focus());
-  if (location.hash !== '#/new') history.pushState(null, '', '#/new');
+  requestAnimationFrame(() => $('#heroInput')?.focus());
+  if (location.hash !== '#/home') history.pushState(null, '', '#/home');
 }
 async function openConversation(id) {
   try {

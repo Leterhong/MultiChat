@@ -86,148 +86,157 @@ function HomeWorkspace() {
   return (
     <div className="home-workbench workspace-home">
       <section className="home-task-entry" aria-labelledby="homeTaskTitle">
-        <div className="home-workspace-context">
-          <span className="home-page-label">新任务</span>
-          <span className="home-context-divider" aria-hidden />
-          <button type="button" onClick={() => actions.openSettings?.('workspace')}>
-            <FolderOpen size={13} aria-hidden />
-            {workspaceName} / {projectName}
-          </button>
-        </div>
-        <h1 id="homeTaskTitle">今天想完成什么？</h1>
-        <p>描述你的目标，MultiChat 会根据任务选择合适的 AI 工作方式。</p>
+        <header className="home-heading">
+          <div className="home-workspace-context">
+            <span className="home-page-label">新任务</span>
+            <span className="home-context-divider" aria-hidden />
+            <button type="button" onClick={() => actions.openSettings?.('workspace')}>
+              <FolderOpen size={13} aria-hidden />
+              {workspaceName} / {projectName}
+            </button>
+          </div>
+          <h1 id="homeTaskTitle">今天想完成什么？</h1>
+          <p>从一个清晰目标开始。选择工作方式，接入项目上下文，然后交给 MultiChat。</p>
+        </header>
 
-        <div className="universal-composer" id="heroCard">
-          <textarea
-            ref={inputRef}
-            className="hero-input"
-            id="heroInput"
-            aria-label="告诉 MultiChat 你的目标"
-            placeholder="描述你想完成的任务..."
-            rows={3}
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                submit();
-              }
-            }}
-          />
-          <div className="home-mode-row">
-            <span>工作方式</span>
-            <div className="task-mode-switch" role="group" aria-label="任务模式">
-              {(['chat', 'agent', 'compare'] as const).map((mode) => (
+        <div className="home-main-grid">
+          <div className="home-compose-column">
+            <div className="universal-composer" id="heroCard">
+              <div className="home-mode-row">
+                <div className="task-mode-switch" role="group" aria-label="任务模式">
+                  {(['chat', 'agent', 'compare'] as const).map((mode) => (
+                    <button
+                      className={taskMode === mode ? 'active' : ''}
+                      type="button"
+                      aria-pressed={taskMode === mode}
+                      key={mode}
+                      onClick={() => setTaskMode(mode)}
+                    >
+                      {mode === 'chat' ? '对话' : mode === 'agent' ? 'Agent' : '模型对比'}
+                    </button>
+                  ))}
+                </div>
+                <span className="home-mode-description">
+                  {taskMode === 'chat'
+                    ? '使用当前模型直接交流'
+                    : taskMode === 'agent'
+                      ? '调用工具与能力完成任务'
+                      : '并行验证多个模型的答案'}
+                </span>
+              </div>
+              <textarea
+                ref={inputRef}
+                className="hero-input"
+                id="heroInput"
+                aria-label="告诉 MultiChat 你的目标"
+                placeholder="描述你想完成的任务…"
+                rows={4}
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    submit();
+                  }
+                }}
+              />
+              <div className="hero-actions">
+                <button type="button" title="添加项目文件夹" onClick={() => void actions.importProjectFolder?.()}>
+                  <Plus size={15} aria-hidden />
+                  <span>项目文件</span>
+                </button>
+                <button type="button" title="查看本轮上下文" onClick={() => openWorkflowRail('context')}>
+                  <Layers3 size={15} aria-hidden />
+                  <span>上下文{selectedFiles ? ` ${selectedFiles}` : ''}</span>
+                </button>
+                <span className="composer-context-summary">
+                  {hasProject ? `${projectFiles} 文件 · ${memories} 记忆` : '尚未添加项目'}
+                </span>
+                <div className="spacer" />
                 <button
-                  className={taskMode === mode ? 'active' : ''}
+                  className="hero-model"
+                  id="heroModelTag"
                   type="button"
-                  aria-pressed={taskMode === mode}
-                  key={mode}
-                  onClick={() => setTaskMode(mode)}
+                  aria-label={`模型：${business.selectedModel || '选择模型'}`}
+                  onClick={() => actions.openModelPicker?.()}
                 >
-                  {mode === 'chat' ? '对话' : mode === 'agent' ? 'Agent' : '模型对比'}
+                  <ModelGlyph name={business.selectedProvider?.name || business.selectedModel || 'M'} />
+                  <span>{business.selectedModel || '选择模型'}</span>
+                  <ChevronDown size={13} aria-hidden />
+                </button>
+                <button
+                  className={`send-btn${business.streaming ? ' stop' : ''}`}
+                  id="heroSendBtn"
+                  type="button"
+                  disabled={!ready || !prompt.trim()}
+                  title="开始"
+                  aria-label="开始任务"
+                  onClick={submit}
+                >
+                  <ArrowUp size={17} aria-hidden />
+                </button>
+              </div>
+            </div>
+
+            <div className="home-quick" aria-label="建议任务">
+              <span>快速开始</span>
+              <div>
+                {quickPrompts.map(([label, value]) => (
+                  <button
+                    type="button"
+                    key={label}
+                    onClick={() => {
+                      setPrompt(value);
+                      requestAnimationFrame(() => inputRef.current?.focus());
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="home-footnote">Enter 开始 · Shift Enter 换行 · 数据默认保存在当前设备</div>
+          </div>
+
+          <section className="home-recent" aria-labelledby="homeRecentTitle">
+            <header>
+              <div>
+                <h2 id="homeRecentTitle">最近任务</h2>
+                <p>继续上次没有完成的工作</p>
+              </div>
+              <span>本机保存</span>
+            </header>
+            <div className="home-recent-list">
+              {recentTasks.map((conversation: any) => (
+                <button
+                  type="button"
+                  key={conversation.id}
+                  onClick={() => void actions.openConversation?.(conversation.id)}
+                >
+                  <span className="home-recent-mark" aria-hidden>
+                    {conversation.compareMode ? 'C' : conversation.agentId ? 'A' : 'T'}
+                  </span>
+                  <span className="home-recent-copy">
+                    <span className="home-recent-title">{conversation.title || '新任务'}</span>
+                    <span className="home-recent-meta">
+                      {formatRecentTime(conversation.updatedAt || conversation.createdAt)} ·{' '}
+                      {conversation.compareMode ? '模型对比' : conversation.agentId ? 'Agent' : '对话'}
+                    </span>
+                  </span>
+                  <span className="home-recent-arrow" aria-hidden>
+                    →
+                  </span>
                 </button>
               ))}
+              {!recentTasks.length && (
+                <div className="home-recent-empty">
+                  <span>还没有最近任务</span>
+                  <small>第一项工作会出现在这里。</small>
+                </div>
+              )}
             </div>
-            <span className="home-mode-description">
-              {taskMode === 'chat'
-                ? '使用当前模型直接交流'
-                : taskMode === 'agent'
-                  ? '调用工具与能力完成任务'
-                  : '并行验证多个模型的答案'}
-            </span>
-          </div>
-          <div className="hero-actions">
-            <button type="button" title="添加项目文件夹" onClick={() => void actions.importProjectFolder?.()}>
-              <Plus size={15} aria-hidden />
-              <span>文件</span>
-            </button>
-            <button type="button" title="查看本轮上下文" onClick={() => openWorkflowRail('context')}>
-              <Layers3 size={15} aria-hidden />
-              <span>上下文{selectedFiles ? ` ${selectedFiles}` : ''}</span>
-            </button>
-            <span className="composer-context-summary">
-              {hasProject ? `${projectFiles} 文件 · ${memories} 记忆` : '未添加项目上下文'}
-            </span>
-            <div className="spacer" />
-            <button
-              className="hero-model"
-              id="heroModelTag"
-              type="button"
-              aria-label={`模型：${business.selectedModel || '选择模型'}`}
-              onClick={() => actions.openModelPicker?.()}
-            >
-              <ModelGlyph name={business.selectedProvider?.name || business.selectedModel || 'M'} />
-              <span>{business.selectedModel || '选择模型'}</span>
-              <ChevronDown size={13} aria-hidden />
-            </button>
-            <button
-              className={`send-btn${business.streaming ? ' stop' : ''}`}
-              id="heroSendBtn"
-              type="button"
-              disabled={!ready || !prompt.trim()}
-              title="开始"
-              aria-label="开始任务"
-              onClick={submit}
-            >
-              <ArrowUp size={17} aria-hidden />
-            </button>
-          </div>
+          </section>
         </div>
-
-        <div className="home-quick" aria-label="建议任务">
-          <span>快速开始</span>
-          {quickPrompts.map(([label, value]) => (
-            <button
-              type="button"
-              key={label}
-              onClick={() => {
-                setPrompt(value);
-                requestAnimationFrame(() => inputRef.current?.focus());
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <section className="home-recent" aria-labelledby="homeRecentTitle">
-          <header>
-            <div>
-              <h2 id="homeRecentTitle">最近任务</h2>
-              <p>继续上次没有完成的工作</p>
-            </div>
-            <span>本机保存</span>
-          </header>
-          <div className="home-recent-list">
-            {recentTasks.map((conversation: any) => (
-              <button
-                type="button"
-                key={conversation.id}
-                onClick={() => void actions.openConversation?.(conversation.id)}
-              >
-                <span className="home-recent-mark" aria-hidden>
-                  {conversation.compareMode ? 'C' : conversation.agentId ? 'A' : 'T'}
-                </span>
-                <span className="home-recent-title">{conversation.title || '新任务'}</span>
-                <span className="home-recent-meta">
-                  {formatRecentTime(conversation.updatedAt || conversation.createdAt)} ·{' '}
-                  {conversation.compareMode ? '模型对比' : conversation.agentId ? 'Agent' : '对话'}
-                </span>
-                <span className="home-recent-arrow" aria-hidden>
-                  →
-                </span>
-              </button>
-            ))}
-            {!recentTasks.length && (
-              <div className="home-recent-empty">
-                <span>还没有最近任务</span>
-                <small>在上方描述目标，第一项工作会出现在这里。</small>
-              </div>
-            )}
-          </div>
-        </section>
-        <div className="home-footnote">Enter 开始 · Shift Enter 换行 · 数据默认保存在当前设备</div>
       </section>
     </div>
   );
@@ -592,6 +601,9 @@ function ConversationWorkspace() {
   const messages = useBusinessStore((current) => current.messages);
   const streaming = useBusinessStore((current) => current.streaming);
   const selectedProject = useBusinessStore((current) => current.selectedProject) as any;
+  const currentConvId = useBusinessStore((current) => current.currentConvId);
+  const conversations = useBusinessStore((current) => current.conversations) as any[];
+  const currentConversation = conversations.find((conversation) => conversation.id === currentConvId);
   const [announcement, setAnnouncement] = useState('');
   useEffect(() => {
     if (!streaming) return;
@@ -602,7 +614,7 @@ function ConversationWorkspace() {
     return () => window.clearTimeout(timer);
   }, [messages, streaming]);
   return (
-    <div className="chat-workspace">
+    <div className={`chat-workspace${messages.length ? '' : ' is-empty'}`}>
       <section className="conversation-canvas" aria-label="当前对话">
         <header className="task-header">
           <span>{selectedProject?.id === 'pr_inbox' ? '临时任务' : selectedProject?.name || '无项目上下文'}</span>
@@ -621,13 +633,16 @@ function ConversationWorkspace() {
             itemContent={(index, message) => <MessageView index={index} message={message} />}
           />
         ) : (
-          <div className="conversation-start">
-            <BrandMark size={30} />
-            <h1>开始新任务</h1>
-            <p>描述目标，MultiChat 会使用当前模型与项目上下文继续工作。</p>
+          <div className="empty-task-shell">
+            <div className="empty-task-heading">
+              <span>准备开始</span>
+              <h1>{currentConversation?.title || '开始一个新任务'}</h1>
+              <p>告诉 MultiChat 你要完成什么，也可以先添加项目文件作为上下文。</p>
+            </div>
+            <ConversationComposer variant="start" />
           </div>
         )}
-        <ConversationComposer />
+        {messages.length > 0 && <ConversationComposer />}
         <div className="sr-only" aria-live="polite" aria-atomic="false">
           {announcement}
         </div>
@@ -641,7 +656,7 @@ export function WorkspaceContent() {
   return workspaceView === 'chat' ? <ConversationWorkspace /> : <HomeWorkspace />;
 }
 
-export function ConversationComposer() {
+export function ConversationComposer({ variant = 'dock' }: { variant?: 'dock' | 'start' } = {}) {
   useBusinessStore((current) => current);
   const ready = useAppStore((current) => current.ready);
   const actions = useAppStore((current) => current.actions);
@@ -698,7 +713,7 @@ export function ConversationComposer() {
     actions.refreshFileContext?.();
   };
   return (
-    <div className="composer-wrap" id="composerWrap">
+    <div className={`composer-wrap${variant === 'start' ? ' composer-start' : ''}`} id="composerWrap">
       <div className="composer">
         {state.assets.length > 0 && (
           <div className="file-ctx" id="fileCtx">
@@ -767,7 +782,7 @@ export function ConversationComposer() {
           className="composer-input"
           id="input"
           rows={1}
-          placeholder="描述下一步工作…"
+          placeholder={variant === 'start' ? '描述你想完成的任务…' : '描述下一步工作…'}
           autoComplete="off"
           value={text}
           onChange={(event) => setText(event.target.value)}

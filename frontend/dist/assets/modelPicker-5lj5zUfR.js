@@ -1,4 +1,4 @@
-import{g as e,w as t,x as n}from"./index-Bszfo8RR.js";function r(){if(!e.providers.length){openSettings(`providers`),n(`请先添加模型`);return}let r=[];e.providers.forEach(e=>{let t=e.models||(e.model?[e.model]:[]),n=e.name||e.id,i={pid:e.id,providerName:n,apiType:e.apiType||`openai`,initial:n.trim().slice(0,1).toUpperCase()||`M`};t.length?t.forEach(e=>r.push({...i,model:e,modelLabel:e})):r.push({...i,model:``,modelLabel:`手动输入模型名`,custom:!0})}),showModal({title:`选择模型`,body:`<div class="picker-dialog-intro">
+import{g as e,w as t,x as n}from"./index-fl2LpQUK.js";function r(){if(!e.providers.length){openSettings(`providers`),n(`请先添加模型`);return}let r=[];e.providers.forEach(e=>{let t=e.models||(e.model?[e.model]:[]),n=e.name||e.id,i={pid:e.id,providerName:n,apiType:e.apiType||`openai`,initial:n.trim().slice(0,1).toUpperCase()||`M`};t.length?t.forEach(e=>r.push({...i,model:e,modelLabel:e})):r.push({...i,model:``,modelLabel:`手动输入模型名`,custom:!0})}),showModal({title:`选择模型`,body:`<div class="picker-dialog-intro">
         <span>为接下来的消息选择运行模型</span>
         <span>${r.length} 个可用模型</span>
       </div>

@@ -36,4 +36,13 @@ describe('conversation route recovery', () => {
     expect(useAppStore.getState().workspaceView).toBe('home');
     expect(document.getElementById('toast')).toHaveTextContent('该任务不存在或已被删除');
   });
+
+  it('canonicalizes the legacy new-task route to the home task composer', async () => {
+    history.replaceState(null, '', '#/new');
+
+    await applyLocationRoute();
+
+    expect(location.hash).toBe('#/home');
+    expect(useAppStore.getState().workspaceView).toBe('home');
+  });
 });
