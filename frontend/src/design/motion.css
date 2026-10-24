@@ -1,0 +1,299 @@
+/* Full-app motion layer — final cascade layer after hero.css.
+   Works on the design-system class names; reduced-motion users are
+   covered both by the explicit block below and the global kill in system.css. */
+
+/* ---------- View transitions (components remount on view switch) ---------- */
+
+.home-workbench,
+.chat-workspace {
+  animation: view-in 0.4s var(--mc-easing);
+}
+
+.empty-task-shell {
+  animation: view-in 0.45s var(--mc-easing) 0.05s backwards;
+}
+
+.task-header .running i {
+  animation: live-pulse-dot 1.6s ease-out infinite;
+}
+
+/* ---------- Modals, drawers, overlays ---------- */
+
+.modal {
+  animation: scrim-in 0.25s var(--mc-easing);
+}
+
+.modal .modal-card {
+  animation: modal-pop 0.32s var(--mc-easing);
+}
+
+.settings.open {
+  animation: drawer-in 0.34s var(--mc-easing);
+}
+
+body.workflow-rail-open .workspace-frame > .workspace-rail {
+  animation: rail-in 0.3s var(--mc-easing);
+}
+
+.command-panel {
+  animation: modal-pop 0.28s var(--mc-easing);
+}
+
+.toast {
+  animation: toast-in 0.36s var(--mc-easing);
+}
+
+/* ---------- Interactive controls ---------- */
+
+.btn-primary,
+.btn-ghost,
+.danger-ghost,
+.mc-act,
+.icon-btn,
+.mc-toggle,
+.settings-side button,
+.task-mode-switch button {
+  transition:
+    transform var(--mc-duration-fast) var(--mc-easing),
+    background var(--mc-duration-fast) var(--mc-easing),
+    border-color var(--mc-duration-fast) var(--mc-easing),
+    color var(--mc-duration-fast) var(--mc-easing),
+    box-shadow var(--mc-duration-fast) var(--mc-easing);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--mc-accent) 28%, transparent);
+}
+
+.btn-primary:active,
+.btn-ghost:active,
+.danger-ghost:active,
+.mc-act:active,
+.icon-btn:active,
+.mc-toggle:active {
+  transform: scale(0.965);
+}
+
+.icon-btn:hover,
+.settings-side button:hover {
+  background: var(--mc-surface-hover);
+}
+
+.task-mode-switch button.active {
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--mc-accent) 26%, transparent);
+}
+
+/* ---------- Cards and list rows ---------- */
+
+.mc-card,
+.provider-card,
+.passport-card,
+.provider-template-card,
+.compare-config {
+  transition:
+    transform var(--mc-duration) var(--mc-easing),
+    box-shadow var(--mc-duration) var(--mc-easing),
+    border-color var(--mc-duration) var(--mc-easing);
+}
+
+.mc-card:hover,
+.provider-card:hover,
+.passport-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--mc-line-hover);
+  box-shadow: var(--mc-shadow);
+}
+
+.run-row,
+.memory-item,
+.snapshot-item,
+.knowledge-hit {
+  transition: background var(--mc-duration-fast) var(--mc-easing), border-color var(--mc-duration-fast) var(--mc-easing);
+}
+
+.home-recent-list button .home-recent-arrow {
+  transition: transform var(--mc-duration) var(--mc-easing), opacity var(--mc-duration) var(--mc-easing);
+  opacity: 0.45;
+}
+
+.home-recent-list button:hover .home-recent-arrow {
+  transform: translateX(4px);
+  opacity: 1;
+}
+
+/* ---------- Chat transcript ---------- */
+
+.composer-wrap {
+  transition: border-color var(--mc-duration) var(--mc-easing), box-shadow var(--mc-duration) var(--mc-easing);
+}
+
+.composer-wrap:focus-within {
+  border-color: var(--mc-accent-line);
+  box-shadow: 0 0 0 3px var(--mc-accent-soft);
+}
+
+.think-row[data-state='running'] summary {
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in srgb, var(--mc-accent) 12%, transparent) 50%,
+    transparent 70%
+  );
+  background-size: 220% 100%;
+  animation: think-sweep 1.7s linear infinite;
+}
+
+.mc-trace {
+  transition: border-color var(--mc-duration) var(--mc-easing);
+}
+
+/* ---------- Settings surfaces ---------- */
+
+.settings-body > * {
+  animation: view-in 0.4s var(--mc-easing) 0.04s backwards;
+}
+
+.settings-body > :nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.settings-body > :nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+.settings-body > :nth-child(n + 4) {
+  animation-delay: 0.22s;
+}
+
+.extension-tool-list span {
+  transition: background var(--mc-duration-fast) var(--mc-easing), color var(--mc-duration-fast) var(--mc-easing);
+}
+
+/* ---------- Compare lab ---------- */
+
+.compare-result {
+  animation: view-in 0.42s var(--mc-easing) backwards;
+}
+
+.compare-result:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.compare-result:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+/* ---------- Keyframes ---------- */
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes rail-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes think-sweep {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@keyframes live-pulse-dot {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--mc-accent) 45%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(0, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .home-workbench,
+  .chat-workspace,
+  .empty-task-shell,
+  .modal,
+  .modal .modal-card,
+  .settings.open,
+  body.workflow-rail-open .workspace-frame > .workspace-rail,
+  .command-panel,
+  .toast,
+  .settings-body > *,
+  .compare-result,
+  .task-header .running i,
+  .think-row[data-state='running'] summary {
+    animation: none;
+  }
+
+  .btn-primary:hover,
+  .mc-card:hover,
+  .provider-card:hover,
+  .passport-card:hover {
+    transform: none;
+  }
+}

@@ -364,3 +364,89 @@
     display: none;
   }
 }
+
+/* ---------- Whole-app premium surfaces ---------- */
+
+.chat-workspace {
+  background:
+    radial-gradient(1100px 500px at 85% -8%, var(--mc-accent-soft), transparent 60%),
+    radial-gradient(900px 460px at -10% 108%, color-mix(in srgb, var(--mc-ai) 7%, transparent), transparent 55%);
+}
+
+.composer-wrap {
+  background: color-mix(in srgb, var(--mc-surface) 80%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: var(--mc-radius-lg);
+}
+
+.msg-content.user-plain-text {
+  background: var(--mc-user-surface);
+  border: 1px solid var(--mc-user-line);
+  border-radius: var(--mc-radius-lg) var(--mc-radius-lg) var(--mc-radius-lg) var(--mc-radius-xs);
+}
+
+.msg-avatar {
+  box-shadow: 0 0 0 1px var(--mc-line), 0 2px 8px color-mix(in srgb, var(--mc-accent) 14%, transparent);
+}
+
+.msg.streaming .model-status-dot {
+  animation: hero-pulse 1.6s ease-out infinite;
+}
+
+.busy-label {
+  background: linear-gradient(
+    100deg,
+    var(--mc-text-faint) 35%,
+    var(--mc-accent-strong) 50%,
+    var(--mc-text-faint) 65%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: think-sweep 1.8s linear infinite;
+}
+
+.topbar {
+  background: color-mix(in srgb, var(--mc-canvas) 72%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.primary-nav button {
+  transition:
+    background var(--mc-duration-fast) var(--mc-easing),
+    color var(--mc-duration-fast) var(--mc-easing),
+    transform var(--mc-duration-fast) var(--mc-easing);
+}
+
+.primary-nav button:hover {
+  transform: translateX(2px);
+}
+
+.primary-nav button.active {
+  box-shadow: inset 2px 0 0 var(--mc-accent), 0 1px 8px color-mix(in srgb, var(--mc-accent) 12%, transparent);
+}
+
+.settings-brand {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--mc-accent) 14%, transparent), transparent 70%);
+}
+
+.mc-tag {
+  transition: background var(--mc-duration-fast) var(--mc-easing), color var(--mc-duration-fast) var(--mc-easing);
+}
+
+.hero-ambient {
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .busy-label,
+  .msg.streaming .model-status-dot,
+  .primary-nav button,
+  .mc-tag {
+    animation: none;
+    transition: none;
+  }
+}
