@@ -21,9 +21,7 @@ import { Virtuoso } from 'react-virtuoso';
 import { state } from '../core';
 import { useAppStore, useBusinessStore } from '../store/appStore';
 import { fmtTok, formatRecentTime } from '../utils/format';
-import { AmbientBackdrop } from './AmbientBackdrop';
-import { BrandMark } from './BrandMark';
-import { ModelGlyph } from './BrandMark';
+import { BrandMark } from './BrandMark';import { ModelGlyph } from './BrandMark';
 import { SafeMarkdown } from './SafeMarkdown';
 import { openWorkflowRail } from './workflowRailDom';
 
@@ -101,7 +99,6 @@ function HomeWorkspace() {
 
   return (
     <div className="home-workbench workspace-home">
-      <AmbientBackdrop />
       <button type="button" className="hero-announce" onClick={() => actions.openSettings?.('workspace')}>
         <span>本地优先的 AI 工作台 —— 所有数据保存在你自己的设备上</span>
         <ArrowRight size={13} aria-hidden />

@@ -1,0 +1,233 @@
+/* NextChat-derived skin (MIT, github.com/ChatGPTNextWeb/NextChat).
+   Final cascade layer: remaps the --mc-* tokens to the verified
+   NextChat palette and re-skins surfaces flat — no glass, no serif
+   display, no ambient canvas. */
+
+:root {
+  --mc-canvas: rgb(250, 250, 250);
+  --mc-surface: #ffffff;
+  --mc-surface-subtle: #f5f5f5;
+  --mc-surface-elevated: #ffffff;
+  --mc-surface-hover: #f3f3f3;
+  --mc-surface-active: #ededed;
+  --mc-sidebar: #fafafa;
+  --mc-sidebar-raised: #ffffff;
+  --mc-sidebar-title: rgb(48, 48, 48);
+  --mc-sidebar-text: rgb(80, 80, 80);
+  --mc-sidebar-muted: rgb(140, 140, 140);
+  --mc-sidebar-faint: rgb(170, 170, 170);
+  --mc-sidebar-hover: rgba(0, 0, 0, 0.045);
+  --mc-sidebar-active: #ffffff;
+  --mc-sidebar-line: rgb(235, 235, 235);
+  --mc-text: rgb(48, 48, 48);
+  --mc-text-muted: rgb(110, 110, 110);
+  --mc-text-subtle: rgb(130, 130, 130);
+  --mc-text-faint: rgb(160, 160, 160);
+  --mc-text-disabled: rgb(200, 200, 200);
+  --mc-line-faint: rgb(242, 242, 242);
+  --mc-line: rgb(228, 228, 228);
+  --mc-line-hover: rgb(210, 210, 210);
+  --mc-line-strong: rgb(190, 190, 190);
+  --mc-accent: rgb(29, 147, 171);
+  --mc-accent-strong: rgb(24, 122, 142);
+  --mc-accent-soft: rgb(231, 248, 255);
+  --mc-accent-glow: rgba(29, 147, 171, 0.16);
+  --mc-accent-line: rgba(29, 147, 171, 0.42);
+  --mc-accent-cyan: rgb(29, 147, 171);
+  --mc-user-surface: rgb(231, 248, 255);
+  --mc-user-line: rgb(210, 236, 246);
+  --mc-radius-xs: 6px;
+  --mc-radius-sm: 8px;
+  --mc-radius-md: 10px;
+  --mc-radius-lg: 14px;
+  --mc-radius-xl: 18px;
+  --mc-radius-2xl: 20px;
+  --mc-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --mc-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --mc-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  --mc-shadow-pop: 0 30px 80px rgba(0, 0, 0, 0.22);
+  --mc-scrollbar-thumb: rgba(0, 0, 0, 0.18);
+  --mc-scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme='dark'] {
+  --mc-canvas: rgb(21, 21, 21);
+  --mc-surface: rgb(30, 30, 30);
+  --mc-surface-subtle: rgb(37, 37, 37);
+  --mc-surface-elevated: rgb(30, 30, 30);
+  --mc-surface-hover: #323232;
+  --mc-surface-active: #3c3c3c;
+  --mc-sidebar: rgb(21, 21, 21);
+  --mc-sidebar-raised: rgb(30, 30, 30);
+  --mc-sidebar-title: rgb(235, 235, 235);
+  --mc-sidebar-text: rgb(187, 187, 187);
+  --mc-sidebar-muted: rgb(145, 145, 145);
+  --mc-sidebar-faint: rgb(110, 110, 110);
+  --mc-sidebar-hover: rgba(255, 255, 255, 0.07);
+  --mc-sidebar-active: rgb(44, 44, 44);
+  --mc-sidebar-line: rgba(255, 255, 255, 0.08);
+  --mc-text: rgb(210, 210, 210);
+  --mc-text-muted: rgb(160, 160, 160);
+  --mc-text-subtle: rgb(140, 140, 140);
+  --mc-text-faint: rgb(120, 120, 120);
+  --mc-text-disabled: rgb(90, 90, 90);
+  --mc-line-faint: rgba(255, 255, 255, 0.06);
+  --mc-line: rgba(255, 255, 255, 0.1);
+  --mc-line-hover: rgba(255, 255, 255, 0.16);
+  --mc-line-strong: rgba(255, 255, 255, 0.192);
+  --mc-accent-soft: rgb(27, 38, 42);
+  --mc-user-surface: rgb(27, 38, 42);
+  --mc-user-line: rgba(29, 147, 171, 0.35);
+  --mc-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --mc-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --mc-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --mc-shadow-pop: 0 30px 80px rgba(0, 0, 0, 0.6);
+  --mc-scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --mc-scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
+}
+
+/* ---------- Home: flat canvas, centered composer ---------- */
+
+.workspace-home {
+  background: var(--mc-canvas);
+}
+
+.hero-announce {
+  border-bottom: 1px solid var(--mc-line-faint);
+  background: var(--mc-surface-subtle);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.hero-announce:hover {
+  background: var(--mc-accent-soft);
+}
+
+.home-hero {
+  min-height: clamp(400px, calc(100vh - var(--mc-topbar-height) - 190px), 700px);
+}
+
+.hero-eyebrow {
+  color: var(--mc-accent);
+}
+
+.hero-display {
+  font-family: var(--mc-font-sans);
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 680;
+  letter-spacing: -0.022em;
+  margin-left: -2px;
+  color: var(--mc-text);
+}
+
+.hero-sub {
+  font-size: 15px;
+  color: var(--mc-text-muted);
+}
+
+.hero-cta-primary {
+  background: var(--mc-accent);
+  border-radius: var(--mc-radius-md);
+  padding: 12px 24px;
+  box-shadow: var(--mc-shadow-xs);
+}
+
+.hero-cta-primary:hover {
+  background: var(--mc-accent-strong);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.hero-cta-primary:active {
+  background: var(--mc-accent-strong);
+}
+
+.hero-play {
+  background: var(--mc-surface);
+  border-color: var(--mc-line);
+}
+
+.hero-cta-ghost:hover .hero-play {
+  border-color: var(--mc-accent);
+  background: var(--mc-accent-soft);
+  color: var(--mc-accent);
+}
+
+.hero-scroll-cue:hover {
+  color: var(--mc-accent);
+  background: var(--mc-accent-soft);
+}
+
+.universal-composer,
+.home-recent {
+  background: var(--mc-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-lg);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.universal-composer:focus-within {
+  border-color: var(--mc-accent);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+/* ---------- Shell: flat topbar, NextChat sidebar ---------- */
+
+.topbar {
+  background: var(--mc-canvas);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: 1px solid var(--mc-line-faint);
+}
+
+.primary-nav button.active {
+  background: var(--mc-sidebar-active);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.primary-nav button:hover {
+  transform: none;
+}
+
+.settings-brand {
+  background: none;
+}
+
+/* ---------- Chat: white cards, tinted user bubbles ---------- */
+
+.chat-workspace {
+  background: var(--mc-canvas);
+}
+
+.composer-wrap {
+  background: var(--mc-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-lg);
+}
+
+.composer-wrap:focus-within {
+  border-color: var(--mc-accent);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.msg-content.user-plain-text {
+  background: var(--mc-user-surface);
+  border: 1px solid var(--mc-user-line);
+  border-radius: var(--mc-radius-lg);
+}
+
+.msg-avatar {
+  box-shadow: none;
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .busy-label,
+  .msg.streaming .model-status-dot {
+    animation: none;
+  }
+}
