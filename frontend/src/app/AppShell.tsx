@@ -254,7 +254,7 @@ export function AppShell() {
               onClick={() => setNewTaskOpen((value) => !value)}
             >
               <Plus size={16} aria-hidden />
-              <span>新任务</span>
+              <span>开启新对话</span>
               <ChevronDown size={14} aria-hidden />
             </button>
             {newTaskOpen && (
@@ -283,6 +283,16 @@ export function AppShell() {
               </div>
             )}
           </div>
+
+          <button
+            className="sidebar-utility sidebar-search"
+            id="commandBtnSide"
+            type="button"
+            onClick={() => document.getElementById('commandBtn')?.click()}
+          >
+            <Search size={16} aria-hidden />
+            <span>搜索</span>
+          </button>
 
           <nav className="primary-nav" aria-label="工作区">
             <span className="sidebar-section-label">工作区</span>
@@ -347,18 +357,7 @@ export function AppShell() {
             </div>
           </section>
 
-          <div className="sidebar-footer">
-            <button
-              className="sidebar-utility"
-              id="commandBtnSide"
-              type="button"
-              onClick={() => document.getElementById('commandBtn')?.click()}
-            >
-              <Command size={16} aria-hidden />
-              <span>命令</span>
-              <kbd>Ctrl K</kbd>
-            </button>
-          </div>
+          <div className="sidebar-footer" />
         </aside>
 
         <div className="workspace-frame">

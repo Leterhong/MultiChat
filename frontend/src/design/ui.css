@@ -4820,3 +4820,117 @@ label:has(input[type='checkbox']) {
 textarea#heroInput {
   min-height: 108px;
 }
+
+/* ---------------- 26. DeepSeek 1:1 layout ---------------- */
+
+/* No announcement strip, no topbar search — DeepSeek keeps the chrome minimal */
+
+.hero-announce,
+.topbar .global-search,
+.topbar-path {
+  display: none;
+}
+
+.topbar {
+  gap: 6px;
+}
+
+/* Sidebar: flat title list like DeepSeek */
+
+.sidebar {
+  background: var(--mc-sidebar);
+  padding-top: 14px;
+}
+
+.sidebar-search {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin: 6px 0 2px;
+  border-radius: var(--mc-radius-md);
+  color: var(--mc-sidebar-muted);
+  font-size: 13px;
+  transition: background var(--mc-duration-fast) var(--mc-easing), color var(--mc-duration-fast) var(--mc-easing);
+}
+
+.sidebar-search:hover {
+  background: var(--mc-sidebar-hover);
+  color: var(--mc-sidebar-title);
+}
+
+.recent-indicator {
+  display: none;
+}
+
+.recent-work-copy small {
+  display: none;
+}
+
+.recent-work-copy strong {
+  font-weight: 560;
+  font-size: 13px;
+  color: var(--mc-sidebar-text);
+}
+
+.recent-work-row.active .recent-work-copy strong {
+  color: var(--mc-sidebar-title);
+}
+
+.recent-work-heading {
+  padding-top: 16px;
+}
+
+.sidebar-footer {
+  border-top: 0;
+}
+
+/* Chat: assistant answers are plain text on the canvas, like DeepSeek */
+
+.msg .msg-content {
+  border: 0;
+  background: transparent;
+  padding: 2px 0 0;
+}
+
+.msg-content.user-plain-text {
+  background: var(--mc-user-surface);
+  border: 0;
+  border-radius: var(--mc-radius-lg);
+  padding: 10px 16px;
+}
+
+.msg.user .msg-body {
+  max-width: 78%;
+}
+
+.think-row,
+.mc-trace {
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-md);
+  background: var(--mc-surface-subtle);
+}
+
+.mcp-warning {
+  border: 1px solid var(--mc-warning-soft);
+}
+
+.composer-wrap,
+.universal-composer {
+  background: var(--mc-surface);
+  border: 1px solid var(--mc-line);
+}
+
+.hero-input,
+textarea#heroInput,
+.composer .composer-input {
+  font-size: 15px;
+}
+
+/* Topbar: conversation title on the left reads like DeepSeek's model row */
+
+.topbar-title {
+  font-size: 14px;
+  font-weight: 600;
+}
