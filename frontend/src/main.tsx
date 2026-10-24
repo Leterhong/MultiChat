@@ -14,6 +14,7 @@ import './design/home.css';
 import './design/chat.css';
 import './design/activity.css';
 import './design/surfaces.css';
+import './design/hero.css';
 
 const mount = document.getElementById('root');
 if (!mount) throw new Error('MultiChat root mount is missing');

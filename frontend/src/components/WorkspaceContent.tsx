@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
+  ArrowDown,
+  ArrowRight,
   ArrowUp,
   Brain,
   CheckCircle2,
@@ -10,6 +12,7 @@ import {
   FolderPlus,
   Layers3,
   ListTree,
+  Play,
   Plus,
   RefreshCw,
   Wrench,
@@ -18,6 +21,7 @@ import { Virtuoso } from 'react-virtuoso';
 import { state } from '../core';
 import { useAppStore, useBusinessStore } from '../store/appStore';
 import { fmtTok, formatRecentTime } from '../utils/format';
+import { AmbientBackdrop } from './AmbientBackdrop';
 import { BrandMark } from './BrandMark';
 import { ModelGlyph } from './BrandMark';
 import { SafeMarkdown } from './SafeMarkdown';
@@ -57,10 +61,22 @@ function HomeWorkspace() {
   const recentTasks = (business.conversations || []).slice(0, 5);
   const workspaceName = business.selectedWorkspace?.name || '本机工作区';
   const projectName = hasProject ? business.selectedProject.name : '临时任务';
+  const providerCount = (business.providers || []).length;
+  const modelCount = (business.providers || []).reduce(
+    (sum: number, provider: any) => sum + (provider.models?.length || 0),
+    0,
+  );
 
   useEffect(() => {
     if (ready && !document.querySelector('.settings.open, .modal.open')) inputRef.current?.focus();
   }, [ready, inputRef]);
+
+  const enterComposer = () => {
+    const reduce =
+      typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById('heroCard')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
 
   const submit = () => {
     const value = prompt.trim();
@@ -85,6 +101,46 @@ function HomeWorkspace() {
 
   return (
     <div className="home-workbench workspace-home">
+      <AmbientBackdrop />
+      <button type="button" className="hero-announce" onClick={() => actions.openSettings?.('workspace')}>
+        <span>本地优先的 AI 工作台 —— 所有数据保存在你自己的设备上</span>
+        <ArrowRight size={13} aria-hidden />
+      </button>
+      <section className="home-hero" aria-labelledby="homeHeroTitle">
+        <p className="hero-eyebrow">Local-first · Multi-model workspace</p>
+        <h1 id="homeHeroTitle" className="hero-display">
+          Every model.
+          <br />
+          One canvas.
+        </h1>
+        <p className="hero-sub">
+          所有模型并行思考，结果在同一画布汇合。
+          <br />
+          本地运行，数据不出设备。
+        </p>
+        <div className="hero-cta-row">
+          <button type="button" className="hero-cta-primary" onClick={enterComposer}>
+            <span>进入工作区</span>
+            <ArrowRight size={16} aria-hidden />
+          </button>
+          <button type="button" className="hero-cta-ghost" onClick={() => actions.openCompare?.()}>
+            <span className="hero-play" aria-hidden>
+              <Play size={11} />
+            </span>
+            <span>模型对比实验室</span>
+          </button>
+        </div>
+        <p className="hero-live">
+          <span className="hero-live-dot" aria-hidden />
+          {providerCount
+            ? `LIVE · ${providerCount} 家提供商 · ${modelCount} 个模型就绪`
+            : 'READY · 在设置中连接你的第一个提供商'}
+        </p>
+      </section>
+      <button type="button" className="hero-scroll-cue" onClick={enterComposer}>
+        <span>SCROLL TO EXPLORE</span>
+        <ArrowDown size={14} aria-hidden />
+      </button>
       <section className="home-task-entry" aria-labelledby="homeTaskTitle">
         <header className="home-heading">
           <div className="home-workspace-context">
@@ -95,7 +151,7 @@ function HomeWorkspace() {
               {workspaceName} / {projectName}
             </button>
           </div>
-          <h1 id="homeTaskTitle">今天想完成什么？</h1>
+          <h2 id="homeTaskTitle">今天想完成什么？</h2>
           <p>从一个清晰目标开始。选择工作方式，接入项目上下文，然后交给 MultiChat。</p>
         </header>
 
