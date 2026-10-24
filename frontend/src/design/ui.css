@@ -4786,3 +4786,37 @@ label:has(input[type='checkbox']) {
 .home-workspace-context {
   display: none;
 }
+
+/* ---------------- 25. Start page vertical balance ---------------- */
+
+.home-workbench {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--mc-topbar-height));
+  padding-bottom: 0;
+}
+
+.home-hero {
+  margin-top: auto;
+  padding-top: 30px;
+}
+
+.home-hero .hero-display {
+  font-size: clamp(24px, 2.6vw, 34px);
+  margin-bottom: 4px;
+}
+
+.home-task-entry {
+  margin-bottom: auto;
+  padding-bottom: 28px;
+}
+
+.home-task-entry h1,
+.home-task-entry h2 {
+  margin-bottom: 14px;
+}
+
+.hero-input,
+textarea#heroInput {
+  min-height: 108px;
+}
