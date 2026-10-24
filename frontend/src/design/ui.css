@@ -4726,3 +4726,63 @@ label:has(input[type='checkbox']) {
 .inspector-status {
   border-radius: var(--mc-radius-sm);
 }
+
+/* ---------------- 24. DeepSeek start page ---------------- */
+
+.home-hero {
+  min-height: 0;
+  padding-top: clamp(56px, 14vh, 130px);
+  padding-bottom: 6px;
+}
+
+.hero-display {
+  font-size: clamp(26px, 3.2vw, 38px);
+  font-weight: 640;
+  letter-spacing: 0;
+}
+
+.hero-sub,
+.hero-cta-row,
+.hero-live {
+  display: none;
+}
+
+.home-task-entry {
+  width: min(720px, 100%);
+  padding-top: 34px;
+}
+
+.home-main-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.home-recent,
+.home-quick,
+.home-footnote {
+  display: none;
+}
+
+.home-task-entry h1,
+.home-task-entry h2 {
+  text-align: center;
+  font-size: 17px;
+  font-weight: 620;
+  color: var(--mc-text-subtle);
+  margin-bottom: 14px;
+}
+
+.home-heading p {
+  display: none;
+}
+
+.home-workspace-context {
+  justify-content: center;
+}
+
+.home-heading {
+  margin-bottom: 0;
+}
+
+.home-workspace-context {
+  display: none;
+}

@@ -106,9 +106,7 @@ function HomeWorkspace() {
       <section className="home-hero" aria-labelledby="homeHeroTitle">
         <p className="hero-eyebrow">Local-first · Multi-model workspace</p>
         <h1 id="homeHeroTitle" className="hero-display">
-          Every model.
-          <br />
-          One canvas.
+          Hi，我是 MultiChat。
         </h1>
         <p className="hero-sub">
           所有模型并行思考，结果在同一画布汇合。
