@@ -66,7 +66,7 @@ function HomeWorkspace() {
   );
 
   useEffect(() => {
-    if (ready && !document.querySelector('.settings.open, .modal.open')) inputRef.current?.focus();
+    if (ready && !document.querySelector('.settings.open, .modal.open')) inputRef.current?.focus({ preventScroll: true });
   }, [ready, inputRef]);
 
   const enterComposer = () => {
