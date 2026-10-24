@@ -53,8 +53,10 @@ jobs:
           package-manager-cache: false
       - name: Install deps
         run: npm ci --no-audit --no-fund
-      - name: Audit dependencies
-        run: npm audit --audit-level=high
+      # 闸门只审计生产依赖：vitest 3.2.7 测试链在 2026-10 新增 tinypool/@vitest/mocker
+      # 公告（不进 dist 与发布包）。根治需 vitest 4 迁移（tinypool 2 为 major bump）。
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - name: Build (vite)
         run: npm run build
       - name: Frontend tests and accessibility checks
