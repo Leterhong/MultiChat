@@ -4934,3 +4934,168 @@ textarea#heroInput,
   font-size: 14px;
   font-weight: 600;
 }
+
+/* ---------------- 27. Sweep fixes ---------------- */
+
+/* Brand mark SVG (was unstyled after the rebuild — rendered as a black blob) */
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--brand-mark-size, 34px);
+  height: var(--brand-mark-size, 34px);
+  flex: none;
+}
+
+.brand-mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.brand-mark .brand-frame {
+  fill: var(--mc-accent-soft);
+  stroke: var(--mc-accent-line);
+  stroke-width: 1.4;
+}
+
+.brand-mark .brand-flow,
+.brand-mark svg > circle {
+  fill: none;
+  stroke: var(--mc-accent);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.brand-mark .brand-core {
+  fill: var(--mc-accent);
+  stroke: none;
+}
+
+/* Markdown tables inside assistant answers */
+
+.msg-content table {
+  width: 100%;
+  margin: 12px 0;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.msg-content th,
+.msg-content td {
+  padding: 8px 12px;
+  border: 1px solid var(--mc-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.msg-content th {
+  background: var(--mc-surface-subtle);
+  font-weight: 650;
+}
+
+.msg-content tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--mc-surface-subtle) 55%, transparent);
+}
+
+/* Agent capability stats */
+
+.agent-capability-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--mc-text-muted);
+  font-size: 12px;
+}
+
+.agent-capability-summary strong {
+  margin-right: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--mc-radius-pill);
+  background: var(--mc-success-soft);
+  color: var(--mc-success);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.agent-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Compare targets fieldset + empty results */
+
+.compare-targets {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-height: 46px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.compare-targets legend {
+  padding: 0;
+  margin-bottom: 8px;
+  color: var(--mc-text-muted);
+  font-size: 12px;
+  font-weight: 630;
+}
+
+.compare-targets label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-pill);
+  background: var(--mc-surface);
+  cursor: pointer;
+  transition: border-color var(--mc-duration-fast) var(--mc-easing), background var(--mc-duration-fast) var(--mc-easing);
+}
+
+.compare-targets label:has(input:checked) {
+  border-color: var(--mc-accent);
+  background: var(--mc-accent-soft);
+}
+
+.compare-targets input {
+  accent-color: var(--mc-accent);
+}
+
+.compare-targets strong {
+  font-size: 12.5px;
+  font-weight: 620;
+}
+
+.compare-targets small {
+  color: var(--mc-text-faint);
+  font-size: 11px;
+}
+
+.compare-results:not(:has(*)) {
+  display: none;
+}
+
+/* Unknown settings tabs fall back to a visible empty state instead of a blank page */
+
+.settings-body:empty::after {
+  content: '该设置页暂无内容';
+  display: block;
+  padding: 40px 0;
+  color: var(--mc-text-faint);
+  font-size: 13px;
+  text-align: center;
+}

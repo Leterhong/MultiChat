@@ -146,7 +146,23 @@ function switchSettingsTab(tab: string) {
   else if (tab === 'capabilities') void loadCapabilities();
 }
 
-function renderSettings(tab = 'general', keepScroll = false) {
+const KNOWN_SETTINGS_TABS = [
+  'general',
+  'workspace',
+  'providers',
+  'agents',
+  'experiment',
+  'skills',
+  'tools',
+  'mcp',
+  'plugins',
+  'capabilities',
+  'runs',
+  'usage',
+];
+
+function renderSettings(rawTab = 'general', keepScroll = false) {
+  const tab = KNOWN_SETTINGS_TABS.includes(rawTab) ? rawTab : 'general';
   const body = $('#settingsBody') as HTMLElement;
   unmountExtensionSettings();
   const previousScroll = keepScroll ? body.scrollTop : 0;
