@@ -12,5 +12,5 @@ test('automation keeps the repository single-branch friendly', () => {
   assert.equal((dependabot.match(/version-update:semver-major/g) || []).length, 3);
 
   const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-  assert.ok((ci.match(/npm audit --audit-level=high/g) || []).length >= 3);
+  assert.ok((ci.match(/npm audit( --omit=dev)? --audit-level=high/g) || []).length >= 3);
 });
