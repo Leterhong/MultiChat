@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// axe 扫描在负载下可能超过默认 5s 预算
+vi.setConfig({ testTimeout: 20000 });
 import { state } from '../../core';
 import { syncModelUI } from '../../modules/modelPicker';
 import { useAppStore } from '../../store/appStore';

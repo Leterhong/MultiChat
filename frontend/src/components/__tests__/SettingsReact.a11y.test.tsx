@@ -1,6 +1,9 @@
 import { render } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { describe, expect, it, vi } from 'vitest';
+
+// axe 扫描在负载下可能超过默认 5s 预算
+vi.setConfig({ testTimeout: 20000 });
 import { CompareLab } from '../CompareLab';
 import { ProviderSettings, SkillSettings } from '../CoreSettings';
 import { McpSettings, PluginSettings } from '../ExtensionSettings';

@@ -10,7 +10,7 @@ describe('AppShell navigation', () => {
     useAppStore.setState({ ready: true, workspaceView: 'home', taskMode: 'chat', actions: {} });
   });
 
-  it('has no detectable accessibility violations and exposes one settings entry', async () => {
+  it('has no detectable accessibility violations and exposes one settings entry', async () => { // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     const openSettings = vi.fn();
     useAppStore.setState({ ready: true, actions: { openSettings } });
     const { container } = render(<AppShell />);
