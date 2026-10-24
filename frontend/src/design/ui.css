@@ -15,44 +15,44 @@
   --mc-space-6: 24px;
   --mc-space-8: 32px;
 
-  --mc-canvas: #f6f7f9;
+  --mc-canvas: #ffffff;
   --mc-surface: #ffffff;
-  --mc-surface-subtle: #f1f3f6;
+  --mc-surface-subtle: #f7f8fa;
   --mc-surface-elevated: #ffffff;
-  --mc-surface-hover: #eef1f5;
-  --mc-surface-active: #e6eaf0;
+  --mc-surface-hover: #f2f3f5;
+  --mc-surface-active: #e8eaf0;
 
-  --mc-sidebar: #f2f4f7;
+  --mc-sidebar: #f9fafb;
   --mc-sidebar-raised: #ffffff;
-  --mc-sidebar-title: #1c212b;
+  --mc-sidebar-title: #26282d;
   --mc-sidebar-text: #4d5563;
   --mc-sidebar-muted: #8b93a2;
-  --mc-sidebar-faint: #adb4c0;
-  --mc-sidebar-hover: rgba(28, 33, 43, 0.05);
-  --mc-sidebar-active: #ffffff;
-  --mc-sidebar-line: #e5e8ee;
+  --mc-sidebar-faint: #b3bac4;
+  --mc-sidebar-hover: #ececf1;
+  --mc-sidebar-active: #e8eaf0;
+  --mc-sidebar-line: #ececf1;
 
-  --mc-text: #1c212b;
-  --mc-text-muted: #5b6472;
-  --mc-text-subtle: #79818f;
-  --mc-text-faint: #9aa1ae;
-  --mc-text-disabled: #c2c7d1;
+  --mc-text: #26282d;
+  --mc-text-muted: #575c66;
+  --mc-text-subtle: #7b8190;
+  --mc-text-faint: #9ba1ad;
+  --mc-text-disabled: #c9cdd4;
 
-  --mc-line-faint: #eef0f4;
-  --mc-line: #e4e7ed;
-  --mc-line-hover: #d3d8e0;
-  --mc-line-strong: #b8bfcb;
+  --mc-line-faint: #f2f3f5;
+  --mc-line: #e5e7eb;
+  --mc-line-hover: #d8dbe0;
+  --mc-line-strong: #c0c4cc;
 
-  --mc-accent: #0d8a9e;
-  --mc-accent-strong: #0a7080;
-  --mc-accent-soft: #e4f5f8;
-  --mc-accent-glow: rgba(13, 138, 158, 0.16);
-  --mc-accent-line: rgba(13, 138, 158, 0.45);
-  --mc-accent-cyan: #0d8a9e;
+  --mc-accent: #4d6bfe;
+  --mc-accent-strong: #3d5bf0;
+  --mc-accent-soft: #edf1ff;
+  --mc-accent-glow: rgba(77, 107, 254, 0.18);
+  --mc-accent-line: rgba(77, 107, 254, 0.45);
+  --mc-accent-cyan: #4d6bfe;
 
   --mc-on-accent: #ffffff;
-  --mc-user-surface: #e4f5f8;
-  --mc-user-line: #c8e9ef;
+  --mc-user-surface: #e8f0ff;
+  --mc-user-line: #dbe6ff;
 
   --mc-warning: #a15c12;
   --mc-warning-soft: #fdf2e2;
@@ -103,44 +103,44 @@
 }
 
 :root[data-theme='dark'] {
-  --mc-canvas: #12161d;
-  --mc-surface: #191e27;
-  --mc-surface-subtle: #1f242f;
-  --mc-surface-elevated: #1f2530;
-  --mc-surface-hover: #242b37;
-  --mc-surface-active: #2b3341;
+  --mc-canvas: #18191a;
+  --mc-surface: #1e1f20;
+  --mc-surface-subtle: #242526;
+  --mc-surface-elevated: #242526;
+  --mc-surface-hover: #2a2b2d;
+  --mc-surface-active: #333538;
 
-  --mc-sidebar: #0f131a;
-  --mc-sidebar-raised: #1a1f29;
-  --mc-sidebar-title: #eef1f6;
-  --mc-sidebar-text: #b6bdc9;
-  --mc-sidebar-muted: #838b99;
-  --mc-sidebar-faint: #626a78;
-  --mc-sidebar-hover: rgba(255, 255, 255, 0.06);
-  --mc-sidebar-active: #232a36;
-  --mc-sidebar-line: rgba(255, 255, 255, 0.07);
+  --mc-sidebar: #131415;
+  --mc-sidebar-raised: #1e1f20;
+  --mc-sidebar-title: #f0f1f2;
+  --mc-sidebar-text: #b9bbbd;
+  --mc-sidebar-muted: #84868a;
+  --mc-sidebar-faint: #63656a;
+  --mc-sidebar-hover: #262729;
+  --mc-sidebar-active: #2e3033;
+  --mc-sidebar-line: rgba(255, 255, 255, 0.06);
 
-  --mc-text: #e7eaf0;
-  --mc-text-muted: #a6adba;
-  --mc-text-subtle: #8b93a1;
-  --mc-text-faint: #6d7482;
-  --mc-text-disabled: #4d545f;
+  --mc-text: #e9eaeb;
+  --mc-text-muted: #a3a5a8;
+  --mc-text-subtle: #8b8d91;
+  --mc-text-faint: #6c6e73;
+  --mc-text-disabled: #4b4d51;
 
   --mc-line-faint: rgba(255, 255, 255, 0.05);
   --mc-line: rgba(255, 255, 255, 0.09);
   --mc-line-hover: rgba(255, 255, 255, 0.15);
   --mc-line-strong: rgba(255, 255, 255, 0.22);
 
-  --mc-accent: #3ab6cc;
-  --mc-accent-strong: #6fd0e2;
-  --mc-accent-soft: rgba(58, 182, 204, 0.14);
-  --mc-accent-glow: rgba(58, 182, 204, 0.2);
-  --mc-accent-line: rgba(58, 182, 204, 0.5);
-  --mc-accent-cyan: #3ab6cc;
+  --mc-accent: #6b83fb;
+  --mc-accent-strong: #8b9dff;
+  --mc-accent-soft: rgba(107, 131, 251, 0.14);
+  --mc-accent-glow: rgba(107, 131, 251, 0.2);
+  --mc-accent-line: rgba(107, 131, 251, 0.5);
+  --mc-accent-cyan: #6b83fb;
 
-  --mc-on-accent: #06272d;
-  --mc-user-surface: rgba(58, 182, 204, 0.13);
-  --mc-user-line: rgba(58, 182, 204, 0.32);
+  --mc-on-accent: #ffffff;
+  --mc-user-surface: rgba(107, 131, 251, 0.14);
+  --mc-user-line: rgba(107, 131, 251, 0.3);
 
   --mc-warning: #f2b95c;
   --mc-warning-soft: rgba(242, 185, 92, 0.12);
@@ -4545,4 +4545,184 @@ label:has(input[type='checkbox']) {
   display: flex;
   justify-content: flex-end;
   align-self: auto;
+}
+
+/* ---------------- 23. DeepSeek-style refinements ---------------- */
+
+/* Centered welcome, DeepSeek-style */
+
+.home-hero {
+  align-items: center;
+  text-align: center;
+  padding-top: clamp(48px, 10vh, 96px);
+  min-height: clamp(320px, calc(100vh - var(--mc-topbar-height) - 430px), 480px);
+}
+
+.hero-display {
+  font-weight: 640;
+  letter-spacing: -0.02em;
+}
+
+.hero-sub {
+  max-width: 520px;
+}
+
+.hero-cta-row {
+  justify-content: center;
+}
+
+.hero-live {
+  justify-content: center;
+}
+
+.hero-eyebrow,
+.hero-scroll-cue {
+  display: none;
+}
+
+/* Flat sidebar list, no elevation on active rows */
+
+.primary-nav button.active,
+.recent-work-row.active {
+  box-shadow: none;
+}
+
+.recent-work-row.active {
+  background: var(--mc-sidebar-active);
+}
+
+.recent-work-row.active .recent-work-copy strong {
+  color: var(--mc-sidebar-title);
+  font-weight: 640;
+}
+
+/* Composer: DeepSeek input card */
+
+.universal-composer,
+.composer-wrap {
+  border-radius: var(--mc-radius-xl);
+  box-shadow: var(--mc-shadow-xs);
+}
+
+.universal-composer:focus-within,
+.composer-wrap:focus-within {
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.task-mode-switch,
+.mode-segments {
+  background: transparent;
+  padding: 0;
+  gap: 8px;
+}
+
+.task-mode-switch button,
+.mode-segments button {
+  padding: 6px 15px;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-pill);
+  background: var(--mc-surface);
+  color: var(--mc-text-muted);
+  box-shadow: none;
+}
+
+.task-mode-switch button:hover,
+.mode-segments button:hover {
+  border-color: var(--mc-line-hover);
+  background: var(--mc-surface);
+  color: var(--mc-text);
+}
+
+.task-mode-switch button.active,
+.mode-segments button.active {
+  border-color: var(--mc-accent);
+  background: var(--mc-accent-soft);
+  color: var(--mc-accent);
+  box-shadow: none;
+}
+
+.workflow-tabs,
+.workflow-task-tabs {
+  background: transparent;
+}
+
+.workflow-tabs button,
+.workflow-task-tabs button {
+  border: 1px solid transparent;
+  border-radius: var(--mc-radius-pill);
+}
+
+.workflow-tabs button.active,
+.workflow-task-tabs button.active {
+  border-color: var(--mc-line);
+  background: var(--mc-surface-subtle);
+  box-shadow: none;
+}
+
+.send-btn {
+  border-radius: var(--mc-radius-lg);
+}
+
+.msg-content.user-plain-text {
+  border-radius: var(--mc-radius-lg);
+  border-bottom-right-radius: var(--mc-radius-lg);
+}
+
+.msg-avatar {
+  border-radius: var(--mc-radius-pill);
+  background: var(--mc-accent-soft);
+  color: var(--mc-accent);
+}
+
+.btn-primary {
+  border-radius: var(--mc-radius-lg);
+}
+
+.hero-cta-primary {
+  border-radius: var(--mc-radius-pill);
+  padding: 11px 26px;
+}
+
+.hero-cta-primary,
+.btn-primary,
+.send-btn {
+  box-shadow: none;
+}
+
+.hero-cta-primary:hover {
+  box-shadow: 0 4px 14px var(--mc-accent-glow);
+}
+
+.home-quick button {
+  border-radius: var(--mc-radius-pill);
+  background: var(--mc-surface-subtle);
+  border-color: transparent;
+}
+
+.home-quick button:hover {
+  border-color: var(--mc-accent-line);
+  background: var(--mc-accent-soft);
+}
+
+.new-task-button {
+  border-radius: var(--mc-radius-lg);
+}
+
+.hero-announce {
+  background: var(--mc-surface-subtle);
+  border-bottom-color: var(--mc-line-faint);
+}
+
+.hero-announce:hover {
+  background: var(--mc-accent-soft);
+}
+
+.mc-tag,
+.run-status,
+.run-state,
+.activity-status,
+.execution-status,
+.picker-option-state,
+.inspector-status {
+  border-radius: var(--mc-radius-sm);
 }
