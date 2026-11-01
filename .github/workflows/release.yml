@@ -14,8 +14,8 @@ jobs:
     name: Publish npm + GitHub Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           package-manager-cache: false
@@ -60,13 +60,13 @@ jobs:
       # 发布失败时把 npm 完整输出存为构件，便于匿名诊断（公共仓库构件可匿名下载）。
       - name: Upload publish log on failure
         if: failure() && steps.publish.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: npm-publish-error
           path: npm-publish.log
           retention-days: 7
           if-no-files-found: ignore
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
