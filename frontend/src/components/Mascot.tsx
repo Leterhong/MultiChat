@@ -17,14 +17,14 @@ export function Mascot({ size = 64, className = '' }: MascotProps) {
     >
       <defs>
         <linearGradient id="mascot-head" x1="8" y1="6" x2="56" y2="52" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#89b4fa" />
-          <stop offset="0.55" stopColor="#cba6f7" />
-          <stop offset="1" stopColor="#f5c2e7" />
+          <stop offset="0" stopColor="#8fb0fb" />
+          <stop offset="0.55" stopColor="#5b83f8" />
+          <stop offset="1" stopColor="#7fa0fa" />
         </linearGradient>
         <linearGradient id="mascot-head-light" x1="8" y1="6" x2="56" y2="52" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#7287fd" />
-          <stop offset="0.55" stopColor="#8839ef" />
-          <stop offset="1" stopColor="#ea76cb" />
+          <stop offset="0" stopColor="#3b6cf6" />
+          <stop offset="0.55" stopColor="#2f59dc" />
+          <stop offset="1" stopColor="#4b7af0" />
         </linearGradient>
       </defs>
       <g className="mascot">

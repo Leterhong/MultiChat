@@ -16,6 +16,8 @@ export function applyTheme(preference: ThemePreference = getTheme()): void {
   document.documentElement.dataset.theme = resolved;
   document.documentElement.dataset.themePreference = preference;
   document.documentElement.style.colorScheme = resolved;
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  if (themeColor) themeColor.setAttribute('content', resolved === 'dark' ? '#1e1e2e' : '#f7f8fa');
   window.dispatchEvent(new CustomEvent('multichat:themechange', { detail: { preference, resolved } }));
 }
 

@@ -12,5 +12,7 @@
       fb.style.display = 'flex';
     }, 4000);
   });
+  var retry = document.getElementById('bootReloadBtn');
+  if (retry) retry.addEventListener('click', function () { location.reload(); });
   new MutationObserver(hide).observe(document.documentElement, { childList: true, subtree: true });
 })();

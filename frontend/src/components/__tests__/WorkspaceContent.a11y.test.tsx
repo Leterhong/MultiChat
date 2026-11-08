@@ -51,7 +51,7 @@ describe('WorkspaceContent accessibility', () => {
       state.selectedModel = 'echo';
     });
     expect(screen.getByRole('button', { name: '模型：echo' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /今天想完成什么？/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /开始一个新任务/ })).toBeInTheDocument();
   });
 
   it('keeps the React model control intact when legacy refresh hooks run', () => {

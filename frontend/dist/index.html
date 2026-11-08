@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0b1526" />
+    <meta name="theme-color" content="#f7f8fa" id="mcThemeColor" />
     <meta name="color-scheme" content="light dark" />
     <title>MultiChat · 本地模型工作台</title>
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -12,16 +12,16 @@
     <meta name="apple-mobile-web-app-title" content="MultiChat" />
     <meta name="mobile-web-app-capable" content="yes" />
     <script src="/theme-seed.js"></script>
-    <script type="module" crossorigin src="/assets/index-BaUGyQ3C.js"></script>
+    <script type="module" crossorigin src="/assets/index-CYhQDXPG.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/react-CDEwA66Z.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-DXwClNo-.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-B-gxu2vF.css">
   </head>
   <body>
     <div id="root"></div>
-    <div id="bootFallback" role="alert" style="display:none;position:fixed;inset:0;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg-base,#f6f7f9);color:var(--label-primary,#172033);font-family:system-ui,sans-serif;">
+    <div id="bootFallback" role="alert" style="display:none;position:fixed;inset:0;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--mc-surface,#ffffff);color:var(--mc-text,#1f2329);font-family:system-ui,sans-serif;">
       <strong style="font-size:16px;">MultiChat 加载失败</strong>
       <span style="font-size:13px;opacity:.7;">页面资源未能在 4 秒内就绪，可能是服务刚重启或网络缓存过期。</span>
-      <button type="button" onclick="location.reload()" style="padding:9px 18px;border:0;border-radius:9px;background:#315fce;color:#fff;font-size:13px;cursor:pointer;">重新加载</button>
+      <button type="button" id="bootReloadBtn" style="padding:9px 18px;border:0;border-radius:8px;background:var(--mc-accent,#3b6cf6);color:#fff;font-size:13px;cursor:pointer;">重新加载</button>
     </div>
     <script src="/boot-fallback.js"></script>
   </body>

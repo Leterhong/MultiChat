@@ -113,7 +113,7 @@ function HomeWorkspace() {
         <ArrowRight size={13} aria-hidden />
       </button>
       <section className="home-hero" aria-labelledby="homeHeroTitle">
-        <Mascot size={72} className="home-mascot" />
+        <Mascot size={48} className="home-mascot" />
         <h1 id="homeHeroTitle" className="hero-display">
           Hi，我是 MultiChat。
         </h1>
@@ -155,8 +155,8 @@ function HomeWorkspace() {
               {workspaceName} / {projectName}
             </button>
           </div>
-          <h2 id="homeTaskTitle">今天想完成什么？</h2>
-          <p>从一个清晰目标开始。选择工作方式，接入项目上下文，然后交给 MultiChat。</p>
+          <h2 id="homeTaskTitle">开始一个新任务</h2>
+          <p>描述目标，选择工作方式，接入项目上下文，然后交给 MultiChat。</p>
         </header>
 
         <div className="home-main-grid">
@@ -301,15 +301,15 @@ function HomeWorkspace() {
         {characters.length > 0 && (
           <section className="home-characters" aria-label="智能体角色">
             <header>
-              <h3>和角色一起干活</h3>
-              <p>挑一个伙伴，输入框会自动切到 Agent 模式</p>
+              <h3>智能体角色</h3>
+              <p>选择一个角色开始，输入框会自动切换到 Agent 模式</p>
             </header>
             <div className="character-grid">
-              {characters.map((agent, index) => (
+              {characters.map((agent) => (
                 <button
                   type="button"
                   key={agent.id || agent.name}
-                  className={`character-card hue-${index % 6}`}
+                  className="character-card"
                   onClick={() => startAgent(agent)}
                 >
                   <span className="character-avatar" aria-hidden>
