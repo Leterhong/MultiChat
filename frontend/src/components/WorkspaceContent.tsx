@@ -23,6 +23,7 @@ import { useAppStore, useBusinessStore } from '../store/appStore';
 import { fmtTok, formatRecentTime } from '../utils/format';
 import { BrandMark } from './BrandMark';import { ModelGlyph } from './BrandMark';
 import { SafeMarkdown } from './SafeMarkdown';
+import { Mascot } from './Mascot';
 import { openWorkflowRail } from './workflowRailDom';
 
 const quickPrompts = [
@@ -73,8 +74,16 @@ function HomeWorkspace() {
     const reduce =
       typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.getElementById('heroCard')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
-    requestAnimationFrame(() => inputRef.current?.focus());
+    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   };
+
+  const startAgent = (agent: any) => {
+    state.selectedAgent = agent;
+    setTaskMode('agent');
+    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+  };
+
+  const characters = (business.agents || []) as any[];
 
   const submit = () => {
     const value = prompt.trim();
@@ -104,7 +113,7 @@ function HomeWorkspace() {
         <ArrowRight size={13} aria-hidden />
       </button>
       <section className="home-hero" aria-labelledby="homeHeroTitle">
-        <p className="hero-eyebrow">Local-first · Multi-model workspace</p>
+        <Mascot size={72} className="home-mascot" />
         <h1 id="homeHeroTitle" className="hero-display">
           Hi，我是 MultiChat。
         </h1>
@@ -288,6 +297,34 @@ function HomeWorkspace() {
             </div>
           </section>
         </div>
+
+        {characters.length > 0 && (
+          <section className="home-characters" aria-label="智能体角色">
+            <header>
+              <h3>和角色一起干活</h3>
+              <p>挑一个伙伴，输入框会自动切到 Agent 模式</p>
+            </header>
+            <div className="character-grid">
+              {characters.map((agent, index) => (
+                <button
+                  type="button"
+                  key={agent.id || agent.name}
+                  className={`character-card hue-${index % 6}`}
+                  onClick={() => startAgent(agent)}
+                >
+                  <span className="character-avatar" aria-hidden>
+                    <Mascot size={44} />
+                  </span>
+                  <strong>{agent.name}</strong>
+                  <small>{agent.description || '随时待命的智能体'}</small>
+                  <span className="character-go" aria-hidden>
+                    →
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
       </section>
     </div>
   );
