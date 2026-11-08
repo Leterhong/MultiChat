@@ -11,8 +11,12 @@ function activateWorkflow(conversationId = state.currentConvId, projectId = stat
 async function loadConversations() {
   try {
     state.conversations = await api('/api/conversations');
+    state.conversationsLoadFailed = false;
   } catch {
+    // 失败时会话列表为空，但「空」不等于「服务端没有这些会话」。
+    // 标记后由路由层改走单会话详情接口做权威判定，避免深链被误弹回首页。
     state.conversations = [];
+    state.conversationsLoadFailed = true;
   }
   renderConvList();
 }

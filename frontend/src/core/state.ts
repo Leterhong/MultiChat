@@ -35,6 +35,9 @@ const initialBusinessState = {
   selectedProvider: null,
   selectedModel: null,
   conversations: [],
+  // 会话列表最近一次加载是否失败。为 true 时列表内容不可信，
+  // 路由层不得据此判定某个深链会话「不存在」。
+  conversationsLoadFailed: false,
   currentConvId: null,
   messages: [],
   streaming: false,

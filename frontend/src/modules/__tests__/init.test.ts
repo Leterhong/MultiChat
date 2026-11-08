@@ -9,9 +9,11 @@ describe('conversation route recovery', () => {
     state.currentConvId = null;
     state.messages = [];
     state.conversations = [];
+    state.conversationsLoadFailed = false;
     state.selectedProject = null;
     (globalThis as any).renderTopbar = vi.fn();
     (globalThis as any).renderContent = vi.fn();
+    (globalThis as any).openConversation = vi.fn();
     useAppStore.setState({ workspaceView: 'chat' });
     history.replaceState(null, '', '#/home');
   });
@@ -35,6 +37,21 @@ describe('conversation route recovery', () => {
     expect(state.messages).toEqual([]);
     expect(useAppStore.getState().workspaceView).toBe('home');
     expect(document.getElementById('toast')).toHaveTextContent('该任务不存在或已被删除');
+    expect((globalThis as any).openConversation).not.toHaveBeenCalled();
+  });
+
+  it('does not bounce a deep link when the conversation list failed to load', async () => {
+    // 列表加载失败时 state.conversations 为空但不可信，必须交由后端
+    // /api/conversations/:id 权威判定，而不是直接 replaceState 到 #/home。
+    state.conversationsLoadFailed = true;
+    history.replaceState(null, '', '#/chat/recoverable-task');
+
+    await applyLocationRoute();
+
+    expect(location.hash).toBe('#/chat/recoverable-task');
+    expect((globalThis as any).openConversation).toHaveBeenCalledWith('recoverable-task');
+    expect(useAppStore.getState().workspaceView).toBe('chat');
+    expect(state.currentConvId).toBeNull();
   });
 
   it('canonicalizes the legacy new-task route to the home task composer', async () => {

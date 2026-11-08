@@ -29,6 +29,14 @@ async function applyLocationRoute() {
     return;
   }
   if (parts[0] === 'chat' && parts[1] && !isKnownConversation(parts[1])) {
+    // 列表加载失败时 state.conversations 是空数组，不能据此断言会话不存在。
+    // 改由后端 /api/conversations/:id 权威判定：openConversation 内部已处理
+    // 404（弹回新任务页并提示），请求成功则正常恢复该会话且 URL 不变。
+    if (state.conversationsLoadFailed) {
+      setWorkspaceView('chat');
+      await openConversation(parts[1]);
+      return;
+    }
     state.currentConvId = null;
     state.messages = [];
     state.workflowScope = workflowScope(null, state.selectedProject?.id);
