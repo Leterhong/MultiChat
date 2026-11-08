@@ -117,11 +117,7 @@ function HomeWorkspace() {
         <h1 id="homeHeroTitle" className="hero-display">
           Hi，我是 MultiChat。
         </h1>
-        <p className="hero-sub">
-          所有模型并行思考，结果在同一画布汇合。
-          <br />
-          本地运行，数据不出设备。
-        </p>
+        <p className="hero-sub">所有模型并行思考 · 本地运行，数据不出设备。</p>
         <div className="hero-cta-row">
           <button type="button" className="hero-cta-primary" onClick={enterComposer}>
             <span>进入工作区</span>
@@ -148,42 +144,39 @@ function HomeWorkspace() {
       <section className="home-task-entry" aria-labelledby="homeTaskTitle">
         <header className="home-heading">
           <div className="home-workspace-context">
-            <span className="home-page-label">新任务</span>
-            <span className="home-context-divider" aria-hidden />
             <button type="button" onClick={() => actions.openSettings?.('workspace')}>
               <FolderOpen size={13} aria-hidden />
               {workspaceName} / {projectName}
             </button>
           </div>
           <h2 id="homeTaskTitle">开始一个新任务</h2>
-          <p>描述目标，选择工作方式，接入项目上下文，然后交给 MultiChat。</p>
         </header>
 
         <div className="home-main-grid">
           <div className="home-compose-column">
-            <div className="universal-composer" id="heroCard">
-              <div className="home-mode-row">
-                <div className="task-mode-switch" role="group" aria-label="任务模式">
-                  {(['chat', 'agent', 'compare'] as const).map((mode) => (
-                    <button
-                      className={taskMode === mode ? 'active' : ''}
-                      type="button"
-                      aria-pressed={taskMode === mode}
-                      key={mode}
-                      onClick={() => setTaskMode(mode)}
-                    >
-                      {mode === 'chat' ? '对话' : mode === 'agent' ? 'Agent' : '模型对比'}
-                    </button>
-                  ))}
-                </div>
-                <span className="home-mode-description">
-                  {taskMode === 'chat'
-                    ? '使用当前模型直接交流'
-                    : taskMode === 'agent'
-                      ? '调用工具与能力完成任务'
-                      : '并行验证多个模型的答案'}
-                </span>
+            <div className="home-mode-row is-outside">
+              <div className="task-mode-switch" role="group" aria-label="任务模式">
+                {(['chat', 'agent', 'compare'] as const).map((mode) => (
+                  <button
+                    className={taskMode === mode ? 'active' : ''}
+                    type="button"
+                    aria-pressed={taskMode === mode}
+                    key={mode}
+                    onClick={() => setTaskMode(mode)}
+                  >
+                    {mode === 'chat' ? '对话' : mode === 'agent' ? 'Agent' : '模型对比'}
+                  </button>
+                ))}
               </div>
+              <span className="home-mode-description">
+                {taskMode === 'chat'
+                  ? '使用当前模型直接交流'
+                  : taskMode === 'agent'
+                    ? '调用工具与能力完成任务'
+                    : '并行验证多个模型的答案'}
+              </span>
+            </div>
+            <div className="universal-composer" id="heroCard">
               <textarea
                 ref={inputRef}
                 className="hero-input"

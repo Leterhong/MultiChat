@@ -15,58 +15,58 @@
   --mc-space-6: 24px;
   --mc-space-8: 32px;
 
-  --mc-canvas: #f7f8fa;
-  --mc-surface: #ffffff;
-  --mc-surface-subtle: #f6f7f9;
-  --mc-surface-elevated: #ffffff;
-  --mc-surface-hover: #f1f3f6;
-  --mc-surface-active: #e9edf3;
+  --mc-canvas: var(--mc-p-canvas);
+  --mc-surface: var(--mc-p-surface);
+  --mc-surface-subtle: var(--mc-p-surface-subtle);
+  --mc-surface-elevated: var(--mc-p-surface-elevated);
+  --mc-surface-hover: var(--mc-p-surface-hover);
+  --mc-surface-active: var(--mc-p-surface-active);
 
-  --mc-sidebar: #f3f5f8;
-  --mc-sidebar-raised: #ffffff;
-  --mc-sidebar-title: #1f2329;
-  --mc-sidebar-text: #4a505c;
-  --mc-sidebar-muted: #838a97;
-  --mc-sidebar-faint: #a2a8b3;
-  --mc-sidebar-hover: #e9edf2;
-  --mc-sidebar-active: #e7edfb;
-  --mc-sidebar-line: #e3e7ed;
+  --mc-sidebar: var(--mc-p-sidebar);
+  --mc-sidebar-raised: var(--mc-p-sidebar-raised);
+  --mc-sidebar-title: var(--mc-p-sidebar-title);
+  --mc-sidebar-text: var(--mc-p-sidebar-text);
+  --mc-sidebar-muted: var(--mc-p-sidebar-muted);
+  --mc-sidebar-faint: var(--mc-p-sidebar-faint);
+  --mc-sidebar-hover: var(--mc-p-sidebar-hover);
+  --mc-sidebar-active: var(--mc-p-sidebar-active);
+  --mc-sidebar-line: var(--mc-p-sidebar-line);
 
-  --mc-text: #1f2329;
-  --mc-text-muted: #5a6270;
-  --mc-text-subtle: #838a97;
-  --mc-text-faint: #a2a8b3;
-  --mc-text-disabled: #c3c8d1;
+  --mc-text: var(--mc-p-text);
+  --mc-text-muted: var(--mc-p-text-muted);
+  --mc-text-subtle: var(--mc-p-text-subtle);
+  --mc-text-faint: var(--mc-p-text-faint);
+  --mc-text-disabled: var(--mc-p-text-disabled);
 
-  --mc-line-faint: #f0f2f5;
-  --mc-line: #e1e5eb;
-  --mc-line-hover: #cbd2dc;
-  --mc-line-strong: #aeb6c2;
+  --mc-line-faint: var(--mc-p-line-faint);
+  --mc-line: var(--mc-p-line);
+  --mc-line-hover: var(--mc-p-line-hover);
+  --mc-line-strong: var(--mc-p-line-strong);
 
-  --mc-accent: #3b6cf6;
-  --mc-accent-strong: #2f59dc;
-  --mc-accent-soft: #edf2fe;
-  --mc-accent-glow: rgba(59, 108, 246, 0.12);
-  --mc-accent-line: rgba(59, 108, 246, 0.38);
-  --mc-accent-cyan: #179299;
+  --mc-accent: var(--mc-p-accent);
+  --mc-accent-strong: var(--mc-p-accent-strong);
+  --mc-accent-soft: var(--mc-p-accent-soft);
+  --mc-accent-glow: var(--mc-p-accent-glow);
+  --mc-accent-line: var(--mc-p-accent-line);
+  --mc-accent-cyan: var(--mc-p-accent-cyan);
 
-  --mc-on-accent: #ffffff;
-  --mc-user-surface: #eef2fd;
-  --mc-user-line: #dbe4fb;
+  --mc-on-accent: var(--mc-p-on-accent);
+  --mc-user-surface: var(--mc-p-user-surface);
+  --mc-user-line: var(--mc-p-user-line);
 
   --mc-gradient-accent: var(--mc-accent);
-  --mc-gradient-glow: rgba(59, 108, 246, 0.1);
+  --mc-gradient-glow: var(--mc-p-gradient-glow);
 
-  --mc-warning: #df8e1d;
-  --mc-warning-soft: #fdf0d5;
-  --mc-danger: #d20f39;
-  --mc-danger-soft: #fde3e9;
-  --mc-success: #40a02b;
-  --mc-success-soft: #e6f2df;
-  --mc-info: #04a5e5;
-  --mc-info-soft: #e2f2fc;
-  --mc-ai: #3b6cf6;
-  --mc-ai-soft: #edf2fe;
+  --mc-warning: var(--mc-p-warning);
+  --mc-warning-soft: var(--mc-p-warning-soft);
+  --mc-danger: var(--mc-p-danger);
+  --mc-danger-soft: var(--mc-p-danger-soft);
+  --mc-success: var(--mc-p-success);
+  --mc-success-soft: var(--mc-p-success-soft);
+  --mc-info: var(--mc-p-info);
+  --mc-info-soft: var(--mc-p-info-soft);
+  --mc-ai: var(--mc-p-ai);
+  --mc-ai-soft: var(--mc-p-ai-soft);
 
   --mc-radius-xs: 4px;
   --mc-radius-sm: 6px;
@@ -101,71 +101,71 @@
   --mc-z-overlay: 100;
   --mc-z-toast: 160;
 
-  --mc-scrollbar-thumb: rgba(70, 78, 96, 0.24);
-  --mc-scrollbar-thumb-hover: rgba(70, 78, 96, 0.4);
+  --mc-scrollbar-thumb: var(--mc-p-scrollbar-thumb);
+  --mc-scrollbar-thumb-hover: var(--mc-p-scrollbar-thumb-hover);
 }
 
 :root[data-theme='dark'] {
-  --mc-canvas: #1e1e2e;
-  --mc-surface: #24243a;
-  --mc-surface-subtle: #2a2a42;
-  --mc-surface-elevated: #26263e;
-  --mc-surface-hover: #302f4d;
-  --mc-surface-active: #38375a;
+  --mc-canvas: var(--mc-p-dark-canvas);
+  --mc-surface: var(--mc-p-dark-surface);
+  --mc-surface-subtle: var(--mc-p-dark-surface-subtle);
+  --mc-surface-elevated: var(--mc-p-dark-surface-elevated);
+  --mc-surface-hover: var(--mc-p-dark-surface-hover);
+  --mc-surface-active: var(--mc-p-dark-surface-active);
 
-  --mc-sidebar: #181825;
-  --mc-sidebar-raised: #1e1e2e;
-  --mc-sidebar-title: #cdd6f4;
-  --mc-sidebar-text: #a6adc8;
-  --mc-sidebar-muted: #7f849c;
-  --mc-sidebar-faint: #626382;
-  --mc-sidebar-hover: #2b2b40;
-  --mc-sidebar-active: #31315a;
-  --mc-sidebar-line: rgba(205, 214, 244, 0.08);
+  --mc-sidebar: var(--mc-p-dark-sidebar);
+  --mc-sidebar-raised: var(--mc-p-dark-sidebar-raised);
+  --mc-sidebar-title: var(--mc-p-dark-sidebar-title);
+  --mc-sidebar-text: var(--mc-p-dark-sidebar-text);
+  --mc-sidebar-muted: var(--mc-p-dark-sidebar-muted);
+  --mc-sidebar-faint: var(--mc-p-dark-sidebar-faint);
+  --mc-sidebar-hover: var(--mc-p-dark-sidebar-hover);
+  --mc-sidebar-active: var(--mc-p-dark-sidebar-active);
+  --mc-sidebar-line: var(--mc-p-dark-sidebar-line);
 
-  --mc-text: #cdd6f4;
-  --mc-text-muted: #a6adc8;
-  --mc-text-subtle: #9399b2;
-  --mc-text-faint: #737089;
-  --mc-text-disabled: #52536b;
+  --mc-text: var(--mc-p-dark-text);
+  --mc-text-muted: var(--mc-p-dark-text-muted);
+  --mc-text-subtle: var(--mc-p-dark-text-subtle);
+  --mc-text-faint: var(--mc-p-dark-text-faint);
+  --mc-text-disabled: var(--mc-p-dark-text-disabled);
 
-  --mc-line-faint: rgba(205, 214, 244, 0.06);
-  --mc-line: rgba(205, 214, 244, 0.1);
-  --mc-line-hover: rgba(205, 214, 244, 0.16);
-  --mc-line-strong: rgba(205, 214, 244, 0.24);
+  --mc-line-faint: var(--mc-p-dark-line-faint);
+  --mc-line: var(--mc-p-dark-line);
+  --mc-line-hover: var(--mc-p-dark-line-hover);
+  --mc-line-strong: var(--mc-p-dark-line-strong);
 
-  --mc-accent: #89b4fa;
-  --mc-accent-strong: #b4befe;
-  --mc-accent-soft: rgba(137, 180, 250, 0.14);
-  --mc-accent-glow: rgba(137, 180, 250, 0.2);
-  --mc-accent-line: rgba(137, 180, 250, 0.5);
-  --mc-accent-cyan: #94e2d5;
+  --mc-accent: var(--mc-p-dark-accent);
+  --mc-accent-strong: var(--mc-p-dark-accent-strong);
+  --mc-accent-soft: var(--mc-p-dark-accent-soft);
+  --mc-accent-glow: var(--mc-p-dark-accent-glow);
+  --mc-accent-line: var(--mc-p-dark-accent-line);
+  --mc-accent-cyan: var(--mc-p-dark-accent-cyan);
 
-  --mc-on-accent: #ffffff;
-  --mc-user-surface: rgba(137, 180, 250, 0.13);
-  --mc-user-line: rgba(137, 180, 250, 0.3);
+  --mc-on-accent: var(--mc-p-dark-on-accent);
+  --mc-user-surface: var(--mc-p-dark-user-surface);
+  --mc-user-line: var(--mc-p-dark-user-line);
 
   --mc-gradient-accent: var(--mc-accent);
-  --mc-gradient-glow: rgba(137, 180, 250, 0.14);
+  --mc-gradient-glow: var(--mc-p-dark-gradient-glow);
 
-  --mc-warning: #f9e2af;
-  --mc-warning-soft: rgba(249, 226, 175, 0.12);
-  --mc-danger: #f38ba8;
-  --mc-danger-soft: rgba(243, 139, 168, 0.12);
-  --mc-success: #a6e3a1;
-  --mc-success-soft: rgba(166, 227, 161, 0.12);
-  --mc-info: #6aa5f8;
-  --mc-info-soft: rgba(106, 165, 248, 0.12);
-  --mc-ai: #89b4fa;
-  --mc-ai-soft: rgba(137, 180, 250, 0.13);
+  --mc-warning: var(--mc-p-dark-warning);
+  --mc-warning-soft: var(--mc-p-dark-warning-soft);
+  --mc-danger: var(--mc-p-dark-danger);
+  --mc-danger-soft: var(--mc-p-dark-danger-soft);
+  --mc-success: var(--mc-p-dark-success);
+  --mc-success-soft: var(--mc-p-dark-success-soft);
+  --mc-info: var(--mc-p-dark-info);
+  --mc-info-soft: var(--mc-p-dark-info-soft);
+  --mc-ai: var(--mc-p-dark-ai);
+  --mc-ai-soft: var(--mc-p-dark-ai-soft);
 
   --mc-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
   --mc-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
   --mc-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
   --mc-shadow-pop: 0 24px 70px rgba(0, 0, 0, 0.6);
 
-  --mc-scrollbar-thumb: rgba(255, 255, 255, 0.16);
-  --mc-scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+  --mc-scrollbar-thumb: var(--mc-p-dark-scrollbar-thumb);
+  --mc-scrollbar-thumb-hover: var(--mc-p-dark-scrollbar-thumb-hover);
 
   color-scheme: dark;
 }
@@ -1337,7 +1337,7 @@ select {
 .home-task-entry {
   width: min(1020px, 100%);
   margin: 0 auto;
-  padding: 26px 30px 0;
+  padding: var(--mc-c-page-pad) var(--mc-c-page-pad) 0;
 }
 
 .home-heading {
@@ -1352,18 +1352,6 @@ select {
   margin-bottom: 10px;
   color: var(--mc-text-subtle);
   font-size: 12px;
-}
-
-.home-page-label {
-  color: var(--mc-accent);
-  font-weight: 680;
-}
-
-.home-context-divider {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: var(--mc-text-faint);
 }
 
 .home-workspace-context button {
@@ -1389,16 +1377,10 @@ select {
   letter-spacing: -0.02em;
 }
 
-.home-heading p {
-  margin-top: 7px;
-  color: var(--mc-text-muted);
-  font-size: 13.5px;
-}
-
 .home-main-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 18px;
+  gap: var(--mc-c-section-gap);
   align-items: start;
 }
 
@@ -1411,9 +1393,9 @@ select {
 
 .universal-composer {
   padding: 14px;
-  border: 1px solid var(--mc-line);
+  border: 1px solid var(--mc-c-composer-border);
   border-radius: var(--mc-radius-lg);
-  background: var(--mc-surface);
+  background: var(--mc-c-composer-bg);
   box-shadow: var(--mc-shadow-sm);
   transition: border-color var(--mc-duration-fast) var(--mc-easing), box-shadow var(--mc-duration-fast) var(--mc-easing);
 }
@@ -1428,7 +1410,20 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+}
+
+/* Mode selection belongs to the task header, not to the text field. */
+.home-mode-row.is-outside {
+  margin: 0 0 var(--mc-space-2);
+  padding: 0 2px;
+}
+
+.home-mode-row.is-outside .task-mode-switch {
+  background: var(--mc-surface-subtle);
+}
+
+.home-mode-row.is-outside .home-mode-description {
+  color: var(--mc-text-subtle);
 }
 
 .task-mode-switch {
@@ -4755,7 +4750,7 @@ label:has(input[type='checkbox']) {
 
 .home-task-entry {
   width: min(720px, 100%);
-  padding-top: 34px;
+  padding-top: var(--mc-c-page-pad);
 }
 
 .home-main-grid {
@@ -4775,10 +4770,6 @@ label:has(input[type='checkbox']) {
   font-weight: 620;
   color: var(--mc-text-subtle);
   margin-bottom: 14px;
-}
-
-.home-heading p {
-  display: none;
 }
 
 .home-workspace-context {
@@ -4814,7 +4805,7 @@ label:has(input[type='checkbox']) {
 
 .home-task-entry {
   margin-bottom: auto;
-  padding-bottom: 28px;
+  padding-bottom: var(--mc-c-section-gap);
 }
 
 .home-task-entry h1,
@@ -4924,8 +4915,8 @@ textarea#heroInput {
 
 .composer-wrap,
 .universal-composer {
-  background: var(--mc-surface);
-  border: 1px solid var(--mc-line);
+  background: var(--mc-c-composer-bg);
+  border: 1px solid var(--mc-c-composer-border);
 }
 
 .hero-input,
@@ -5226,7 +5217,7 @@ textarea#heroInput,
 :root[data-theme='dark'] .task-mode-switch button.active {
   border-color: var(--mc-accent);
   background: var(--mc-accent);
-  color: #ffffff;
+  color: var(--mc-on-accent);
   box-shadow: none;
 }
 
@@ -5248,7 +5239,7 @@ textarea#heroInput,
 }
 
 ::selection {
-  background: rgba(59, 108, 246, 0.18);
+  background: var(--mc-accent-glow);
 }
 
 ::-webkit-scrollbar-thumb {

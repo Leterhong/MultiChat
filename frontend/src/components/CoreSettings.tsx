@@ -1,11 +1,31 @@
 import { FilePenLine, Plus, Search, ShieldCheck, Trash2, Upload, Wrench } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-export function GeneralSettings({ params, theme, token, onSaveParams, onTheme, onSaveToken }: any) {
+export function GeneralSettings({ params, theme, token, onSaveParams, onTheme, onSaveToken, skin, density, onSkin, onDensity }: any) {
   const [temperature, setTemperature] = useState(Number(params.temperature));
   const [maxTokens, setMaxTokens] = useState(Number(params.max_tokens));
   const [topP, setTopP] = useState(Number(params.top_p));
   const [serverToken, setServerToken] = useState(token);
+  const [themeValue, setThemeValue] = useState(theme);
+  const [skinValue, setSkinValue] = useState(skin || 'blue');
+  const [densityValue, setDensityValue] = useState(density || 'comfortable');
+  useEffect(() => {
+    const syncTheme = (event: Event) => {
+      const preference = (event as CustomEvent).detail?.preference;
+      if (preference) setThemeValue(preference);
+    };
+    const syncAppearance = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail?.skin) setSkinValue(detail.skin);
+      if (detail?.density) setDensityValue(detail.density);
+    };
+    window.addEventListener('multichat:themechange', syncTheme);
+    window.addEventListener('multichat:appearancechange', syncAppearance);
+    return () => {
+      window.removeEventListener('multichat:themechange', syncTheme);
+      window.removeEventListener('multichat:appearancechange', syncAppearance);
+    };
+  }, []);
   return <>
     <h3>偏好设置</h3><p className="lead">模型参数与外观</p>
     <section className="provider-card"><h4>模型参数</h4><div className="pmeta">应用于每次对话请求（OpenAI 兼容）</div>
@@ -14,7 +34,11 @@ export function GeneralSettings({ params, theme, token, onSaveParams, onTheme, o
       <div className="field"><label htmlFor="pTopReact">Top P：{topP}</label><input id="pTopReact" type="range" min="0" max="1" step="0.05" value={topP} onChange={(event) => setTopP(Number(event.target.value))} /></div>
       <div className="provider-row"><button className="btn-ghost" type="button" onClick={() => { setTemperature(.7); setMaxTokens(2000); setTopP(1); }}>重置</button><button className="btn-primary compact-action" type="button" onClick={() => onSaveParams({ temperature, max_tokens: maxTokens || 2000, top_p: topP })}>保存</button></div>
     </section>
-    <section className="provider-card"><h4>外观</h4><div className="field"><label htmlFor="themeReact">主题</label><select id="themeReact" value={theme} onChange={(event) => onTheme(event.target.value)}><option value="light">浅色</option><option value="dark">深色</option><option value="system">跟随系统</option></select></div></section>
+    <section className="provider-card"><h4>外观</h4>
+      <div className="field"><label htmlFor="themeReact">主题</label><select id="themeReact" value={themeValue} onChange={(event) => { setThemeValue(event.target.value); onTheme(event.target.value); }}><option value="light">浅色</option><option value="dark">深色</option><option value="system">跟随系统</option></select></div>
+      <div className="field"><label htmlFor="skinReact">强调色</label><select id="skinReact" value={skinValue} onChange={(event) => { setSkinValue(event.target.value); onSkin(event.target.value); }}><option value="blue">工作台蓝</option><option value="graphite">石墨灰</option><option value="teal">青绿</option></select></div>
+      <div className="field"><label htmlFor="densityReact">界面密度</label><select id="densityReact" value={densityValue} onChange={(event) => { setDensityValue(event.target.value); onDensity(event.target.value); }}><option value="comfortable">标准</option><option value="compact">紧凑</option></select></div>
+    </section>
     <section className="provider-card"><h4>本地服务访问保护</h4><div className="pmeta">仅在服务启用 MULTICHAT_API_TOKEN（兼容 MC_API_TOKEN）时填写；只保存在当前浏览器。</div><div className="field"><label htmlFor="serverTokenReact">访问令牌</label><input id="serverTokenReact" type="password" value={serverToken} onChange={(event) => setServerToken(event.target.value)} autoComplete="off" placeholder="未启用则留空" /></div><div className="provider-row"><button className="btn-ghost" type="button" onClick={() => { setServerToken(''); onSaveToken(''); }}>清除</button><button className="btn-primary compact-action" type="button" onClick={() => onSaveToken(serverToken.trim())}>保存令牌</button></div></section>
     <section className="provider-card"><h4>关于</h4><div className="pmeta">MultiChat · 本地优先的多模型工作台<br />模型、Skills、MCP 与插件按运行配置组合。</div></section>
   </>;

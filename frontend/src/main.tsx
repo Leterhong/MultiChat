@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { AppShell } from './app/AppShell';
+import './design/tokens.css';
 import './design/ui.css';
 import * as Core from './core/index';
 import { installRuntimeActions, markAppReady, setWorkspaceView } from './store/appStore';

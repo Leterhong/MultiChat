@@ -1,0 +1,185 @@
+/* ============================================================
+   MultiChat design tokens — primitive / semantic / component.
+   Visual baseline: CherryHQ/cherry-studio workbench language.
+   - primitive  --mc-p-*        raw palette values, theme-independent
+   - semantic   --mc-*          ui.css section 1 maps meaning to primitives
+   - component  --mc-c-*        component-level aliases used by sections 5+
+   Skins only override the primitive accent family; density overrides
+   spacing / radius / component aliases. No component rule lives here.
+   ============================================================ */
+
+:root {
+  /* Light palette (workbench neutral + single accent) */
+  --mc-p-canvas: #f7f8fa;
+  --mc-p-surface: #ffffff;
+  --mc-p-surface-subtle: #f6f7f9;
+  --mc-p-surface-elevated: #ffffff;
+  --mc-p-surface-hover: #f1f3f6;
+  --mc-p-surface-active: #e9edf3;
+  --mc-p-sidebar: #f3f5f8;
+  --mc-p-sidebar-raised: #ffffff;
+  --mc-p-sidebar-title: #1f2329;
+  --mc-p-sidebar-text: #4a505c;
+  --mc-p-sidebar-muted: #838a97;
+  --mc-p-sidebar-faint: #a2a8b3;
+  --mc-p-sidebar-hover: #e9edf2;
+  --mc-p-sidebar-active: #e7edfb;
+  --mc-p-sidebar-line: #e3e7ed;
+  --mc-p-text: #1f2329;
+  --mc-p-text-muted: #5a6270;
+  --mc-p-text-subtle: #838a97;
+  --mc-p-text-faint: #a2a8b3;
+  --mc-p-text-disabled: #c3c8d1;
+  --mc-p-line-faint: #f0f2f5;
+  --mc-p-line: #e1e5eb;
+  --mc-p-line-hover: #cbd2dc;
+  --mc-p-line-strong: #aeb6c2;
+  --mc-p-accent: #3b6cf6;
+  --mc-p-accent-strong: #2f59dc;
+  --mc-p-accent-soft: #edf2fe;
+  --mc-p-accent-glow: rgba(59, 108, 246, 0.12);
+  --mc-p-accent-line: rgba(59, 108, 246, 0.38);
+  --mc-p-accent-cyan: #179299;
+  --mc-p-on-accent: #ffffff;
+  --mc-p-user-surface: #eef2fd;
+  --mc-p-user-line: #dbe4fb;
+  --mc-p-gradient-glow: rgba(59, 108, 246, 0.1);
+  --mc-p-warning: #df8e1d;
+  --mc-p-warning-soft: #fdf0d5;
+  --mc-p-danger: #d20f39;
+  --mc-p-danger-soft: #fde3e9;
+  --mc-p-success: #40a02b;
+  --mc-p-success-soft: #e6f2df;
+  --mc-p-info: #04a5e5;
+  --mc-p-info-soft: #e2f2fc;
+  --mc-p-ai: #3b6cf6;
+  --mc-p-ai-soft: #edf2fe;
+  --mc-p-scrollbar-thumb: rgba(70, 78, 96, 0.24);
+  --mc-p-scrollbar-thumb-hover: rgba(70, 78, 96, 0.4);
+
+  /* Dark palette (Catppuccin night) */
+  --mc-p-dark-canvas: #1e1e2e;
+  --mc-p-dark-surface: #24243a;
+  --mc-p-dark-surface-subtle: #2a2a42;
+  --mc-p-dark-surface-elevated: #26263e;
+  --mc-p-dark-surface-hover: #302f4d;
+  --mc-p-dark-surface-active: #38375a;
+  --mc-p-dark-sidebar: #181825;
+  --mc-p-dark-sidebar-raised: #1e1e2e;
+  --mc-p-dark-sidebar-title: #cdd6f4;
+  --mc-p-dark-sidebar-text: #a6adc8;
+  --mc-p-dark-sidebar-muted: #7f849c;
+  --mc-p-dark-sidebar-faint: #626382;
+  --mc-p-dark-sidebar-hover: #2b2b40;
+  --mc-p-dark-sidebar-active: #31315a;
+  --mc-p-dark-sidebar-line: rgba(205, 214, 244, 0.08);
+  --mc-p-dark-text: #cdd6f4;
+  --mc-p-dark-text-muted: #a6adc8;
+  --mc-p-dark-text-subtle: #9399b2;
+  --mc-p-dark-text-faint: #737089;
+  --mc-p-dark-text-disabled: #52536b;
+  --mc-p-dark-line-faint: rgba(205, 214, 244, 0.06);
+  --mc-p-dark-line: rgba(205, 214, 244, 0.1);
+  --mc-p-dark-line-hover: rgba(205, 214, 244, 0.16);
+  --mc-p-dark-line-strong: rgba(205, 214, 244, 0.24);
+  --mc-p-dark-accent: #89b4fa;
+  --mc-p-dark-accent-strong: #b4befe;
+  --mc-p-dark-accent-soft: rgba(137, 180, 250, 0.14);
+  --mc-p-dark-accent-glow: rgba(137, 180, 250, 0.2);
+  --mc-p-dark-accent-line: rgba(137, 180, 250, 0.5);
+  --mc-p-dark-accent-cyan: #94e2d5;
+  --mc-p-dark-on-accent: #ffffff;
+  --mc-p-dark-user-surface: rgba(137, 180, 250, 0.13);
+  --mc-p-dark-user-line: rgba(137, 180, 250, 0.3);
+  --mc-p-dark-gradient-glow: rgba(137, 180, 250, 0.14);
+  --mc-p-dark-warning: #f9e2af;
+  --mc-p-dark-warning-soft: rgba(249, 226, 175, 0.12);
+  --mc-p-dark-danger: #f38ba8;
+  --mc-p-dark-danger-soft: rgba(243, 139, 168, 0.12);
+  --mc-p-dark-success: #a6e3a1;
+  --mc-p-dark-success-soft: rgba(166, 227, 161, 0.12);
+  --mc-p-dark-info: #6aa5f8;
+  --mc-p-dark-info-soft: rgba(106, 165, 248, 0.12);
+  --mc-p-dark-ai: #89b4fa;
+  --mc-p-dark-ai-soft: rgba(137, 180, 250, 0.13);
+  --mc-p-dark-scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --mc-p-dark-scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+
+  /* Component layer */
+  --mc-c-composer-bg: var(--mc-surface);
+  --mc-c-composer-border: var(--mc-line);
+  --mc-c-page-pad: 30px;
+  --mc-c-section-gap: 18px;
+}
+
+html[data-skin='graphite'] {
+  /* light accent family */
+  --mc-p-accent: #4b5563;
+  --mc-p-accent-strong: #374151;
+  --mc-p-accent-soft: #eef0f3;
+  --mc-p-accent-glow: rgba(75, 85, 99, 0.12);
+  --mc-p-accent-line: rgba(75, 85, 99, 0.38);
+  --mc-p-accent-cyan: #4b6b6b;
+  --mc-p-user-surface: #eef0f3;
+  --mc-p-user-line: #d9dee5;
+  --mc-p-gradient-glow: rgba(75, 85, 99, 0.1);
+  --mc-p-ai: #4b5563;
+  --mc-p-ai-soft: #eef0f3;
+  /* dark accent family */
+  --mc-p-dark-accent: #bac2de;
+  --mc-p-dark-accent-strong: #cdd6f4;
+  --mc-p-dark-accent-soft: rgba(186, 194, 222, 0.14);
+  --mc-p-dark-accent-glow: rgba(186, 194, 222, 0.2);
+  --mc-p-dark-accent-line: rgba(186, 194, 222, 0.5);
+  --mc-p-dark-accent-cyan: #94e2d5;
+  --mc-p-dark-user-surface: rgba(186, 194, 222, 0.13);
+  --mc-p-dark-user-line: rgba(186, 194, 222, 0.3);
+  --mc-p-dark-gradient-glow: rgba(186, 194, 222, 0.14);
+  --mc-p-dark-ai: #bac2de;
+  --mc-p-dark-ai-soft: rgba(186, 194, 222, 0.13);
+}
+
+html[data-skin='teal'] {
+  /* light accent family */
+  --mc-p-accent: #0d9488;
+  --mc-p-accent-strong: #0f766e;
+  --mc-p-accent-soft: #e6f5f2;
+  --mc-p-accent-glow: rgba(13, 148, 136, 0.12);
+  --mc-p-accent-line: rgba(13, 148, 136, 0.38);
+  --mc-p-accent-cyan: #0f766e;
+  --mc-p-user-surface: #e6f5f2;
+  --mc-p-user-line: #c7e6e0;
+  --mc-p-gradient-glow: rgba(13, 148, 136, 0.1);
+  --mc-p-ai: #0d9488;
+  --mc-p-ai-soft: #e6f5f2;
+  /* dark accent family */
+  --mc-p-dark-accent: #5eead4;
+  --mc-p-dark-accent-strong: #99f6e4;
+  --mc-p-dark-accent-soft: rgba(94, 234, 212, 0.14);
+  --mc-p-dark-accent-glow: rgba(94, 234, 212, 0.2);
+  --mc-p-dark-accent-line: rgba(94, 234, 212, 0.5);
+  --mc-p-dark-accent-cyan: #94e2d5;
+  --mc-p-dark-user-surface: rgba(94, 234, 212, 0.13);
+  --mc-p-dark-user-line: rgba(94, 234, 212, 0.3);
+  --mc-p-dark-gradient-glow: rgba(94, 234, 212, 0.14);
+  --mc-p-dark-ai: #5eead4;
+  --mc-p-dark-ai-soft: rgba(94, 234, 212, 0.13);
+}
+
+/* Density is orthogonal to theme and skin. */
+html[data-density='compact'] {
+  --mc-space-1: 3px;
+  --mc-space-2: 6px;
+  --mc-space-3: 9px;
+  --mc-space-4: 12px;
+  --mc-space-5: 16px;
+  --mc-space-6: 18px;
+  --mc-space-8: 24px;
+  --mc-radius-lg: 8px;
+  --mc-radius-xl: 10px;
+  --mc-radius-2xl: 12px;
+  --mc-sidebar-width: 216px;
+  --mc-topbar-height: 46px;
+  --mc-c-page-pad: 18px;
+  --mc-c-section-gap: 12px;
+}

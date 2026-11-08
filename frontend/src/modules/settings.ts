@@ -11,6 +11,10 @@ import {
   saveParams,
   getTheme,
   setTheme,
+  getSkin,
+  setSkin,
+  getDensity,
+  setDensity,
 } from '../core/index';
 import { GeneralSettings, ProviderSettings, SkillSettings, ToolSettings } from '../components/CoreSettings';
 import {
@@ -171,6 +175,8 @@ function renderSettings(rawTab = 'general', keepScroll = false) {
     mountExtensionSettings(GeneralSettings, {
       params: state.params,
       theme: getTheme(),
+      skin: getSkin(),
+      density: getDensity(),
       token: getServerToken(),
       onSaveParams: (params: any) => {
         state.params = params;
@@ -180,6 +186,14 @@ function renderSettings(rawTab = 'general', keepScroll = false) {
       onTheme: (theme: string) => {
         setTheme(theme as any);
         toast('主题已切换');
+      },
+      onSkin: (skin: string) => {
+        setSkin(skin as any);
+        toast('强调色已切换');
+      },
+      onDensity: (density: string) => {
+        setDensity(density as any);
+        toast('界面密度已切换');
       },
       onSaveToken: (value: string) => {
         setServerToken(value);

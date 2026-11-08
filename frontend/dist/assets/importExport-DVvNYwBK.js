@@ -1,0 +1,69 @@
+import{E as e,O as t,T as n,b as r,f as i}from"./index-OvEKy9IY.js";function a(){return`
+    <div class="import-bar">
+      <span class="import-bar-label">运行配置备份</span>
+      <button class="mini-btn" id="importFile">导入配置 JSON</button>
+      <input type="file" id="importFileInput" accept=".json,application/json" style="display:none" />
+    </div>`}async function o(e,t){try{let a=await i(`/api/import`,{method:`POST`,body:JSON.stringify(e)});return await loadAgents(),renderSettings(r.currentTab||`agents`,!0),renderTopbar(),n(`已导入 ${a.agents} 个运行配置（来源：${t}）`),a}catch(e){throw n(e.message,`error`),e}}function s(e){if(Array.isArray(e))return{agents:e};if(e&&e.agents)return{agents:e.agents};if(e&&typeof e==`object`&&e.id)return{agents:[e]};throw Error(`文件不是 Agent JSON 备份`)}function c(){let t=e(`#settingsBody`),r=t.querySelector(`#importFile`),i=t.querySelector(`#importFileInput`);r&&i&&(r.onclick=()=>i.click(),i.onchange=async()=>{let e=i.files&&i.files[0];if(e){try{let t=await e.text();await o(s(JSON.parse(t)),`文件 `+e.name)}catch(e){n(`解析失败：`+e.message,`error`)}i.value=``}})}function l(e,t){let r=new Blob([JSON.stringify(e,null,2)],{type:`application/json`}),i=document.createElement(`a`);i.href=URL.createObjectURL(r),i.download=(e.id||t)+`.json`,document.body.appendChild(i),i.click(),i.remove(),setTimeout(()=>URL.revokeObjectURL(i.href),1e3),n(`已导出：`+(e.name||e.id))}function u(a){let o=!!a,s=o?r.agents.find(e=>e.id===a):null;showModal({title:o?`编辑运行配置`:`新建运行配置`,body:`<form id="agentForm">
+      <div class="field"><label>名称</label><input name="name" value="${s?t(s.name):``}" placeholder="中英翻译" required /></div>
+      <div class="field"><label>描述</label><input name="description" value="${s?t(s.description||``):``}" placeholder="一句话说明这套配置适合什么任务" /></div>
+      <div class="field"><label>系统提示词 <button type="button" class="btn-ghost tpl-save" id="savePromptTpl" style="float:right;font-size:11px;">存为模板</button></label>
+        <select id="promptTplPick" class="form-control" style="margin-bottom:6px;"><option value="">从模板填充…</option></select>
+        <textarea name="systemPrompt" rows="4" placeholder="你是一个...">${s?t(s.systemPrompt||``):``}</textarea></div>
+      <div class="field"><label>单次最大执行轮数</label><input name="maxIterations" type="number" min="1" max="30" step="1" value="${t(s?.maxIterations||12)}" /><div class="pmeta">达到上限后保存检查点，可在对话中继续运行。</div></div>
+      <div class="field"><label>Agent Skills（先提供描述，匹配任务时再加载完整工作流）</label>
+        <div class="extension-checks">
+          ${r.skills.map(e=>{let n=e.key||e.id,r=s&&(s.skillRefs||s.skillIds)||[],i=r.includes(n)||r.includes(e.id)?`checked`:``;return`<label>
+              <input type="checkbox" name="skill" value="${t(n)}" ${i} /> ${t(e.name)} <span class="pmeta">${t(sourceLabel(e.source))}${e.enabled?``:` · 已停用`}</span>
+            </label>`}).join(``)||`<span class="pmeta">没有已启用的 Skill</span>`}
+        </div>
+      </div>
+      <div class="field"><label>内置工具（函数调用）</label>
+        <div class="extension-checks">
+          ${(r.tools||[]).map(e=>{let n=s&&(s.toolIds||[]).includes(e.id)?`checked`:``;return`<label><input type="checkbox" name="tool" value="${t(e.id)}" ${n} /> ${t(e.name)}${e.enabled?``:`（已停用）`}</label>`}).join(``)||`<span class="pmeta">没有已启用的内置工具</span>`}
+        </div>
+      </div>
+      <div class="field"><label>MCP servers（工具由 tools/list 实时发现）</label>
+        <div class="extension-checks">
+          ${(r.mcpServers||[]).filter(e=>(e.targets||[`multichat`]).includes(`multichat`)).map(e=>{let n=s&&(s.mcpServerIds||[]).includes(e.id)?`checked`:``;return`<label><input type="checkbox" name="mcpServer" value="${t(e.id)}" ${n} /> ${t(e.name)} <span class="pmeta">${(e.tools||[]).length} tools${e.enabled?``:` · 已停用`}</span></label>`}).join(``)||`<span class="pmeta">没有已启用的 MCP server</span>`}
+        </div>
+      </div>
+      <div id="agentErr" class="auth-error"></div>
+      <div class="row">
+        <button type="button" class="btn-ghost" id="agentCancel">取消</button>
+        <button type="submit" class="btn-primary btn-auto">${o?`保存`:`创建`}</button>
+      </div>
+    </form>`,onMount:t=>{e(`#agentCancel`,t).onclick=closeModal;let c=e(`#promptTplPick`,t),l=t.querySelector(`[name="systemPrompt"]`);(async()=>{try{let e=await i(`/api/prompt-templates`);for(let t of e){let e=document.createElement(`option`);e.value=t.id,e.textContent=t.name,c.appendChild(e)}}catch{}})(),c.onchange=async()=>{if(!c.value)return;let e=(await i(`/api/prompt-templates`)).find(e=>e.id===c.value);e&&(l.value=e.content)},e(`#savePromptTpl`,t).onclick=async()=>{let e=l.value.trim();if(!e){n(`提示词为空，无法存为模板`,`error`);return}let t=await showPrompt({title:`保存为提示词模板`,label:`模板名称`,placeholder:`例如：代码审查员`,maxLength:80});if(t)try{await i(`/api/prompt-templates`,{method:`POST`,body:JSON.stringify({name:t,content:e})});let r=document.createElement(`option`);r.value=(await i(`/api/prompt-templates`)).find(e=>e.name===t)?.id||``,r.textContent=t,r.selected=!0,c.appendChild(r),n(`已保存模板：`+t)}catch(e){n(e.message,`error`)}},e(`#agentForm`,t).onsubmit=async c=>{c.preventDefault();let l=new FormData(c.target),u=Object.fromEntries(l.entries());u.name&&=u.name.trim(),u.description&&=u.description.trim(),u.maxIterations=Math.max(1,Math.min(30,Number.parseInt(u.maxIterations||`12`,10)||12));let d=new Set(r.skills.flatMap(e=>[e.key||e.id,e.id])),f=new Set((r.tools||[]).map(e=>e.id)),p=new Set((r.mcpServers||[]).filter(e=>(e.targets||[`multichat`]).includes(`multichat`)).map(e=>e.id)),m=o?(s?.skillRefs||s?.skillIds||[]).filter(e=>!d.has(e)):[],h=o?(s?.toolIds||[]).filter(e=>!f.has(e)):[],g=o?(s?.mcpServerIds||[]).filter(e=>!p.has(e)):[];u.skillRefs=[...Array.from(c.target.querySelectorAll(`input[name="skill"]:checked`)).map(e=>e.value),...m],u.toolIds=[...Array.from(c.target.querySelectorAll(`input[name="tool"]:checked`)).map(e=>e.value),...h],u.mcpServerIds=[...Array.from(c.target.querySelectorAll(`input[name="mcpServer"]:checked`)).map(e=>e.value),...g];try{o?(await i(`/api/agents/`+a,{method:`PUT`,body:JSON.stringify(u)}),n(`已保存`)):(await i(`/api/agents`,{method:`POST`,body:JSON.stringify(u)}),n(`已创建`)),await loadAgents(),renderSettings(r.currentTab||`agents`,!0),renderTopbar(),closeModal()}catch(n){e(`#agentErr`,t).textContent=n.message}}}})}function d(a){let o=!!a,s=o?r.skills.find(e=>(e.key||e.id)===a):null;showModal({title:o?`编辑 Agent Skill`:`新建 Agent Skill`,body:`<form id="skillForm">
+      <div class="field"><label>Skill ID</label><input name="id" value="${s?t(s.id):``}" placeholder="release-notes" required pattern="[a-z0-9-]+" ${o?`readonly`:``} />
+        <div class="pmeta">1–64 位小写字母、数字或连字符；写入 SKILL.md frontmatter。</div></div>
+      <div class="field"><label>Skill name</label><input name="name" value="${s?t(s.name):``}" placeholder="release-notes" required pattern="[a-z0-9-]+" ${o?`readonly`:``} /></div>
+      <div class="field"><label>Description</label><textarea name="description" rows="3" placeholder="说明何时应使用此 Skill，以及它能完成什么。" required>${s?t(s.description||``):``}</textarea></div>
+      <div class="field"><label>Instructions（SKILL.md 正文）</label><textarea name="instructions" rows="9" placeholder="# Workflow&#10;&#10;1. ..." required>${s?t(s.instructions||``):``}</textarea>
+        <div class="pmeta">需要脚本、参考资料或模板时，可在对应 Skill 目录添加 scripts、references、assets。</div></div>
+      <div id="skillErr" class="auth-error"></div>
+      <div class="row">
+        <button type="button" class="btn-ghost" id="skillCancel">取消</button>
+        <button type="submit" class="btn-primary btn-auto">${o?`保存`:`创建`}</button>
+      </div>
+    </form>`,onMount:t=>{e(`#skillCancel`,t).onclick=closeModal,e(`#skillForm`,t).onsubmit=async s=>{s.preventDefault();let c=new FormData(s.target),l=Object.fromEntries(c.entries());l.id&&=l.id.trim(),l.name&&=l.name.trim(),l.description&&=l.description.trim(),l.instructions&&=l.instructions.trim();try{if(o){let e={...l};delete e.id,await i(`/api/skills/`+encodeURIComponent(a),{method:`PUT`,body:JSON.stringify(e)}),n(`已保存`)}else await i(`/api/skills`,{method:`POST`,body:JSON.stringify(l)}),n(`已创建`);await loadSkills(),renderSettings(r.currentTab||`skills`,!0),closeModal()}catch(n){e(`#skillErr`,t).textContent=n.message}}}})}var f=[{id:`mock`,name:`本地体验（无需密钥）`,apiType:`openai`,baseUrl:`http://127.0.0.1:3099`,models:[`echo`],allowPrivate:!0},{id:`openai`,name:`OpenAI`,apiType:`openai`,baseUrl:`https://api.openai.com/v1`,models:[`gpt-4o`,`gpt-4o-mini`,`gpt-4-turbo`]},{id:`deepseek`,name:`DeepSeek`,apiType:`openai`,baseUrl:`https://api.deepseek.com/v1`,models:[`deepseek-chat`,`deepseek-reasoner`]},{id:`anthropic`,name:`Anthropic`,apiType:`anthropic`,baseUrl:`https://api.anthropic.com/v1`,models:[`claude-3-5-sonnet-latest`,`claude-3-opus-latest`,`claude-3-haiku-latest`]},{id:`gemini`,name:`Google Gemini`,apiType:`openai`,baseUrl:`https://generativelanguage.googleapis.com/v1beta/openai`,models:[`gemini-1.5-pro`,`gemini-1.5-flash`,`gemini-2.0-flash`]},{id:`moonshot`,name:`月之暗面 Kimi`,apiType:`openai`,baseUrl:`https://api.moonshot.cn/v1`,models:[`moonshot-v1-8k`,`moonshot-v1-32k`,`moonshot-v1-128k`]},{id:`zhipu`,name:`智谱 GLM`,apiType:`zhipu`,baseUrl:`https://open.bigmodel.cn/api/paas/v4`,models:[`glm-4-plus`,`glm-4`,`glm-4-air`]},{id:`dashscope`,name:`阿里云 DashScope`,apiType:`openai`,baseUrl:`https://dashscope.aliyuncs.com/compatible-mode/v1`,models:[`qwen-max`,`qwen-plus`,`qwen-turbo`]},{id:`ollama`,name:`Ollama (本地)`,apiType:`ollama`,baseUrl:`http://localhost:11434/v1`,models:[]},{id:`lmstudio`,name:`LM Studio (本地)`,apiType:`lmstudio`,baseUrl:`http://localhost:1234/v1`,models:[]},{id:`siliconflow`,name:`硅基流动 SiliconFlow (注册送额度)`,apiType:`openai`,baseUrl:`https://api.siliconflow.cn/v1`,models:[`Qwen/Qwen2.5-72B-Instruct`,`deepseek-ai/DeepSeek-V3`,`Qwen/Qwen2.5-7B-Instruct`]}];function p(){showModal({title:`添加提供方`,body:`<div class="provider-template-grid">
+      ${f.map(e=>`<button class="add-tile" data-id="${e.id}"><div class="tpl-name">${e.name}</div><div class="tpl-meta">${e.apiType} · ${e.baseUrl}</div></button>`).join(``)}
+    </div>`,onMount:e=>{e.querySelectorAll(`[data-id]`).forEach(e=>e.onclick=async()=>{let t=f.find(t=>t.id===e.dataset.id);try{await i(`/api/providers`,{method:`POST`,body:JSON.stringify(t)}),await loadProviders(),renderSettings(`providers`,!0),closeModal(),n(`已添加：`+t.name)}catch(e){n(e.message,`error`)}})}})}function m(){showModal({title:`自定义提供方`,body:`<form id="customForm">
+      <div class="field"><label>Provider ID（留空自动生成）</label><input name="id" placeholder="留空自动生成，例如 acme-gateway" />
+        <div class="field-hint">小写字母、数字、下划线或连字符，唯一标识该提供方；不确定就留空。</div></div>
+      <div class="field"><label>模型列表</label><textarea name="models" rows="2" placeholder="deepseek-chat, deepseek-reasoner"></textarea>
+        <div class="field-hint">逗号或换行分隔；如不确定可留空，稍后在模型卡片中补充。</div></div>
+      <div class="field"><label>显示名称</label><input name="name" placeholder="显示名称" /></div>
+      <div class="field"><label>API 地址</label><input name="baseUrl" placeholder="https://gateway.example/v1" required /></div>
+      <div class="field"><label>API 协议</label><select name="apiType">
+        <option value="openai">openai-completions</option>
+        <option value="anthropic">anthropic-messages</option>
+        <option value="ollama">ollama</option>
+        <option value="lmstudio">lmstudio</option>
+      </select></div>
+      <div class="field"><label>API 密钥</label><input name="apiKey" type="password" placeholder="输入 API 密钥" /></div>
+      <label class="provider-private"><input name="allowPrivate" type="checkbox" /> 允许该提供方访问本机或内网地址（仅本地网关需要）</label>
+      <div id="customErr" class="auth-error"></div>
+      <div class="row">
+        <button type="button" class="btn-ghost" id="customCancel">取消</button>
+        <button type="submit" class="btn-primary btn-auto">保存</button>
+      </div>
+    </form>`,onMount:t=>{e(`#customCancel`,t).onclick=closeModal,e(`#customForm`,t).onsubmit=async r=>{r.preventDefault();let a=new FormData(r.target),o=Object.fromEntries(a.entries());o.models=(o.models||``).toString().split(/[,\n]/).map(e=>e.trim()).filter(Boolean),o.allowPrivate=a.get(`allowPrivate`)===`on`,o.id&&=o.id.trim(),o.name&&=o.name.trim();try{await i(`/api/providers`,{method:`POST`,body:JSON.stringify(o)}),await loadProviders(),renderSettings(`providers`,!0),closeModal(),n(`已添加`)}catch(n){e(`#customErr`,t).textContent=n.message}}}})}export{f as BUILTIN_PROVIDERS,o as doImport,l as exportEntity,a as importBarHTML,s as normalizeImport,p as showAddBuiltin,m as showAddCustom,u as showAgentModal,d as showSkillModal,c as wireImportBar};
