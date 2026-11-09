@@ -1,7 +1,7 @@
 {
   "name": "multichat-frontend",
   "private": true,
-  "version": "1.7.0",
+  "version": "1.8.0",
   "type": "module",
   "engines": {
     "node": ">=22.13.0"
@@ -29,6 +29,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@types/react": "^19.1.11",
@@ -42,7 +43,7 @@
     "stylelint": "^16.23.1",
     "typescript": "^5.6.3",
     "vite": "^8.2.2",
-    "vitest": "^3.2.4",
+    "vitest": "^4.1.12",
     "vitest-axe": "^0.1.0"
   }
 }
