@@ -1,0 +1,57 @@
+name: Desktop check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop-check.yml'
+  pull_request:
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop-check.yml'
+  workflow_dispatch:
+
+jobs:
+  cargo-check:
+    name: Tauri v2 cargo check (ubuntu-latest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Show Rust toolchain
+        run: |
+          rustup default stable
+          rustc --version
+          cargo --version
+
+      - uses: actions/cache@v7
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            desktop/src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('desktop/src-tauri/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # 桌面壳复用仓库内已跟踪的 frontend/dist，不需要在这里重新构建前端。
+      # 只做 cargo check：验证 Rust 源码、Tauri 配置、图标与 capabilities 能一起通过编译，
+      # 不产出安装包（打包需要额外平台签名与 sidecar，见 desktop/README.md）。
+      - name: cargo check
+        working-directory: desktop/src-tauri
+        run: cargo check
