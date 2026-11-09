@@ -32,6 +32,7 @@ import {
   X,
 } from 'lucide-react';
 import { BrandMark } from '../components/BrandMark';
+import { OverlayLayer } from '../components/OverlayLayer';
 import { WorkspaceContent } from '../components/WorkspaceContent';
 import { WorkspaceRail } from '../components/WorkspaceRail';
 import { openWorkflowRail, setWorkflowRailOpen, syncWorkflowRailLayout } from '../components/workflowRailDom';
@@ -506,6 +507,7 @@ export function AppShell() {
           <div className="command-list" id="commandList" />
         </div>
       </div>
+      <OverlayLayer />
     </>
   );
 }

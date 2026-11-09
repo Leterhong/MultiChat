@@ -1,6 +1,24 @@
-import { $, $$, esc, getTheme, setTheme, state } from '../core/index';
+import { createElement, type ReactElement } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { $, $$, getTheme, setTheme, state } from '../core/index';
 import { openWorkflowRail } from '../components/workflowRailDom';
+import { CommandList, InspectorBody } from '../components/workbenchPanels';
 import { setTaskMode } from '../store/appStore';
+
+// 把 React 面板渲染进遗留容器（参照 pluginsUI.ts 的 mountExtensionSettings 写法）。
+// WeakMap 以 DOM 节点为键，容器被替换时自然重建 root；渲染后的交互改由面板内的
+// React onClick 处理，setupWorkbench 只保留挂在容器本身（不随重渲染消失）的监听。
+const overlayRoots = new WeakMap<HTMLElement, Root>();
+function mountOverlayPanel(containerId: string, element: ReactElement) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  let root = overlayRoots.get(container);
+  if (!root) {
+    root = createRoot(container);
+    overlayRoots.set(container, root);
+  }
+  root.render(element);
+}
 
 type Command = {
   id: string;
@@ -94,48 +112,42 @@ function renderInspector() {
   const mcp = capabilityCount(agent, 'mcpServerIds', 'mcpServerIds');
   const readiness = Math.round((checks.filter((item) => item.ok).length / checks.length) * 100);
 
-  body.innerHTML = `
-    <section class="inspector-status ${ready ? 'ready' : 'needs-attention'}">
-      <div class="inspector-score"><strong>${readiness}</strong><span>%</span></div>
-      <div><strong>${ready ? '可以开始运行' : '需要完成配置'}</strong><span>${ready ? '必要条件已经就绪' : '补齐下面的配置项后再运行'}</span></div>
-    </section>
-    <section class="inspector-section">
-      <div class="inspector-section-head"><strong>会话配置</strong><button type="button" data-inspector-settings="agents">编辑</button></div>
-      <dl class="inspector-facts">
-        <div><dt>模型</dt><dd>${esc(state.selectedModel || '未选择')}</dd></div>
-        <div><dt>运行配置</dt><dd>${esc(agent?.name || '直接对话')}</dd></div>
-        <div><dt>项目</dt><dd>${esc(state.selectedProject?.id === 'pr_inbox' ? '临时对话' : state.selectedProject?.name || '未选择')}</dd></div>
-      </dl>
-    </section>
-    <section class="inspector-section">
-      <div class="inspector-section-head"><strong>上下文装配</strong><button type="button" data-inspector-settings="workspace">管理</button></div>
-      <div class="inspector-metrics">
-        <div><strong>${selectedFiles}</strong><span>文件</span></div>
-        <div><strong>${enabledMemories}</strong><span>记忆</span></div>
-        <div><strong>${skills}</strong><span>Skills</span></div>
-        <div><strong>${tools + mcp}</strong><span>工具</span></div>
-      </div>
-      <div class="context-budget"><div><span>文件上下文估算</span><strong>${estimatedContextTokens.toLocaleString('zh-CN')} Token</strong></div><div class="context-budget-track"><span style="width:${Math.min(100, estimatedContextTokens / 320)}%"></span></div><small>仅估算已选文件；模型系统提示和对话历史未计入。</small></div>
-      ${agent ? `<p class="inspector-note">${skills} Skills · ${tools} 内置工具 · ${mcp} MCP 服务</p>` : '<p class="inspector-note">直接对话不会注入工具或运行配置提示词。</p>'}
-    </section>
-    <section class="inspector-section">
-      <div class="inspector-section-head"><strong>运行前检查</strong><button type="button" data-inspector-settings="capabilities">能力清单</button></div>
-      <div class="inspector-checks">
-        ${checks.map((item) => `<button type="button" data-inspector-settings="${item.tab}" class="inspector-check ${item.ok ? 'ok' : 'warn'}"><span aria-hidden="true">${item.ok ? '✓' : '!'}</span><div><strong>${esc(item.label)}</strong><small>${esc(item.detail)}</small></div></button>`).join('')}
-      </div>
-    </section>
-    <section class="inspector-section">
-      <div class="inspector-section-head"><strong>最近运行</strong><button type="button" data-inspector-settings="runs">查看日志</button></div>
-      ${latest ? `<div class="inspector-run"><div><span class="run-state ${esc(latest.status)}">${esc(statusText(latest.status))}</span><strong>${esc(latest.agentName || latest.agentId || '直接对话')}</strong></div><dl><div><dt>步骤</dt><dd>${esc(latest.steps || 0)}</dd></div><div><dt>工具调用</dt><dd>${esc(latest.toolCalls || 0)}</dd></div><div><dt>Token</dt><dd>${esc(runUsage(latest).toLocaleString('zh-CN'))}</dd></div></dl></div>` : '<div class="inspector-empty">完成一次运行后，这里会显示步骤、工具调用和 Token。</div>'}
-    </section>
-  `;
+  const view = {
+    ready,
+    readiness,
+    selectedModel: state.selectedModel || '未选择',
+    agentName: agent?.name || '直接对话',
+    projectName: state.selectedProject?.id === 'pr_inbox' ? '临时对话' : state.selectedProject?.name || '未选择',
+    selectedFiles,
+    enabledMemories,
+    skills,
+    tools,
+    mcp,
+    estimatedLabel: estimatedContextTokens.toLocaleString('zh-CN'),
+    budgetWidth: Math.min(100, estimatedContextTokens / 320),
+    agentNote: agent
+      ? `${skills} Skills · ${tools} 内置工具 · ${mcp} MCP 服务`
+      : '直接对话不会注入工具或运行配置提示词。',
+    checks: checks.map((item) => ({ label: item.label, ok: item.ok, detail: item.detail, tab: item.tab })),
+    latest: latest
+      ? {
+          statusClass: latest.status,
+          statusLabel: statusText(latest.status),
+          name: latest.agentName || latest.agentId || '直接对话',
+          steps: latest.steps || 0,
+          toolCalls: latest.toolCalls || 0,
+          tokens: runUsage(latest).toLocaleString('zh-CN'),
+        }
+      : null,
+  };
 
-  $$('[data-inspector-settings]', body).forEach((button: HTMLButtonElement) => {
-    button.onclick = () => {
+  mountOverlayPanel('inspectorBody', createElement(InspectorBody, {
+    view,
+    onSettings: (tab: string) => {
       closeInspector();
-      openSettings(button.dataset.inspectorSettings || 'general');
-    };
-  });
+      openSettings(tab);
+    },
+  }));
 }
 
 function openInspector() {
@@ -315,25 +327,21 @@ function renderCommands(query = '') {
   const filtered = commands().filter((item) =>
     `${item.label} ${item.description} ${item.group}`.toLowerCase().includes(needle)
   );
-  list.innerHTML = filtered.length
-    ? filtered
-        .map(
-          (item) => `
-    <button class="command-item" type="button" data-command="${item.id}">
-      <span class="command-item-group">${esc(item.group)}</span>
-      <span class="command-item-copy"><strong>${esc(item.label)}</strong><small>${esc(item.description)}</small></span>
-      ${item.shortcut ? `<kbd>${esc(item.shortcut)}</kbd>` : '<span class="command-arrow" aria-hidden="true">›</span>'}
-    </button>`
-        )
-        .join('')
-    : '<div class="command-empty">没有匹配的操作</div>';
-  $$('[data-command]', list).forEach((button: HTMLButtonElement) => {
-    button.onclick = () => {
-      const command = commands().find((item) => item.id === button.dataset.command);
+  const items = filtered.map((item) => ({
+    id: item.id,
+    label: item.label,
+    description: item.description,
+    group: item.group,
+    shortcut: item.shortcut,
+  }));
+  mountOverlayPanel('commandList', createElement(CommandList, {
+    items,
+    onRun: (id: string) => {
+      const command = commands().find((item) => item.id === id);
       closeCommandPalette(false);
       command?.run();
-    };
-  });
+    },
+  }));
 }
 
 function openCommandPalette() {
@@ -451,6 +459,7 @@ export {
   closeInspector,
   openCommandPalette,
   openInspector,
+  renderCommands,
   renderInspector,
   setupWorkbench,
   toggleInspector,

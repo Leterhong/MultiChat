@@ -114,9 +114,9 @@ function HomeWorkspace() {
       </button>
       <section className="home-hero" aria-labelledby="homeHeroTitle">
         <Mascot size={48} className="home-mascot" />
-        <h1 id="homeHeroTitle" className="hero-display">
+        <p id="homeHeroTitle" className="hero-display">
           Hi，我是 MultiChat。
-        </h1>
+        </p>
         <p className="hero-sub">所有模型并行思考 · 本地运行，数据不出设备。</p>
         <div className="hero-cta-row">
           <button type="button" className="hero-cta-primary" onClick={enterComposer}>
@@ -149,7 +149,7 @@ function HomeWorkspace() {
               {workspaceName} / {projectName}
             </button>
           </div>
-          <h2 id="homeTaskTitle">开始一个新任务</h2>
+          <h1 id="homeTaskTitle" className="home-task-title">开始一个新任务</h1>
         </header>
 
         <div className="home-main-grid">

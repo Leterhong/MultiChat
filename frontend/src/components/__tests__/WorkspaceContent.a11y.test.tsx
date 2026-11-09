@@ -31,6 +31,13 @@ describe('WorkspaceContent accessibility', () => {
     expect(await axe(container, { rules: { 'color-contrast': { enabled: false } } })).toHaveNoViolations();
   });
 
+  it('makes the task title the primary heading and demotes the brand greeting', () => {
+    render(<WorkspaceContent />);
+    expect(screen.getByRole('heading', { level: 1, name: '开始一个新任务' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Hi，我是 MultiChat/ })).not.toBeInTheDocument();
+    expect(document.getElementById('homeHeroTitle')).toHaveTextContent('Hi，我是 MultiChat。');
+  });
+
   it('turns an empty conversation into an inline task start surface', () => {
     state.currentConvId = 'empty-task';
     state.conversations = [{ id: 'empty-task', title: '整理当前项目' }] as any[];

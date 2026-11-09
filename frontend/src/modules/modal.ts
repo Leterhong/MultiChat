@@ -1,96 +1,39 @@
-import { $, esc } from '../core/index';
+import { openOverlay, closeOverlay } from '../core/overlay';
 
 /* --------------------------- Modal --------------------------- */
-let returnFocus: HTMLElement | null = null;
-let cleanupTimer: number | undefined;
-let closeCallback: (() => void) | null = null;
+// React 渲染层收敛：弹窗内容由 OverlayLayer（createPortal）+ OVERLAY_PANELS 负责渲染，
+// Esc / Tab trap / 背景点击 / 焦点 / inert 也全部迁到 OverlayLayer 的 effect。
+// 本模块只保留四个同名 API，作为旧模块全局裸名调用（main.tsx 的 Object.assign）
+// 的薄适配层，彻底删除 innerHTML 写入与模块级事件监听。
 
-const MODAL_FOCUSABLE = 'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [href], [tabindex="0"]';
-
-function focusWithoutScroll(target: HTMLElement | null) {
-  if (!target) return;
-  try { target.focus({ preventScroll: true }); }
-  catch { target.focus(); }
+function showModal(spec) {
+  openOverlay(spec);
 }
 
-function showModal({ title, body, onMount, onClose = null }) {
-  const modal = $('#modal') as HTMLDivElement;
-  const card = $('#modalCard') as HTMLDivElement;
-  const app = $('#app') as HTMLDivElement;
-  const settings = $('#settings') as HTMLDivElement;
-  const headingId = `modalTitle-${Date.now()}`;
-  if (cleanupTimer !== undefined) {
-    window.clearTimeout(cleanupTimer);
-    cleanupTimer = undefined;
-  }
-  returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  closeCallback = typeof onClose === 'function' ? onClose : null;
-  card.className = 'modal-card';
-  card.innerHTML = `<div class="modal-heading"><h3 id="${headingId}">${esc(title || '')}</h3><button type="button" class="modal-close" aria-label="关闭弹窗" title="关闭">✕</button></div>${body || ''}`;
-  modal.setAttribute('aria-labelledby', headingId);
-  modal.setAttribute('aria-hidden', 'false');
-  modal.inert = false;
-  modal.classList.add('open');
-  const closeButton = card.querySelector<HTMLButtonElement>('.modal-close');
-  if (closeButton) closeButton.onclick = closeModal;
-  if (onMount) onMount(card);
-  const first = Array.from(card.querySelectorAll<HTMLElement>(MODAL_FOCUSABLE))
-    .find(element => !element.classList.contains('modal-close'));
-  focusWithoutScroll(first || card);
-
-  // Focus must leave the underlying surface before it becomes inert.
-  app.inert = true;
-  settings.inert = true;
-}
+// 全局裸名 closeModal 仍可用，且经 closeOverlay 触发 onClose 回调。
 function closeModal() {
-  const modal = $('#modal') as HTMLDivElement;
-  const app = $('#app') as HTMLDivElement;
-  const settings = $('#settings') as HTMLDivElement;
-  if (!modal.classList.contains('open')) return;
-
-  const settingsOpen = settings.classList.contains('open');
-  const destination = settingsOpen ? settings : app;
-  app.inert = settingsOpen;
-  settings.inert = !settingsOpen;
-
-  const fallback = settingsOpen
-    ? ($('#settingsBody') as HTMLElement)
-    : ($('#settingsBtn') as HTMLElement);
-  const target = returnFocus?.isConnected && destination.contains(returnFocus)
-    ? returnFocus
-    : fallback;
-
-  // Move focus synchronously before aria-hidden/inert hide its current ancestor.
-  focusWithoutScroll(target);
-  if (modal.contains(document.activeElement)) focusWithoutScroll(fallback);
-
-  modal.classList.remove('open');
-  modal.inert = true;
-  modal.setAttribute('aria-hidden', 'true');
-  returnFocus = null;
-  const callback = closeCallback;
-  closeCallback = null;
-  callback?.();
-  cleanupTimer = window.setTimeout(() => {
-    if (!modal.classList.contains('open')) $('#modalCard').innerHTML = '';
-    cleanupTimer = undefined;
-  }, 160);
+  closeOverlay();
 }
+
 type ConfirmOptions = { title?: string; message: string; confirmLabel?: string; cancelLabel?: string; danger?: boolean };
 type PromptOptions = { title: string; message?: string; label?: string; value?: string; placeholder?: string; required?: boolean; maxLength?: number; multiline?: boolean; rows?: number; confirmLabel?: string };
 
-/* Promise 化的确认/输入对话框，替代原生 confirm() 与 prompt()，样式与系统弹窗一致。
+/* Promise 化的确认/输入对话框，替代原生 confirm() 与 prompt()。
+   面板改用 React 实现（component: 'confirm' | 'prompt'），不再拼 HTML 字符串。
    Esc、背景点击或取消都 resolve(false/null)；onClose 兜底保证 Promise 永不悬挂。 */
 function showConfirm({ title = '请确认', message, confirmLabel = '确认', cancelLabel = '取消', danger = false }: ConfirmOptions): Promise<boolean> {
   let settled = false;
   return new Promise((resolve) => {
     const finish = (value: boolean) => { if (!settled) { settled = true; resolve(value); } };
-    showModal({
+    openOverlay({
       title,
-      body: `<div class="confirm-message">${esc(message)}</div><div class="row"><button type="button" class="btn-ghost" id="dialogCancel">${esc(cancelLabel)}</button><button type="button" class="${danger ? 'btn-danger' : 'btn-primary'} btn-auto" id="dialogAccept">${esc(confirmLabel)}</button></div>`,
-      onMount: (card: HTMLElement) => {
-        $('#dialogCancel', card).onclick = () => { finish(false); closeModal(); };
-        $('#dialogAccept', card).onclick = () => { finish(true); closeModal(); };
+      component: 'confirm',
+      props: {
+        message,
+        confirmLabel,
+        cancelLabel,
+        danger,
+        onResult: (value: boolean) => { finish(value); closeModal(); },
       },
       onClose: () => finish(false),
     });
@@ -101,40 +44,25 @@ function showPrompt({ title, message = '', label = '名称', value = '', placeho
   let settled = false;
   return new Promise((resolve) => {
     const finish = (result: string | null) => { if (!settled) { settled = true; resolve(result); } };
-    const control = multiline
-      ? `<textarea name="value" rows="${rows}" placeholder="${esc(placeholder)}" ${maxLength ? `maxlength="${maxLength}"` : ''} autofocus>${esc(value)}</textarea>`
-      : `<input name="value" value="${esc(value)}" placeholder="${esc(placeholder)}" ${maxLength ? `maxlength="${maxLength}"` : ''} autofocus />`;
-    showModal({
+    openOverlay({
       title,
-      body: `${message ? `<p class="lead lead-tight">${esc(message)}</p>` : ''}
-        <form id="dialogPromptForm"><div class="field"><label>${esc(label)}</label>${control}</div><div class="row"><button type="button" class="btn-ghost" id="dialogCancel">取消</button><button class="btn-primary btn-auto" type="submit">${esc(confirmLabel)}</button></div></form>`,
-      onMount: (card: HTMLElement) => {
-        $('#dialogCancel', card).onclick = () => { finish(null); closeModal(); };
-        $('#dialogPromptForm', card).onsubmit = (event: SubmitEvent) => {
-          event.preventDefault();
-          const input = card.querySelector<HTMLInputElement | HTMLTextAreaElement>('[name="value"]');
-          const text = (input?.value ?? '').trim();
-          if (required && !text) return;
-          finish(text);
-          closeModal();
-        };
+      component: 'prompt',
+      props: {
+        title,
+        message,
+        label,
+        value,
+        placeholder,
+        required,
+        maxLength,
+        multiline,
+        rows,
+        confirmLabel,
+        onResult: (result: string | null) => { finish(result); closeModal(); },
       },
       onClose: () => finish(null),
     });
   });
 }
 
-$('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });document.addEventListener('keydown', event => {
-  const modal = $('#modal') as HTMLDivElement;
-  if (!modal.classList.contains('open')) return;
-  if (event.key === 'Escape') { event.preventDefault(); closeModal(); return; }
-  if (event.key !== 'Tab') return;
-  const card = $('#modalCard') as HTMLDivElement;
-  const focusable = Array.from(card.querySelectorAll<HTMLElement>(MODAL_FOCUSABLE));
-  if (!focusable.length) { event.preventDefault(); card.focus(); return; }
-  const first = focusable[0], last = focusable[focusable.length - 1];
-  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-});
-
-export { showModal,closeModal, showConfirm, showPrompt };
+export { showModal, closeModal, showConfirm, showPrompt };

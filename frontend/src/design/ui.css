@@ -5175,6 +5175,27 @@ textarea#heroInput,
   color: var(--mc-text);
 }
 
+/* ---------------- 27. 首页主次：任务标题为主，品牌问候退为引导语 ---------------- */
+
+/* 用更高优先级覆盖第 23/24/25 段的 DeepSeek 居中大标题与暗色兜底 */
+.home-workbench .home-hero .hero-display,
+:root[data-theme='dark'] .home-workbench .home-hero .hero-display {
+  margin-bottom: 8px;
+  color: var(--mc-text-subtle);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.home-workbench .home-task-entry .home-task-title {
+  margin: 0 0 18px;
+  color: var(--mc-text);
+  font-size: clamp(26px, 3.2vw, 38px);
+  font-weight: 680;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
 /* Active states: flat tinted rows */
 
 .primary-nav button.active {
