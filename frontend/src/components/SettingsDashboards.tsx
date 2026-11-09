@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bot, Download, Edit3, Plus, RefreshCw, Search, Trash2, Upload } from 'lucide-react';
 import { useBusinessStore } from '../store/appStore';
+import { ResourceActions, ResourceFacts, ResourceList, ResourceTags, type ResourceItem } from './ResourceList';
 
 export function compactNumber(value: unknown) {
   const number = Number(value || 0);
@@ -314,18 +315,67 @@ export function AgentSettings({ onEdit, onExport, onDelete, onImport }: AgentPro
   const agents = useBusinessStore((current) => current.agents);
   const selectedAgent = useBusinessStore((current) => current.selectedAgent);
   const fileRef = useRef<HTMLInputElement>(null);
+  const items: ResourceItem[] = agents.map((agent: any) => {
+    const skillIds: string[] = agent.skillRefs || agent.skillIds || [];
+    const toolIds: string[] = agent.toolIds || [];
+    const mcpIds: string[] = agent.mcpServerIds || [];
+    const current = selectedAgent?.id === agent.id;
+    return {
+      key: agent.id,
+      icon: <Bot size={18} aria-hidden />,
+      name: agent.name,
+      badges: current ? [{ label: '当前使用' }] : [],
+      description: agent.description || '尚未添加说明，可编辑智能体补充职责与适用任务。',
+      meta: agent.id,
+      haystack: [agent.id, ...skillIds, ...toolIds, ...mcpIds].filter(Boolean).join(' '),
+      statusValue: current ? 'current' : 'available',
+      detail: (
+        <>
+          <ResourceFacts facts={[
+            { label: '智能体 ID', value: agent.id },
+            { label: '状态', value: current ? '当前使用' : '可用' },
+            { label: '技能', value: `${skillIds.length} Skills` },
+            { label: '工具', value: `${toolIds.length} 工具 / ${mcpIds.length} MCP` },
+          ]} />
+          <div className="agent-capability-summary resource-detail-extra">
+            <span><strong>{skillIds.length}</strong> Skills</span>
+            <span><strong>{toolIds.length}</strong> 工具</span>
+            <span><strong>{mcpIds.length}</strong> MCP</span>
+          </div>
+          <ResourceTags tags={[
+            ...skillIds.slice(0, 3).map((label: string) => ({ label })),
+            ...(skillIds.length > 3 ? [{ label: `+${skillIds.length - 3}` }] : []),
+            ...(!skillIds.length ? [{ label: '尚未绑定 Skill' }] : []),
+            ...(current ? [{ label: '当前使用', on: true }] : []),
+          ]} />
+          <ResourceActions note="只有当前智能体选中的能力会进入运行">
+            <button className="mc-act wide" type="button" aria-label={`编辑 ${agent.name}`} onClick={() => onEdit(agent.id)}>
+              <Edit3 size={14} aria-hidden /> 编辑
+            </button>
+            <button className="mc-act wide" type="button" aria-label={`导出 ${agent.name}`} onClick={() => onExport(agent)}>
+              <Download size={14} aria-hidden /> 导出
+            </button>
+            <button className="mc-act wide danger" type="button" aria-label={`删除 ${agent.name}`} onClick={() => void onDelete(agent)}>
+              <Trash2 size={14} aria-hidden /> 删除
+            </button>
+          </ResourceActions>
+        </>
+      ),
+    };
+  });
+
   return (
-    <>
-      <div className="settings-page-heading">
-        <div>
-          <div className="usage-kicker">AI TEAM</div>
-          <h3>智能体工作室</h3>
-          <p className="lead">
-            把系统提示词、Skills、内置工具和 MCP 服务组合成可复用的 AI 角色。只有当前智能体选中的能力才会进入运行。
-          </p>
-        </div>
-        <div className="extension-heading-actions">
-          <button className="btn-ghost" type="button" onClick={() => fileRef.current?.click()}>
+    <ResourceList
+      title="智能体工作室"
+      lead="把系统提示词、Skills、内置工具和 MCP 服务组合成可复用的 AI 角色。只有当前智能体选中的能力才会进入运行。"
+      ariaLabel="智能体工作室"
+      countNoun="个智能体"
+      items={items}
+      emptyText={<>还没有智能体。创建一个角色，组合提示词、Skills 和工具。</>}
+      searchPlaceholder="搜索名称、说明、ID 或能力"
+      headingActions={
+        <>
+          <button className="btn-ghost compact-action" type="button" onClick={() => fileRef.current?.click()}>
             <Upload size={15} aria-hidden /> 导入智能体
           </button>
           <button className="btn-primary compact-action" type="button" onClick={() => onEdit(null)}>
@@ -342,99 +392,14 @@ export function AgentSettings({ onEdit, onExport, onDelete, onImport }: AgentPro
               event.target.value = '';
             }}
           />
-        </div>
-      </div>
-      <div className="card-grid agent-studio-grid">
-        {agents.map((agent: any) => {
-          const skillIds = agent.skillRefs || agent.skillIds || [];
-          const toolIds = agent.toolIds || [];
-          const mcpIds = agent.mcpServerIds || [];
-          return (
-            <article className="mc-card agent-card" key={agent.id} onClick={() => onEdit(agent.id)}>
-              <div className="mc-top">
-                <div className="mc-ico">
-                  <Bot size={19} aria-hidden />
-                </div>
-                <div className="mc-title-wrap">
-                  <div className="mc-title">{agent.name}</div>
-                  <div className="mc-sub">{agent.id}</div>
-                </div>
-                <span className={`agent-status${selectedAgent?.id === agent.id ? ' active' : ''}`}>
-                  <i />
-                  {selectedAgent?.id === agent.id ? '当前使用' : '可用'}
-                </span>
-              </div>
-              <div className="mc-desc">{agent.description || '尚未添加说明，可编辑智能体补充职责与适用任务。'}</div>
-              <div className="agent-capability-summary">
-                <span>
-                  <strong>{skillIds.length}</strong> Skills
-                </span>
-                <span>
-                  <strong>{toolIds.length}</strong> 工具
-                </span>
-                <span>
-                  <strong>{mcpIds.length}</strong> MCP
-                </span>
-              </div>
-              <div className="mc-tags">
-                {skillIds.slice(0, 3).map((id: string) => (
-                  <span className="mc-tag" key={id}>
-                    {id}
-                  </span>
-                ))}
-                {skillIds.length > 3 && <span className="mc-tag">+{skillIds.length - 3}</span>}
-                {!skillIds.length && <span className="mc-tag muted">尚未绑定 Skill</span>}
-              </div>
-              <div className="mc-actions extension-card-actions">
-                <button
-                  className="mc-act"
-                  type="button"
-                  title="导出"
-                  aria-label={`导出 ${agent.name}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onExport(agent);
-                  }}
-                >
-                  <Download size={15} aria-hidden />
-                </button>
-                <button
-                  className="mc-act"
-                  type="button"
-                  title="编辑"
-                  aria-label={`编辑 ${agent.name}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onEdit(agent.id);
-                  }}
-                >
-                  <Edit3 size={15} aria-hidden />
-                </button>
-                <button
-                  className="mc-act danger"
-                  type="button"
-                  title="删除"
-                  aria-label={`删除 ${agent.name}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    void onDelete(agent);
-                  }}
-                >
-                  <Trash2 size={15} aria-hidden />
-                </button>
-              </div>
-            </article>
-          );
-        })}
-        {!agents.length && (
-          <div className="extension-empty">
-            <Bot size={22} aria-hidden />
-            <strong>还没有智能体</strong>
-            <span>创建一个角色，组合提示词、Skills 和工具。</span>
-          </div>
-        )}
-      </div>
-    </>
+        </>
+      }
+      tabs={[
+        { value: '', label: '全部' },
+        { value: 'current', label: '当前使用' },
+        { value: 'available', label: '可用' },
+      ]}
+    />
   );
 }
 

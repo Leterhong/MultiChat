@@ -5,7 +5,7 @@ type BrandMarkProps = {
   size?: number;
 };
 
-/** MultiChat 的唯一品牌图形：四条能力轨道汇入一个可验证的执行核心。 */
+/** MultiChat 的唯一品牌图形：两路输入汇流成一个可验证的答案核心。 */
 export function BrandMark({ className = '', size = 34 }: BrandMarkProps) {
   return (
     <span
@@ -14,13 +14,9 @@ export function BrandMark({ className = '', size = 34 }: BrandMarkProps) {
       aria-hidden="true"
     >
       <svg viewBox="0 0 36 36" focusable="false">
-        <path className="brand-frame" d="M11 5.5h14l7 7v11l-7 7H11l-7-7v-11l7-7Z" />
-        <path className="brand-flow" d="M9 11.5h5.2l3.8 5.1 3.8-5.1H27M9 24.5h5.2l3.8-5.1 3.8 5.1H27" />
-        <circle cx="9" cy="11.5" r="1.5" />
-        <circle cx="27" cy="11.5" r="1.5" />
-        <circle cx="9" cy="24.5" r="1.5" />
-        <circle cx="27" cy="24.5" r="1.5" />
-        <circle className="brand-core" cx="18" cy="18" r="2.7" />
+        <path className="brand-arc" d="M7.5 15.5a11 11 0 0 1 21 0" />
+        <path className="brand-arc" d="M28.5 20.5a11 11 0 0 1-21 0" />
+        <circle className="brand-core" cx="18" cy="18" r="4.3" />
       </svg>
     </span>
   );

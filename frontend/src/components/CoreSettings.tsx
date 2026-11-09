@@ -1,5 +1,6 @@
-import { FilePenLine, Plus, Search, ShieldCheck, Trash2, Upload, Wrench } from 'lucide-react';
+import { ChevronDown, FilePenLine, Plus, Search, ShieldCheck, Trash2, Upload, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { ResourceActions, ResourceFacts, ResourceList, ResourceTags, type ResourceItem } from './ResourceList';
 
 export function GeneralSettings({ params, theme, token, onSaveParams, onTheme, onSaveToken, skin, density, onSkin, onDensity }: any) {
   const [temperature, setTemperature] = useState(Number(params.temperature));
@@ -88,14 +89,154 @@ export function ProviderSettings({ providers: initialProviders, onSave, onDelete
 
 export function SkillSettings({ initialSkills, sourceLabel, onToggle, onEdit, onDiff, onDelete, onImport, onAdd }: any) {
   const [skills, setSkills] = useState(initialSkills);
-  const [query, setQuery] = useState(''); const [source, setSource] = useState(''); const [status, setStatus] = useState('');
-  const sourceKinds = useMemo(() => [...new Set(skills.map((skill: any) => skill.source?.kind || 'managed'))], [skills]);
-  const visible = skills.filter((skill: any) => (!query || [skill.name, skill.id, skill.description, sourceLabel(skill.source)].filter(Boolean).join(' ').toLowerCase().includes(query.toLowerCase())) && (!source || (skill.source?.kind || 'managed') === source) && (!status || (skill.enabled ? 'enabled' : 'disabled') === status));
-  return <><h3>Agent Skills</h3><p className="lead">每个 Skill 都是一个以 <code>SKILL.md</code> 为入口的目录，可附带 scripts、references 和 assets；这里的开关控制 MultiChat 是否使用它。</p>
-    <div className="resource-toolbar" aria-label="筛选 Skills"><label className="resource-search"><Search size={15} aria-hidden /><input type="search" aria-label="搜索 Skills" placeholder="搜索名称、说明或 ID" value={query} onChange={(event) => setQuery(event.target.value)} /></label><select aria-label="按来源筛选" value={source} onChange={(event) => setSource(event.target.value)}><option value="">全部来源</option>{sourceKinds.map((kind: any) => <option value={kind} key={kind}>{sourceLabel({ kind })}</option>)}</select><select aria-label="按状态筛选" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">全部状态</option><option value="enabled">已启用</option><option value="disabled">已停用</option></select><span className="resource-count">{visible.length} / {skills.length} 个 Skills</span></div>
-    <div className="card-grid">{visible.map((skill: any) => { const key = skill.key || skill.id; const editable = ['managed', 'repo'].includes(skill.source?.kind); return <article className="mc-card" key={key} onClick={() => editable && onEdit(skill)}><div className="mc-top"><div className="mc-ico"><FilePenLine size={19} aria-hidden /></div><div className="mc-title-wrap"><div className="mc-title">{skill.name}</div><div className="mc-sub">{skill.id}</div></div></div><div className="mc-desc">{skill.description || '（暂无描述）'}</div><div className="extension-source">{sourceLabel(skill.source)} · {skill.scope || 'project'}</div><div className="extension-command" title={skill.path || ''}>{skill.path || ''}</div><div className="mc-tags"><span className={`mc-tag${skill.enabled ? ' on' : ''}`}>SKILL.md</span><span className="mc-tag">MultiChat {skill.enabled ? '已启用' : '已停用'}</span>{(skill.resources || []).map((resource: string) => <span className="mc-tag" key={resource}>{resource}</span>)}{skill.invalid && <span className="mc-tag danger">格式无效</span>}</div><div className="skill-card-actions"><button type="button" className={`mc-toggle${skill.enabled ? ' on' : ''}`} aria-pressed={!!skill.enabled} onClick={async (event) => { event.stopPropagation(); if (await onToggle(skill)) setSkills((current: any[]) => current.map((row) => (row.key || row.id) === key ? { ...row, enabled: !row.enabled } : row)); }}><span className="mc-switch" aria-hidden /><span>{skill.enabled ? '启用中' : '已停用'}</span></button><div className="mc-actions extension-card-actions">{['repo', 'plugin'].includes(skill.source?.kind) && <button className="mc-act" type="button" title="查看 Git 变更" onClick={(event) => { event.stopPropagation(); void onDiff(skill); }}><ShieldCheck size={15} aria-hidden /></button>}{editable && <button className="mc-act" type="button" title="编辑" onClick={(event) => { event.stopPropagation(); onEdit(skill); }}><FilePenLine size={15} aria-hidden /></button>}{editable && <button className="mc-act danger" type="button" title="删除" onClick={async (event) => { event.stopPropagation(); if (await onDelete(skill)) setSkills((current: any[]) => current.filter((row) => (row.key || row.id) !== key)); }}><Trash2 size={15} aria-hidden /></button>}</div></div></article>; })}
-      {!visible.length && <div className="extension-empty">没有符合筛选条件的 Skill。</div>}<button type="button" className="mc-add" onClick={onImport}><Upload size={20} aria-hidden /><span className="plus-t">上传 / 导入 Skill</span><span className="mc-sub">ZIP、SKILL.md 或完整目录</span></button><button type="button" className="mc-add" onClick={onAdd}><Plus size={20} aria-hidden /><span className="plus-t">新建 Skill</span></button></div>
-  </>;
+  const [query, setQuery] = useState('');
+  const [source, setSource] = useState('');
+  const [status, setStatus] = useState('');
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const sourceKinds = useMemo(
+    () => [...new Set(skills.map((skill: any) => skill.source?.kind || 'managed'))],
+    [skills],
+  );
+  const visible = skills.filter((skill: any) =>
+    (!query || [skill.name, skill.id, skill.description, sourceLabel(skill.source)].filter(Boolean).join(' ').toLowerCase().includes(query.toLowerCase()))
+    && (!source || (skill.source?.kind || 'managed') === source)
+    && (!status || (skill.enabled ? 'enabled' : 'disabled') === status));
+  const tabs = [
+    { value: '', label: '全部' },
+    { value: 'enabled', label: '已启用' },
+    { value: 'disabled', label: '已停用' },
+  ];
+
+  return (
+    <section className="skill-settings">
+      <div className="settings-page-heading skill-page-heading">
+        <div>
+          <h3>Agent Skills</h3>
+          <p className="lead">每个 Skill 都是一个以 <code>SKILL.md</code> 为入口的目录，可附带 scripts、references 和 assets；这里的开关控制 MultiChat 是否使用它。</p>
+        </div>
+        <div className="skill-heading-actions">
+          <button type="button" className="btn-primary compact-action" onClick={onImport}>
+            <Upload size={15} aria-hidden /> 上传 / 导入
+          </button>
+          <button type="button" className="btn-ghost compact-action" onClick={onAdd}>
+            <Plus size={15} aria-hidden /> 新建 Skill
+          </button>
+        </div>
+      </div>
+
+      <div className="skill-tabs" role="group" aria-label="按状态筛选 Skills">
+        {tabs.map((tab) => (
+          <button
+            type="button"
+            key={tab.value}
+            className={`skill-tab${status === tab.value ? ' active' : ''}`}
+            aria-pressed={status === tab.value}
+            onClick={() => setStatus(tab.value)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="resource-toolbar skill-toolbar" aria-label="筛选 Skills">
+        <label className="resource-search">
+          <Search size={15} aria-hidden />
+          <input type="search" aria-label="搜索 Skills" placeholder="搜索名称、说明或 ID" value={query} onChange={(event) => setQuery(event.target.value)} />
+        </label>
+        <select aria-label="按来源筛选" value={source} onChange={(event) => setSource(event.target.value)}>
+          <option value="">全部来源</option>
+          {sourceKinds.map((kind: any) => <option value={kind} key={kind}>{sourceLabel({ kind })}</option>)}
+        </select>
+        <span className="resource-count">{visible.length} / {skills.length} 个 Skills</span>
+      </div>
+
+      <div className="skill-list">
+        {visible.map((skill: any, index: number) => {
+          const key = skill.key || skill.id;
+          const editable = ['managed', 'repo'].includes(skill.source?.kind);
+          const open = expanded === key;
+          const detailId = `skill-detail-${index}`;
+          return (
+            <article className={`skill-row${open ? ' is-open' : ''}`} key={key}>
+              <div className="skill-row-main">
+                <span className="skill-row-ico" aria-hidden><FilePenLine size={18} /></span>
+                <div className="skill-row-copy">
+                  <div className="skill-row-title">
+                    <strong>{skill.name}</strong>
+                    <span className="skill-row-badge">{sourceLabel(skill.source)}</span>
+                    {skill.invalid && <span className="skill-row-badge danger">格式无效</span>}
+                  </div>
+                  <p className="skill-row-desc">{skill.description || '（暂无描述）'}</p>
+                  <span className="skill-row-id">{skill.id}</span>
+                </div>
+                <div className="skill-row-actions">
+                  <button
+                    type="button"
+                    className={`mc-toggle${skill.enabled ? ' on' : ''}`}
+                    aria-pressed={!!skill.enabled}
+                    aria-label={`${skill.name}：${skill.enabled ? '已启用，点击停用' : '已停用，点击启用'}`}
+                    onClick={async () => {
+                      if (await onToggle(skill)) setSkills((current: any[]) => current.map((row) => (row.key || row.id) === key ? { ...row, enabled: !row.enabled } : row));
+                    }}
+                  >
+                    <span className="mc-switch" aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    className="skill-row-expand"
+                    aria-expanded={open}
+                    aria-controls={detailId}
+                    aria-label={`${open ? '收起' : '展开'} ${skill.name} 详情`}
+                    onClick={() => setExpanded(open ? null : key)}
+                  >
+                    <ChevronDown size={16} aria-hidden />
+                  </button>
+                </div>
+              </div>
+
+              <div className="skill-row-detail" id={detailId} hidden={!open}>
+                <dl className="skill-facts">
+                  <div><dt>Skill ID</dt><dd>{skill.id}</dd></div>
+                  <div><dt>来源</dt><dd>{sourceLabel(skill.source)}</dd></div>
+                  <div><dt>作用域</dt><dd>{skill.scope || 'project'}</dd></div>
+                  <div><dt>路径</dt><dd title={skill.path || ''}>{skill.path || '—'}</dd></div>
+                </dl>
+                <div className="mc-tags skill-detail-tags">
+                  <span className={`mc-tag${skill.enabled ? ' on' : ''}`}>SKILL.md</span>
+                  <span className="mc-tag">MultiChat {skill.enabled ? '已启用' : '已停用'}</span>
+                  {(skill.resources || []).map((resource: string) => <span className="mc-tag" key={resource}>{resource}</span>)}
+                  {skill.invalid && <span className="mc-tag danger">格式无效</span>}
+                </div>
+                <div className="skill-detail-actions">
+                  {['repo', 'plugin'].includes(skill.source?.kind) && (
+                    <button className="mc-act wide" type="button" onClick={() => void onDiff(skill)}>
+                      <ShieldCheck size={14} aria-hidden /> 查看 Git 变更
+                    </button>
+                  )}
+                  {editable && (
+                    <button className="mc-act wide" type="button" onClick={() => onEdit(skill)}>
+                      <FilePenLine size={14} aria-hidden /> 编辑
+                    </button>
+                  )}
+                  {editable && (
+                    <button className="mc-act wide danger" type="button" onClick={async () => {
+                      if (await onDelete(skill)) setSkills((current: any[]) => current.filter((row) => (row.key || row.id) !== key));
+                    }}>
+                      <Trash2 size={14} aria-hidden /> 删除
+                    </button>
+                  )}
+                  {!editable && !['repo', 'plugin'].includes(skill.source?.kind) && (
+                    <span className="skill-readonly-note">只读来源 · 启停可用，编辑请在原目录进行</span>
+                  )}
+                </div>
+              </div>
+            </article>
+          );
+        })}
+        {!visible.length && <div className="extension-empty">没有符合筛选条件的 Skill。</div>}
+      </div>
+    </section>
+  );
 }
 
 export function ToolSettings({ initialTools, onToggle, agents = [], onTest }: any) {
@@ -122,9 +263,67 @@ export function ToolSettings({ initialTools, onToggle, agents = [], onTest }: an
     } else await runTest(tool);
   };
   const refCount = (tool: any) => agents.filter((agent: any) => (agent.toolIds || []).includes(tool.id)).length;
-  return <><h3>内置工具</h3><p className="lead">这些是 MultiChat 自身实现的函数调用能力。停用后不会暴露给模型。</p><div className="card-grid">{tools.map((tool: any) => {
+  const typeKinds = [...new Set(tools.map((tool: any) => tool.type || 'function'))];
+  const items: ResourceItem[] = tools.map((tool: any) => {
     const testable = ['datetime', 'calculator'].includes(tool.type);
     const refs = refCount(tool);
-    return <article className="mc-card" key={tool.id}><div className="mc-top"><div className="mc-ico"><Wrench size={19} aria-hidden /></div><div className="mc-title-wrap"><div className="mc-title">{tool.name}</div><div className="mc-sub">{tool.id} · {tool.type || 'function'}</div></div></div><div className="mc-desc">{tool.description || ''}</div><div className="mc-tags">{(tool.permissions || []).map((permission: string) => <span className="mc-tag" key={permission}>{permission}</span>)}<span className={`mc-tag${tool.enabled ? ' on' : ''}`}>{tool.enabled ? '已启用' : '已停用'}</span><span className={`mc-tag${refs ? ' on' : ''}`} title="引用该工具的运行配置数量">{refs ? `${refs} 个运行配置引用` : '未被运行配置引用'}</span></div><div className="mc-actions extension-card-actions left"><button type="button" className={`mc-toggle${tool.enabled ? ' on' : ''}`} aria-pressed={!!tool.enabled} onClick={async () => { if (await onToggle(tool)) setTools((current: any[]) => current.map((row) => row.id === tool.id ? { ...row, enabled: !row.enabled } : row)); }}><span className="mc-switch" aria-hidden /><span>{tool.enabled ? '启用中' : '已停用'}</span></button>{testable && <button type="button" className="mc-act wide" disabled={testing === tool.id} onClick={() => void runTestable(tool)}>{testing === tool.id ? '试跑中…' : '试跑'}</button>}</div>{results[tool.id] && <div className="tool-test-result" role="status">{results[tool.id]}</div>}</article>;
-  })}{!tools.length && <div className="extension-empty">没有内置工具。</div>}</div></>;
+    const permissions: string[] = tool.permissions || [];
+    return {
+      key: tool.id,
+      icon: <Wrench size={18} aria-hidden />,
+      name: tool.name,
+      badges: [{ label: tool.type || 'function' }],
+      description: tool.description || '',
+      meta: tool.id,
+      haystack: permissions.join(' '),
+      sourceKind: tool.type || 'function',
+      enabled: !!tool.enabled,
+      onToggle: async () => {
+        if (await onToggle(tool)) setTools((current: any[]) => current.map((row) => row.id === tool.id ? { ...row, enabled: !row.enabled } : row));
+      },
+      detail: (
+        <>
+          <ResourceFacts facts={[
+            { label: '工具 ID', value: tool.id },
+            { label: '类型', value: tool.type || 'function' },
+            { label: '权限', value: permissions.join(', ') || '无' },
+            { label: '引用', value: refs ? `${refs} 个运行配置` : '未被引用' },
+          ]} />
+          <ResourceTags tags={[
+            ...permissions.map((label: string) => ({ label })),
+            { label: tool.enabled ? '已启用' : '已停用', on: !!tool.enabled },
+            { label: refs ? `${refs} 个运行配置引用` : '未被运行配置引用', on: !!refs, title: '引用该工具的运行配置数量' },
+          ]} />
+          {testable && (
+            <ResourceActions note="试跑会真实执行该工具，不会调用模型">
+              <button className="mc-act wide" type="button" disabled={testing === tool.id} onClick={() => void runTestable(tool)}>
+                {testing === tool.id ? '试跑中…' : '试跑'}
+              </button>
+            </ResourceActions>
+          )}
+          {results[tool.id] && <div className="tool-test-result resource-detail-extra" role="status">{results[tool.id]}</div>}
+        </>
+      ),
+    };
+  });
+
+  return (
+    <ResourceList
+      title="内置工具"
+      lead="这些是 MultiChat 自身实现的函数调用能力。停用后不会暴露给模型。"
+      ariaLabel="内置工具"
+      countNoun="个工具"
+      items={items}
+      emptyText="没有内置工具。"
+      searchPlaceholder="搜索名称、说明或 ID"
+      tabs={[
+        { value: '', label: '全部' },
+        { value: 'enabled', label: '已启用' },
+        { value: 'disabled', label: '已停用' },
+      ]}
+      sourceAriaLabel="按类型筛选"
+      sourceDefaultLabel="全部类型"
+      sourceOptions={typeKinds.map((kind: any) => ({ value: kind, label: kind }))}
+    />
+  );
 }

@@ -1,7 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs><linearGradient id="mc" x1="72" y1="54" x2="444" y2="462" gradientUnits="userSpaceOnUse"><stop stop-color="#2563EB"/><stop offset=".62" stop-color="#3B5BD7"/><stop offset="1" stop-color="#1C91B8"/></linearGradient></defs>
-  <rect width="512" height="512" fill="url(#mc)"/>
-  <path d="M140 130h143c32 0 58 26 58 58v57c0 32-26 58-58 58h-69l-57 44v-46c-42-4-75-39-75-81v-32c0-32 26-58 58-58Z" fill="#102757" fill-opacity=".25" stroke="#fff" stroke-width="23" stroke-linejoin="round"/>
-  <path d="M231 205h136c32 0 58 26 58 58v57c0 43-33 78-74 81v45l-59-43h-61c-32 0-58-26-58-58v-82c0-32 26-58 58-58Z" fill="#fff" fill-opacity=".1" stroke="#fff" stroke-width="23" stroke-linejoin="round"/>
-  <circle cx="254" cy="292" r="17" fill="#fff"/><circle cx="315" cy="292" r="17" fill="#fff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36">
+  <title>MultiChat</title>
+  <style>
+    .bg { fill: #f7f8fa; }
+    .arc { fill: none; stroke: #3b6cf6; stroke-width: 3.1; stroke-linecap: round; }
+    .core { fill: #3b6cf6; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1e1e2e; }
+      .arc { stroke: #89b4fa; }
+      .core { fill: #89b4fa; }
+    }
+  </style>
+  <rect class="bg" width="36" height="36"/>
+  <g transform="translate(5.04 5.04) scale(0.72)">
+    <path class="arc" d="M7.5 15.5a11 11 0 0 1 21 0"/>
+    <path class="arc" d="M28.5 20.5a11 11 0 0 1-21 0"/>
+    <circle class="core" cx="18" cy="18" r="4.3"/>
+  </g>
 </svg>

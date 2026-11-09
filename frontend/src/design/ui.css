@@ -4207,9 +4207,8 @@ body.workflow-rail-open .workflow-rail-scrim {
   color: var(--mc-text-muted);
 }
 
-.brand-core,
-.brand-frame,
-.brand-flow {
+.brand-arc,
+.brand-core {
   display: block;
 }
 
@@ -4934,7 +4933,7 @@ textarea#heroInput,
 
 /* ---------------- 27. Sweep fixes ---------------- */
 
-/* Brand mark SVG (was unstyled after the rebuild — rendered as a black blob) */
+/* Brand mark: two arcs converging on a solid core. Colour follows --mc-accent. */
 
 .brand-mark {
   display: inline-flex;
@@ -4950,17 +4949,10 @@ textarea#heroInput,
   height: 100%;
 }
 
-.brand-mark .brand-frame {
-  fill: var(--mc-accent-soft);
-  stroke: var(--mc-accent-line);
-  stroke-width: 1.4;
-}
-
-.brand-mark .brand-flow,
-.brand-mark svg > circle {
+.brand-mark .brand-arc {
   fill: none;
   stroke: var(--mc-accent);
-  stroke-width: 1.8;
+  stroke-width: 3.1;
   stroke-linecap: round;
 }
 
@@ -5183,22 +5175,6 @@ textarea#heroInput,
   color: var(--mc-text);
 }
 
-/* Lavender brand mark */
-
-.brand-mark .brand-frame {
-  fill: var(--mc-surface-subtle);
-  stroke: var(--mc-line);
-}
-
-.brand-mark .brand-flow,
-.brand-mark svg > circle {
-  stroke: var(--mc-accent);
-}
-
-.brand-mark .brand-core {
-  fill: var(--mc-accent);
-}
-
 /* Active states: flat tinted rows */
 
 .primary-nav button.active {
@@ -5308,9 +5284,25 @@ textarea#heroInput,
   filter: none;
 }
 
-.mascot-antenna,
-.mascot-antenna-dot {
+/* Same language as the brand mark: one accent, round-capped outline, solid core. */
+.mascot-head,
+.mascot-ear-l,
+.mascot-ear-r {
   fill: var(--mc-accent-soft);
+  stroke: var(--mc-accent);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mascot-face {
+  fill: var(--mc-accent);
+}
+
+.mascot-face path {
+  fill: none;
+  stroke: var(--mc-accent);
+  stroke-width: 2.2;
 }
 
 .character-grid {
@@ -5403,4 +5395,411 @@ textarea#heroInput,
 .character-card:hover .character-go {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* ---------------- 31. Skills list (Cherry Studio inspired) ---------------- */
+
+.skill-page-heading {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.skill-page-heading h3 {
+  margin: 0;
+}
+
+.skill-page-heading .lead {
+  margin: 4px 0 0;
+}
+
+.skill-heading-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-heading-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.skill-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--mc-line);
+}
+
+.skill-tab {
+  position: relative;
+  padding: 8px 14px 10px;
+  border: 0;
+  background: none;
+  color: var(--mc-text-muted);
+  font-size: 13px;
+  font-weight: 560;
+  cursor: pointer;
+}
+
+.skill-tab:hover {
+  color: var(--mc-text);
+}
+
+.skill-tab.active {
+  color: var(--mc-accent);
+  font-weight: 650;
+}
+
+.skill-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--mc-accent);
+}
+
+.skill-toolbar {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* Global form controls default to width:100%; keep the toolbar on one line. */
+.skill-toolbar .resource-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 280px;
+  min-width: 180px;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-md);
+  background: var(--mc-surface);
+}
+
+.skill-toolbar .resource-search:focus-within {
+  border-color: var(--mc-accent);
+  box-shadow: 0 0 0 2px var(--mc-accent-soft);
+}
+
+.skill-toolbar .resource-search svg {
+  flex: none;
+  color: var(--mc-text-muted);
+}
+
+.skill-toolbar .resource-search input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font-size: 13px;
+}
+
+.skill-toolbar select {
+  flex: none;
+  width: auto;
+  min-width: 150px;
+  height: 40px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.skill-toolbar .resource-count {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .skill-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .skill-toolbar .resource-count {
+    margin-left: 0;
+  }
+}
+
+.skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skill-row {
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-lg);
+  background: var(--mc-surface);
+  transition: border-color var(--mc-duration-fast) var(--mc-easing),
+    box-shadow var(--mc-duration-fast) var(--mc-easing);
+}
+
+.skill-row:hover,
+.skill-row.is-open {
+  border-color: var(--mc-line-hover);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.skill-row-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.skill-row-ico {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--mc-radius-md);
+  background: var(--mc-accent-soft);
+  color: var(--mc-accent);
+}
+
+.skill-row-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.skill-row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.skill-row-title strong {
+  font-size: 13.5px;
+  font-weight: 660;
+  color: var(--mc-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skill-row-badge {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: var(--mc-radius-pill);
+  background: var(--mc-surface-subtle);
+  color: var(--mc-text-muted);
+  font-size: 10.5px;
+  font-weight: 560;
+}
+
+.skill-row-badge.danger {
+  background: var(--mc-danger-soft);
+  color: var(--mc-danger);
+}
+
+.skill-row-desc {
+  margin: 3px 0 0;
+  color: var(--mc-text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skill-row-id {
+  display: block;
+  margin-top: 2px;
+  color: var(--mc-text-faint);
+  font-family: var(--mc-font-mono);
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skill-row-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skill-row-actions .mc-toggle,
+.skill-row-actions .mc-toggle.on {
+  gap: 0;
+  padding: 4px;
+  border: 0;
+  background: none;
+}
+
+.skill-row-expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--mc-line);
+  border-radius: var(--mc-radius-sm);
+  background: var(--mc-surface);
+  color: var(--mc-text-muted);
+  cursor: pointer;
+}
+
+.skill-row-expand:hover {
+  color: var(--mc-accent);
+}
+
+.skill-row.is-open .skill-row-expand svg {
+  transform: rotate(180deg);
+}
+
+.skill-row-detail {
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--mc-line);
+}
+
+.skill-row-detail[hidden] {
+  display: none;
+}
+
+.skill-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin: 12px 0;
+  font-size: 11.5px;
+}
+
+.skill-facts > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.skill-facts dt {
+  flex: none;
+  width: 52px;
+  color: var(--mc-text-faint);
+}
+
+.skill-facts dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--mc-text-muted);
+  font-family: var(--mc-font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skill-detail-tags {
+  margin-bottom: 12px;
+}
+
+.skill-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-detail-actions .mc-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.skill-readonly-note {
+  align-self: center;
+  color: var(--mc-text-faint);
+  font-size: 11.5px;
+}
+
+@media (max-width: 720px) {
+  .skill-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------- 32. Shared resource rows (tools / plugins / MCP / agents) ---------------- */
+
+/* Detail blocks are stacked inside the expanded row; give each a consistent rhythm. */
+.skill-row-detail .resource-detail-extra {
+  margin: 0 0 10px;
+  max-width: 100%;
+}
+
+.skill-row-detail .extension-command {
+  margin-top: 12px;
+}
+
+.skill-row-detail .extension-tool-list {
+  max-height: 108px;
+  overflow-y: auto;
+}
+
+.skill-row-detail .tool-test-result {
+  margin-top: 0;
+  overflow-wrap: anywhere;
+}
+
+.skill-row-detail .agent-capability-summary {
+  margin-top: -4px;
+}
+
+.skill-row-detail .skill-detail-actions:last-child {
+  margin-bottom: 0;
+}
+
+/* Error tags reuse the same neutral token family as the rest of the workbench. */
+.mc-tag.danger {
+  background: var(--mc-danger-soft);
+  color: var(--mc-danger);
+}
+
+/* The heading copy must be able to shrink so the action buttons stay on the
+   same row as the title, matching the Skills page baseline. */
+.skill-page-heading > div:first-child {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.skill-heading-actions {
+  flex: none;
+}
+
+/* Destructive actions inherit a transparent border from .mc-act.danger; give
+   them the same outline as their neighbours in the expanded detail row. */
+.skill-detail-actions .mc-act.danger {
+  border-color: var(--mc-line);
+}
+
+.skill-detail-actions .mc-act.danger:hover {
+  border-color: var(--mc-danger);
+  background: var(--mc-danger-soft);
+}
+
+/* Pages without a toggle keep the expand control right-aligned by the flex copy area. */
+@media (max-width: 720px) {
+  .skill-page-heading {
+    flex-direction: column;
+  }
+
+  .skill-heading-actions {
+    width: 100%;
+  }
 }
