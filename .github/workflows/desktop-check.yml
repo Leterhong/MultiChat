@@ -14,8 +14,8 @@ on:
 
 jobs:
   cargo-check:
-    name: Tauri v2 cargo check (ubuntu-latest)
-    runs-on: ubuntu-latest
+    name: Tauri v2 cargo check (ubuntu-24.04)
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
@@ -39,7 +39,7 @@ jobs:
           rustc --version
           cargo --version
 
-      - uses: actions/cache@v7
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
