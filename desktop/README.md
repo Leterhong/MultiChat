@@ -113,8 +113,13 @@ npm run dev --prefix desktop
 
 - 所有 JSON 已用 `json.load` 逐个校验可解析。
 - 图标 PNG / ICO / ICNS 已用 Python 校验结构（签名、CRC、尺寸、目录项偏移）并目视确认图案正确。
-- **本机无 Rust 工具链，未执行 `cargo build` / `cargo check`，也未执行 `npm install` / `tauri build`。**
-  因此 Rust 代码与 Tauri 配置未经编译验证；Rust 侧 API 写法依据 Tauri v2 官方文档核对，
-  但仍需在装有 Rust stable 的机器上 `npm run dev --prefix desktop` 实测。
+- **Rust 代码已通过编译验证**：`.github/workflows/desktop-check.yml` 在 `ubuntu-24.04` 上安装
+  WebKit2GTK 等系统依赖后执行 `cargo check`，首次成功运行见
+  [Desktop check #42650196028](https://github.com/Leterhong/MultiChat/actions/runs/42650196028)。
+  这确认了 `main.rs` 的 Tauri v2 API、`tauri.conf.json`、图标与 capabilities 能一起编译通过。
+- **仍未验证的部分**：本机无 Rust 工具链，未执行 `cargo build` / `npm install --prefix desktop` /
+  `tauri build`，因此没有产出安装包，也没有在 Windows / macOS 上做过原生窗口运行时实测；
+  `cargo check` 只做类型与依赖检查，不等于能成功链接、打包或启动。
+  正式分发前需在装有 Rust stable 的机器上跑 `npm run dev --prefix desktop` 与 `npm run build --prefix desktop`。
 - `src-tauri/gen/schemas/`（capability 的 `$schema` 指向处）由 `tauri-build` 在首次构建时生成，
   已加入 `.gitignore`；首次 `cargo build` 前编辑器可能提示 schema 文件缺失，属正常现象。
