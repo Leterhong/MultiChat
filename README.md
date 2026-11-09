@@ -88,6 +88,18 @@ bin/                multichat 命令入口
 
 一次请求会被记录为 Run；Run 包含一个或多个 Turn，Turn 再由模型请求、工具调用和审批 Step 组成。运行日志和检查点是复查、继续、分支和诊断的统一事实来源。业务数据默认保存在单文件 SQLite 数据库中，首次启动会自动读取已有 JSON 数据；设置 `MULTICHAT_STORE=json` 可继续使用旧存储方式。
 
+## 桌面端（Tauri v2，实验性）
+
+`desktop/` 是可选的原生窗口壳，复用同一套 Node 后端与 `frontend/dist`，不改变 Web 版行为：
+
+```bash
+npm run build                  # 先产出前端静态资源
+npm install --prefix desktop
+npm run dev --prefix desktop   # 或 npm run build --prefix desktop 打出安装包
+```
+
+壳子启动时拉起 `bin/multichat.mjs web`，等 `/api/health` 就绪后把窗口指向本地回环地址，窗口关闭时结束后端子进程。需要本机 Rust stable 与 Node >= 22.13.0，可用 `MULTICHAT_NODE_PATH` / `MULTICHAT_PORT` 指定运行时与端口。当前阶段依赖系统 Node、尚未打包 sidecar，正式分发前需补齐；详见 `desktop/README.md`。
+
 ## 扩展方式
 
 | 类型 | 用途 | 入口 |
