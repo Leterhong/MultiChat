@@ -27,7 +27,7 @@ test('conversation ids with traversal or separators return 400, never 500', asyn
   const dataDir = mkdtempSync(path.join(tmpdir(), 'multichat-convid-'));
   const server = spawn(process.execPath, ['dist/server.js'], {
     cwd: path.join(__dirname, '..', '..'),
-    env: { ...process.env, PORT: String(PORT), DATA_DIR: dataDir, MULTICHAT_STORE: 'json' },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR: dataDir, MULTICHAT_STORE: 'json', MULTICHAT_NO_AUTH: '1' },
     stdio: 'ignore',
   });
   t.after(() => { server.kill(); rmSync(dataDir, { recursive: true, force: true }); });

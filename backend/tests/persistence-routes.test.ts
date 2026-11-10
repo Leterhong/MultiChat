@@ -34,7 +34,7 @@ test('templates persist before acknowledgement and approvals are atomic', async 
   writeFileSync(path.join(dataDir, 'runs.json'), JSON.stringify([run]), 'utf8');
   const server = spawn(process.execPath, ['dist/server.js'], {
     cwd: path.join(__dirname, '..', '..'),
-    env: { ...process.env, PORT: String(PORT), DATA_DIR: dataDir, MULTICHAT_STORE: 'json' },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR: dataDir, MULTICHAT_STORE: 'json', MULTICHAT_NO_AUTH: '1' },
     stdio: 'ignore',
   });
   t.after(() => { server.kill(); rmSync(dataDir, { recursive: true, force: true }); });

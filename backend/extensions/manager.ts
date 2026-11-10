@@ -17,6 +17,7 @@ const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const ctx = require('../lib/context');
 const { AppError } = require('../lib/errors');
+const { assertSafeMcpLaunch } = require('../lib/mcp-guard');
 import type { JsonRecord, McpServerRecord, RequestOptions } from '../types';
 
 interface ExtensionState {
@@ -573,6 +574,8 @@ function normalizeMcpInput(input: McpServerRecord, previous: McpServerRecord = {
     delete record.url;
     delete record.headers;
     delete record.bearerTokenEnvVar;
+    // 创建/更新阶段就拒绝内联代码执行与危险环境变量，避免写入恶意配置。
+    assertSafeMcpLaunch({ command: record.command, args: record.args, env: record.env });
   } else {
     const requestedUrl = String(input.url || '').trim();
     record.url = requestedUrl.includes('***') && previous.url ? previous.url : String(requestedUrl || previous.url || '').trim();
@@ -850,8 +853,12 @@ async function discoverMcpTools(id: string, force = false, options: RequestOptio
   const record = findPrivateMcp(id);
   if (!record.enabled) throw new AppError('PERMISSION_DENIED', 'MCP server is disabled');
   if (!force && toolCache.get(id)?.status === 'ready') return toolCache.get(id);
+  // 真正 spawn 之前再做一次：历史数据、插件 manifest 与 Codex 同步导入的
+  // 记录都绕过 normalizeMcpInput，这里是最后一道闸门。
+  const launch = mcpLaunch(record);
+  assertSafeMcpLaunch(launch);
   try {
-    const client = ctx.getMcpClient(mcpLaunch(record));
+    const client = ctx.getMcpClient(launch);
     const tools = (await client.listTools(options)).map(tool => ({
       name: String(tool.name || ''),
       description: String(tool.description || ''),
