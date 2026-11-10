@@ -20,6 +20,9 @@ flushSync(() =>
 );
 
 async function start() {
+  // 默认鉴权下先领取同源自动令牌，再发起任何业务请求，避免首屏集中 401。
+  await Core.bootstrapServerSession();
+
   const [
     Shell,
     Init,

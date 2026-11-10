@@ -1,6 +1,7 @@
 import { createElement, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { closeOverlay, useOverlayStore } from '../core/overlay';
+import { sanitizeOverlayHTML } from '../core/sanitize';
 import { OVERLAY_PANELS } from './overlayPanels';
 
 // 标题 h3 的稳定 id：#modal 的 aria-labelledby 指向它，多头面板共用不会冲突。
@@ -129,9 +130,9 @@ export function OverlayLayer() {
   const content = Panel ? (
     createElement(Panel, props || {})
   ) : (
-    // 遗留 body（已由 esc() 转义）。display:contents 让子节点在布局上等价于
-    // 直接放在 .modal-card 下，不引入额外的盒子，保持旧 CSS 表现。
-    <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: body || '' }} />
+    // 遗留 body（已由 esc() 转义），再经 sanitizeOverlayHTML 兜底净化。
+    // display:contents 让子节点在布局上等价于直接放在 .modal-card 下。
+    <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: sanitizeOverlayHTML(body || '') }} />
   );
 
   return createPortal(

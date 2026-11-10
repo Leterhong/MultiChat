@@ -1,5 +1,6 @@
 import { type CompareResult, type CompareTarget } from '../components/CompareLab';
-import { $$, serverAuthHeaders, state, toast } from '../core/index';
+import { $$, state, toast } from '../core/index';
+import { serverAuthHeaders } from '../core/api';
 
 function compareTargets(): CompareTarget[] {
   return (state.providers || []).flatMap((provider: any) => (provider.models || []).map((model: string) => ({

@@ -3,7 +3,6 @@ import {
   $$,
   esc,
   api,
-  getServerToken,
   setServerToken,
   toast,
   state,
@@ -16,6 +15,7 @@ import {
   getDensity,
   setDensity,
 } from '../core/index';
+import { getServerToken } from '../core/api';
 import { GeneralSettings, ProviderSettings, SkillSettings, ToolSettings } from '../components/CoreSettings';
 import {
   AgentSettings,

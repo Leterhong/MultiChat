@@ -1,4 +1,5 @@
-import { $, api, serverAuthHeaders, toast, state, buildWorkflowInstruction, copyWorkflowSession, workflowScope } from '../core/index';
+import { $, api, toast, state, buildWorkflowInstruction, copyWorkflowSession, workflowScope } from '../core/index';
+import { serverAuthHeaders } from '../core/api';
 import { openModelPicker } from './modelPicker';
 
 /* --------------------------- Send (streaming) --------------------------- */

@@ -132,10 +132,21 @@ export function notifyMessagesChanged() {
   businessStore.setState((current) => ({ ...current, messages: [...current.messages] }));
 }
 
-// Optional cross-origin override (?api=…)
+// Optional local override (?api=…). Only loopback HTTP(S) origins without
+// credentials are accepted: an arbitrary external origin would silently
+// redirect every chat request (and its content) to a third party.
 try {
   const _q = new URLSearchParams(location.search).get('api');
-  if (_q) state.apiBase = _q.replace(/\/+$/, '');
+  if (_q) {
+    const _candidate = new URL(_q.replace(/\/+$/, ''), location.href);
+    const _local = ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(_candidate.hostname);
+    if ((_candidate.protocol === 'http:' || _candidate.protocol === 'https:') && _local && !_candidate.username && !_candidate.password) {
+      state.apiBase = `${_candidate.origin}${_candidate.pathname.replace(/\/+$/, '')}`;
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn('[MultiChat] 已忽略非本机 ?api= 覆盖：', _q);
+    }
+  }
 } catch {}
 
 export { DEFAULT_PARAMS };
