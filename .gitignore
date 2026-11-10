@@ -43,6 +43,21 @@ backend/clawtip-pay/.env
 .env
 .env.local
 
+# Secrets / private keys (prevent accidental commits)
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa
+id_ed25519
+*_rsa
+*_dsa
+.secrets/
+
+# Local runtime smoke artifacts
+.smoke-data/
+
 # Docs (non-essential)
 开发者指南_/
 article-ai-chat-workbuddy.md

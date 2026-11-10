@@ -12,5 +12,13 @@ test('automation keeps the repository single-branch friendly', () => {
   assert.equal((dependabot.match(/version-update:semver-major/g) || []).length, 3);
 
   const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-  assert.ok((ci.match(/npm audit( --omit=dev)? --audit-level=high/g) || []).length >= 3);
+  const auditLines = ci.split('\n').filter((line) => line.includes('npm audit'));
+  assert.ok(auditLines.length >= 3, 'CI 需要在三处依赖安装位置执行 audit');
+  // 安装源与审计源必须一致，否则本机镜像会让 audit 返回 404 假绿。
+  assert.ok(
+    auditLines.every((line) => line.includes('--registry=https://registry.npmjs.org')),
+    '所有 npm audit 必须显式指定官方 registry'
+  );
+  assert.ok((ci.match(/--audit-level=high/g) || []).length >= 3);
+  assert.match(ci, /scripts\/check-lock-registry\.mjs/);
 });

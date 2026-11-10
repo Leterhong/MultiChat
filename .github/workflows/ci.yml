@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
 
+# 测试与构建工作流只需要读代码；显式收窄 GITHUB_TOKEN 权限，
+# 避免 fork PR 在 runner 上拿到超出需要的写权限。
+permissions:
+  contents: read
+
 jobs:
   backend:
     name: Backend tests + syntax (${{ matrix.os }})
@@ -17,6 +22,8 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -26,7 +33,7 @@ jobs:
       - name: Install deps
         run: npm ci --no-audit --no-fund
       - name: Audit dependencies
-        run: npm audit --audit-level=high
+        run: npm audit --registry=https://registry.npmjs.org --audit-level=high
       - name: Run backend tests
         run: npm test
       - name: Typecheck (tsc --noEmit)
@@ -47,6 +54,8 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -56,7 +65,7 @@ jobs:
       # 闸门只审计生产依赖：测试链（vitest 4.x / jsdom）不进 dist 与发布包，
       # dev 依赖公告单独跟踪，不阻塞发布物审计。
       - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
+        run: npm audit --registry=https://registry.npmjs.org --omit=dev --audit-level=high
       - name: Build (vite)
         run: npm run build
       - name: Frontend tests and accessibility checks
@@ -73,6 +82,8 @@ jobs:
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -83,7 +94,7 @@ jobs:
           npm ci --prefix backend --no-audit --no-fund
           npm ci --prefix frontend --no-audit --no-fund
       - name: Audit published runtime dependencies
-        run: npm audit --audit-level=high
+        run: npm audit --registry=https://registry.npmjs.org --audit-level=high
       - name: Build
         run: npm run build
       - name: Boot and probe (npx 路径的真实启动)
@@ -105,3 +116,20 @@ jobs:
           curl -sf http://127.0.0.1:3199/ | head -c 120
           echo
           grep -q "backend 源码比" ./.smoke.log && { echo "::error::构建产物落后于源码"; exit 1; } || true
+  supply-chain:
+    name: Lockfile registry + repository hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Verify tarball sources and integrity
+        run: node ./scripts/check-lock-registry.mjs
+      - name: Audit published runtime dependencies (official registry)
+        run: npm audit --registry=https://registry.npmjs.org --audit-level=high
+      - name: Repository hygiene tests
+        run: npm test

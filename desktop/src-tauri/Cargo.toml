@@ -8,10 +8,14 @@ edition = "2021"
 # Cargo 会自动把 src/main.rs 识别为名为 multichat-desktop 的 bin，
 # 因此这里不需要显式写 [lib] / [[bin]]（也避免与不存在的 src/lib.rs 冲突）。
 
+# 固定直接依赖版本，避免 "2" 这种宽泛约束在 CI 与开发者机器上解析到
+# 不同的 Tauri 小版本（当前仓库尚未提交 Cargo.lock）。
+# 版本依据：crates.io max_stable_version（tauri 2.12.x / tauri-build 2.7.4），
+# 并与 desktop/package.json 的 @tauri-apps/cli 2.12.4 保持一致。
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "=2.7.4", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "=2.12.4", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

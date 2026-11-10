@@ -93,6 +93,10 @@ npm run dev --prefix desktop
   工作目录为仓库根；路径由 `CARGO_MANIFEST_DIR`（`desktop/src-tauri`）向上两级推导。
 - Rust 侧轮询 `http://127.0.0.1:<port>/api/health`（标准库 TCP + 最小 HTTP GET，
   不引入 `reqwest` 等第三方 HTTP 客户端），最多等约 20 秒；窗口关闭 / 应用退出时 kill 子进程。
+- MultiChat 后端默认启用自动访问令牌，但 `/api/health` 开放用于探活；窗口加载的是同源
+  `http://127.0.0.1:<port>`，前端会通过同源 `/api/session` 自动领取令牌，因此桌面壳
+  **无需把令牌注入 Rust 或 URL**。若部署时显式设置了 `MULTICHAT_API_TOKEN`，需在应用内
+  的「设置 → 本地服务访问保护」填写同一令牌。
 
 ## 生产分发的限制（重要）
 
@@ -117,6 +121,10 @@ npm run dev --prefix desktop
   WebKit2GTK 等系统依赖后执行 `cargo check`，首次成功运行见
   [Desktop check #42650196028](https://github.com/Leterhong/MultiChat/actions/runs/42650196028)。
   这确认了 `main.rs` 的 Tauri v2 API、`tauri.conf.json`、图标与 capabilities 能一起编译通过。
+- **依赖可复现性**：`Cargo.toml` 已把 `tauri` / `tauri-build` 固定到精确稳定版本
+  （`=2.12.4` / `=2.7.4`），CI 先 `cargo generate-lockfile` 再 `cargo check --locked`。
+  由于本机没有 Rust 工具链，仓库**尚未提交 `Cargo.lock`**；在装有 Rust stable 的开发机上
+  建议执行一次 `cargo generate-lockfile` 并把生成的 `Cargo.lock` 提交入库，以锁定传递依赖。
 - **仍未验证的部分**：本机无 Rust 工具链，未执行 `cargo build` / `npm install --prefix desktop` /
   `tauri build`，因此没有产出安装包，也没有在 Windows / macOS 上做过原生窗口运行时实测；
   `cargo check` 只做类型与依赖检查，不等于能成功链接、打包或启动。

@@ -136,7 +136,7 @@ WantedBy=default.target
 ```
 
 > [!IMPORTANT]
-> 把服务暴露到局域网或公网前，务必设置 `MULTICHAT_API_TOKEN`（保护 `/api/*` 与 `/v1/*`，包括 OpenAI 兼容透传端点）或 `MULTICHAT_BASIC_AUTH`；`/v1/chat/completions` 会使用你配置的模型密钥，无鉴权暴露等于把密钥借给别人。
+> 默认已启用自动访问令牌（保护 `/api/*` 与 `/v1/*`，包括 OpenAI 兼容透传端点）。把服务暴露到局域网或公网前，仍建议用 `MULTICHAT_API_TOKEN` 或 `MULTICHAT_BASIC_AUTH` 指定自己的凭据，并用 `MULTICHAT_ALLOWED_HOSTS` 配置反向代理域名；`/v1/chat/completions` 会使用你配置的模型密钥，无鉴权暴露等于把密钥借给别人。
 
 ## 从源码运行
 
@@ -171,8 +171,11 @@ npm test
 - HTTP MCP 默认限制 localhost、内网和 link-local 地址，只有显式允许后才会连接；
 - 凭据应通过环境变量引用，不要写进扩展包、配置、示例或 Git 提交；
 - 服务默认只监听 `127.0.0.1`，对外提供访问时需要可信网络或额外认证；
-- 可通过 `MULTICHAT_API_TOKEN`（兼容 `MC_API_TOKEN`）为 `/api/*` 与 `/v1/*` 启用 Bearer Token，或通过 `MULTICHAT_BASIC_AUTH=user:password` 启用 Basic Auth；
-- STDIO MCP 子进程默认只继承启动所需的最小系统环境，额外变量必须在 MCP 配置中显式声明。
+- **默认启用访问令牌**：未显式配置令牌时，服务会在数据目录生成随机令牌（`.runtime-token`，权限 0600），同源页面通过 `GET /api/session` 自动领取并只保存在当前标签页的 `sessionStorage`；`/api/health` 保持开放用于健康检查；
+- 回环监听下强制校验 `Host`，并拒绝 `Sec-Fetch-Site: cross-site` 与非本机 `Origin`，用于阻断 DNS rebinding 与跨站请求；显式 `--host` 暴露到非回环地址时该校验会放宽并打印警告，此时必须自行配置反向代理与令牌；
+- 可用 `MULTICHAT_API_TOKEN`（兼容 `MC_API_TOKEN`）或 `MULTICHAT_BASIC_AUTH=user:password` 指定自己的令牌；`MULTICHAT_NO_AUTH=1` 才会完全关闭鉴权（仅供可信本机环境）；反向代理场景用 `MULTICHAT_ALLOWED_HOSTS=host1,host2` 扩展 Host 白名单；
+- STDIO MCP 子进程默认只继承启动所需的最小系统环境，额外变量必须在 MCP 配置中显式声明；可执行文件默认限于 `node / python / npx / uvx / bun / deno` 等常见启动器，且禁止 `-e`、`--eval`、`--import` 等内联代码参数与 `NODE_OPTIONS`、`PATH` 等可劫持解释器的环境变量，需要新增启动器时设置 `MULTICHAT_MCP_ALLOWED_COMMANDS`；
+- 独立静态托管 `frontend/dist` 时，构建注入的 CSP meta 提供安全头兜底；通过 Express 访问时由响应头提供完整 CSP（含 `frame-ancestors`）。
 
 ## 参与项目
 

@@ -12,12 +12,20 @@ on:
       - '.github/workflows/desktop-check.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   cargo-check:
     name: Tauri v2 cargo check (ubuntu-24.04)
     runs-on: ubuntu-24.04
+    # cargo check 会执行仓库自带的 build.rs；fork PR 提交的构建脚本
+    # 不应在带仓库凭据的 runner 上运行，因此只对同仓 PR / push / 手动触发执行。
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Install Tauri system dependencies
         run: |
@@ -52,6 +60,9 @@ jobs:
       # 桌面壳复用仓库内已跟踪的 frontend/dist，不需要在这里重新构建前端。
       # 只做 cargo check：验证 Rust 源码、Tauri 配置、图标与 capabilities 能一起通过编译，
       # 不产出安装包（打包需要额外平台签名与 sidecar，见 desktop/README.md）。
-      - name: cargo check
+      - name: Resolve dependencies
         working-directory: desktop/src-tauri
-        run: cargo check
+        run: cargo generate-lockfile
+      - name: cargo check (locked resolution)
+        working-directory: desktop/src-tauri
+        run: cargo check --locked

@@ -20,7 +20,9 @@
     "backend/package.json",
     "backend/prompts.json",
     "frontend/dist",
-    "README.md"
+    "README.md",
+    "!backend/dist/**/*.map",
+    "!frontend/dist/**/*.map"
   ],
   "scripts": {
     "start": "node ./bin/multichat.mjs web",
@@ -56,6 +58,6 @@
     "express": "^4.19.2"
   },
   "overrides": {
-    "qs": "^6.16.0"
+    "qs": "^6.17.1"
   }
 }

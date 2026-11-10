@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: write
+  # npm provenance 需要 OIDC token 才能把发布包与本次 workflow 绑定。
+  id-token: write
 
 jobs:
   publish:
@@ -15,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -40,8 +44,6 @@ jobs:
           {
             echo "== npm whoami =="
             npm whoami
-            echo "== org leterhong 成员/角色 =="
-            npm org ls leterhong --json 2>&1 || true
           } | tee npm-preflight.txt
       - name: Install & build (发布物里的 dist 必须 freshly built)
         run: |
@@ -54,7 +56,7 @@ jobs:
         id: publish
         run: |
           set -o pipefail
-          npm publish --access public 2>&1 | tee npm-publish.log
+          npm publish --provenance --access public 2>&1 | tee npm-publish.log
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       # 发布失败时把 npm 完整输出存为构件，便于匿名诊断（公共仓库构件可匿名下载）。
